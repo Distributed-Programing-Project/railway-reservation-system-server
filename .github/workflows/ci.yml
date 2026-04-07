@@ -18,32 +18,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-on-push:
-    if: github.event_name == 'push'
-    name: Build on Push
+  build:
+    name: Build and test
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
-
-      - name: Build and test
-        run: mvn -B clean verify
-
-  build-pr-to-main:
-    if: github.event_name == 'pull_request'
-    name: Build PR Merge Result
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout PR merged result
         uses: actions/checkout@v4
 
       - name: Set up JDK 21
