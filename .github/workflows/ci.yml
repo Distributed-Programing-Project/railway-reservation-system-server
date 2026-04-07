@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'dev/**'
+      - 'initialize'
   pull_request:
     branches:
       - main
