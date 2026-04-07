@@ -3,6 +3,7 @@ name: Java CI
 on:
   push:
     branches:
+      - main
       - 'dev/**'
       - 'initialize'
   pull_request:
@@ -17,9 +18,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-personal-branch:
+  build-on-push:
     if: github.event_name == 'push'
-    name: Build on Personal Branch
+    name: Build on Push
     runs-on: ubuntu-latest
 
     steps:
