@@ -1,0 +1,57 @@
+package vn.edu.iuh.fit.server.model;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import vn.edu.iuh.fit.common.enums.InvoiceType;
+
+@NoArgsConstructor
+@AllArgsConstructor
+@Setter
+@Getter
+@ToString(exclude = { "customer", "employee", "details" })
+@Builder
+@Entity
+@Table(name = "invoices")
+public class Invoice {
+  @Id
+  @Column(name = "invoice_id", length = 50)
+  private String id;
+
+  @Column(name = "issue_date")
+  private LocalDateTime issueDate;
+
+  @Column(name = "total_amount")
+  private double totalAmount;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "invoice_type")
+  private InvoiceType type;
+
+  @ManyToOne
+  @JoinColumn(name = "customer_id")
+  private Customer customer;
+
+  @ManyToOne
+  @JoinColumn(name = "employee_id")
+  private Employee employee;
+
+  @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL)
+  private List<InvoiceDetail> details;
+}
