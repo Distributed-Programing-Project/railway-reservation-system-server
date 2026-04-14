@@ -17,33 +17,33 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import vn.edu.iuh.fit.common.enums.SeatType;
+import vn.edu.iuh.fit.common.enums.CarriageType;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter
 @Getter
-@ToString(exclude = {"carriage", "scheduleDetails"})
+@ToString(exclude = {"train", "seats"})
 @Builder
 @Entity
-@Table(name = "seats")
-public class Seat {
+@Table(name = "carriages")
+public class Carriage {
 
   @Id
-  @Column(name = "seat_id", length = 50)
+  @Column(name = "carriage_id", length = 50)
   private String id;
 
   @Column(name = "sequence_number")
   private int number;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "seat_type")
-  private SeatType type;
+  @Column(name = "carriage_type")
+  private CarriageType type;
 
   @ManyToOne
-  @JoinColumn(name = "carriage_id")
-  private Carriage carriage;
+  @JoinColumn(name = "train_id")
+  private Train train;
 
-  @OneToMany(mappedBy = "seat")
-  private List<ScheduleDetail> scheduleDetails;
+  @OneToMany(mappedBy = "carriage")
+  private List<Seat> seats;
 }
