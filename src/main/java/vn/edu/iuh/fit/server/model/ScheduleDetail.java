@@ -1,0 +1,36 @@
+package vn.edu.iuh.fit.server.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.UuidGenerator;
+
+
+@NoArgsConstructor
+@AllArgsConstructor
+@Setter
+@Getter
+@Builder
+@Entity
+@Table(name =  "schedule_details")
+public class ScheduleDetail {
+    @Id
+    @UuidGenerator
+    @GeneratedValue
+    private String id ;
+
+    @Column(name = "price_seat")
+    private Float priceSeat ;
+
+    @ToString.Exclude
+    @ManyToOne
+    private Seat seat;
+
+    @ToString.Exclude
+    @ManyToOne
+    private Schedule schedule ;
+
+    @ToString.Exclude
+    @ManyToOne
+    @JoinColumn(name = "route_stop_id")
+    private RouteStop routeStop ;
+}
