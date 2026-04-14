@@ -1,4 +1,4 @@
-package vn.edu.iuh.fit.util;
+package vn.edu.iuh.fit.server.util;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
