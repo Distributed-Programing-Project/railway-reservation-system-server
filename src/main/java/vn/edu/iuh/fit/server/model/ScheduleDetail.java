@@ -5,7 +5,6 @@ import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 import java.math.BigDecimal;
 
-
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter
@@ -14,12 +13,13 @@ import java.math.BigDecimal;
 @Entity
 @Table(name =  "schedule_details")
 public class ScheduleDetail {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private String id ;
+    private String id;
 
     @Column(name = "price_seat")
-    private BigDecimal priceSeat ;
+    private BigDecimal priceSeat;
 
     @ToString.Exclude
     @ManyToOne
@@ -27,10 +27,10 @@ public class ScheduleDetail {
 
     @ToString.Exclude
     @ManyToOne
-    private Schedule schedule ;
+    private Schedule schedule;
 
     @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "route_stop_id")
-    private RouteStop routeStop ;
+    private RouteStop routeStop;
 }

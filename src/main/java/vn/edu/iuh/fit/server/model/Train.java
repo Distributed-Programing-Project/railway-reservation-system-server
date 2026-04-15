@@ -1,27 +1,29 @@
 package vn.edu.iuh.fit.server.model;
 
+
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.List;
 
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString(exclude = "carriages")
+@Builder
 @Entity
 @Table(name = "trains")
-@NoArgsConstructor
-@AllArgsConstructor
-@Setter
-@Getter
-@Builder
 public class Train {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id ;
 
-    @ToString.Exclude
-    @Column(name = "train_code")
-    private String trainCode ;
+  @Id
+  @Column(name = "train_id", length = 50)
+  private String id;
 
-    @ToString.Exclude
-    @OneToMany(mappedBy = "train")
-    private List<Schedule> schedules ;
+  @Column(name = "status", columnDefinition = "NVARCHAR(50)")
+  private String status;
+
+  @OneToMany(mappedBy = "train")
+  private List<Carriage> carriages;
 }
