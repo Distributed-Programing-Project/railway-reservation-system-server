@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.server.model;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
+import java.math.BigDecimal;
 
 
 @NoArgsConstructor
@@ -14,12 +15,11 @@ import org.hibernate.annotations.UuidGenerator;
 @Table(name =  "schedule_details")
 public class ScheduleDetail {
     @Id
-    @UuidGenerator
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id ;
 
     @Column(name = "price_seat")
-    private Float priceSeat ;
+    private BigDecimal priceSeat ;
 
     @ToString.Exclude
     @ManyToOne

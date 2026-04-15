@@ -1,8 +1,10 @@
 package vn.edu.iuh.fit.common.request;
 
+import lombok.AllArgsConstructor;
 import vn.edu.iuh.fit.common.enums.ActionType;
 
 import java.io.Serializable;
+
 
 public class Request implements Serializable {
 

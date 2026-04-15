@@ -16,8 +16,7 @@ import java.time.LocalDate;
 @Builder
 public class Schedule {
     @Id
-    @GeneratedValue
-    @UuidGenerator
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id ;
 
     @Enumerated(EnumType.STRING)

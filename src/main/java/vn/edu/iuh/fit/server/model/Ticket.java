@@ -1,9 +1,6 @@
 package vn.edu.iuh.fit.server.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -16,7 +13,6 @@ import org.hibernate.annotations.UuidGenerator;
 @Builder
 public class Ticket {
     @Id
-    @GeneratedValue
-    @UuidGenerator
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id ;
 }

@@ -2,8 +2,6 @@ package vn.edu.iuh.fit.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CompositeType;
-import org.hibernate.annotations.UuidGenerator;
 
 import java.util.List;
 
@@ -16,8 +14,7 @@ import java.util.List;
 @Builder
 public class Train {
     @Id
-    @GeneratedValue
-    @UuidGenerator
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id ;
 
     @ToString.Exclude

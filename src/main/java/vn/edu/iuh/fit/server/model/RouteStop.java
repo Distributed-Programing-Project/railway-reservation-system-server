@@ -16,8 +16,7 @@ import java.util.List;
 @Builder
 public class RouteStop {
     @Id
-    @GeneratedValue
-    @UuidGenerator
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id ;
 
     @Column(name = "order_stop")

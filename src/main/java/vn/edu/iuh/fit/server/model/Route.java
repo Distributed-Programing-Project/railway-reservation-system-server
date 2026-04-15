@@ -16,8 +16,7 @@ import java.util.List;
 @Builder
 public class Route {
     @Id
-    @GeneratedValue
-    @UuidGenerator
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @ToString.Exclude()
