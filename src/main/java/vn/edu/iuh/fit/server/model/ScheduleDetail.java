@@ -26,9 +26,9 @@ import lombok.ToString;
 @Table(name = "schedule_details")
 public class ScheduleDetail {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "schedule_detail_id")
-  private int id;
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = "schedule_detail_id", length = 36)
+  private String id;
 
   @Column(name = "seat_price")
   private double seatPrice;
