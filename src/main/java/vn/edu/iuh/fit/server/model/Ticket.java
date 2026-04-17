@@ -4,6 +4,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -15,7 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import vn.edu.iuh.fit.common.enums.TicketType;
+import vn.edu.iuh.fit.server.constant.TicketType;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -27,7 +29,8 @@ import vn.edu.iuh.fit.common.enums.TicketType;
 @Table(name = "tickets")
 public class Ticket {
   @Id
-  @Column(name = "ticket_id", length = 50)
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = "ticket_id", length = 36)
   private String id;
 
   @ManyToOne

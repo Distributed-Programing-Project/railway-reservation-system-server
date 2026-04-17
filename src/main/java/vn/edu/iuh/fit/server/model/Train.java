@@ -4,6 +4,8 @@ import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -25,7 +27,8 @@ import lombok.ToString;
 public class Train {
 
   @Id
-  @Column(name = "train_id", length = 50)
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = "train_id", length = 36)
   private String id;
 
   @Column(name = "status", columnDefinition = "NVARCHAR(50)")

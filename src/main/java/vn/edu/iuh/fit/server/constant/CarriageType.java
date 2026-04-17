@@ -1,4 +1,4 @@
-package vn.edu.iuh.fit.common.enums;
+package vn.edu.iuh.fit.server.constant;
 
 public enum CarriageType {
   HARD_SEAT("Toa ngồi cứng"),

@@ -1,8 +1,8 @@
 package vn.edu.iuh.fit.common.request;
 
-import vn.edu.iuh.fit.common.enums.ActionType;
-
 import java.io.Serializable;
+
+import vn.edu.iuh.fit.common.command.ActionType;
 
 public class Request implements Serializable {
 
