@@ -1,4 +1,4 @@
-package vn.edu.iuh.fit.server.constraint;
+package vn.edu.iuh.fit.server.constant;
 
 
 public enum EmployeeStatus {
