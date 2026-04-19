@@ -39,6 +39,12 @@ public class Customer {
   @Column(name = "passport", length = 20)
   private String passport;
 
+  @Column(name = "phone_number", length = 10)
+  private String phoneNumber;
+
+  @Column(name = "email", length = 100)
+  private String email;
+
   @OneToMany(mappedBy = "customer")
   private List<Ticket> tickets;
 }
