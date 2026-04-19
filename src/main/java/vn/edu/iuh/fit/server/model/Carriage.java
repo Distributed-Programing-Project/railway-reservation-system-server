@@ -6,6 +6,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -17,7 +19,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import vn.edu.iuh.fit.common.enums.CarriageType;
+import vn.edu.iuh.fit.server.constant.CarriageType;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -30,7 +32,8 @@ import vn.edu.iuh.fit.common.enums.CarriageType;
 public class Carriage {
 
   @Id
-  @Column(name = "carriage_id", length = 50)
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = "carriage_id", length = 36)
   private String id;
 
   @Column(name = "sequence_number")

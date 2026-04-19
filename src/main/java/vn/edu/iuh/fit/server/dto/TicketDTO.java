@@ -1,4 +1,4 @@
-package vn.edu.iuh.fit.common.dto;
+package vn.edu.iuh.fit.server.dto;
 
 import java.io.Serializable;
 
@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import vn.edu.iuh.fit.common.enums.TicketType;
+import vn.edu.iuh.fit.server.constant.TicketType;
 
 @Data
 @NoArgsConstructor

@@ -18,7 +18,8 @@ import java.util.List;
 public class Train {
 
   @Id
-  @Column(name = "train_id", length = 50)
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = "train_id", length = 36)
   private String id;
 
   @Column(name = "status", columnDefinition = "NVARCHAR(50)")
