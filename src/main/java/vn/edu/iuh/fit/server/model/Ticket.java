@@ -28,6 +28,7 @@ import vn.edu.iuh.fit.server.constant.TicketType;
 @Entity
 @Table(name = "tickets")
 public class Ticket {
+
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   @Column(name = "ticket_id", length = 36)

@@ -1,46 +1,35 @@
 package vn.edu.iuh.fit.server.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import jakarta.persistence.*;
+import lombok.*;
+import java.math.BigDecimal;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter
 @Getter
-@ToString(exclude = { "schedule", "seat", "ticket" })
 @Builder
 @Entity
-@Table(name = "schedule_details")
+@Table(name =  "schedule_details")
 public class ScheduleDetail {
-  @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
-  @Column(name = "schedule_detail_id", length = 36)
-  private String id;
 
-  @Column(name = "seat_price")
-  private double seatPrice;
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
 
-  @ManyToOne
-  @JoinColumn(name = "schedule_id")
-  private Schedule schedule;
+    @Column(name = "price_seat")
+    private BigDecimal priceSeat;
 
-  @ManyToOne
-  @JoinColumn(name = "seat_id")
-  private Seat seat;
+    @ToString.Exclude
+    @ManyToOne
+    private Seat seat;
 
-  @OneToOne(mappedBy = "scheduleDetail")
-  private Ticket ticket;
+    @ToString.Exclude
+    @ManyToOne
+    private Schedule schedule;
+
+    @ToString.Exclude
+    @ManyToOne
+    @JoinColumn(name = "route_stop_id")
+    private RouteStop routeStop;
 }
