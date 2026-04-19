@@ -7,17 +7,18 @@ import vn.edu.iuh.fit.server.constant.EmployeeStatus;
 import java.time.LocalDate;
 import java.util.List;
 
-@Entity
-@Table(name = "employees")
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString()
+@Setter
+@Getter
+@ToString(exclude = {"account", "invoiceList"})
 @Builder
+@Entity
+@Table(name = "employees")
 public class Employee {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "employee_id", length = 20)
+    @Column(name = "employee_id", length = 36)
     private String employeeId;
 
     @Column(name = "employee_name", nullable = false, length = 100)
@@ -52,7 +53,7 @@ public class Employee {
     private LocalDate updatedAt;
 
     @OneToOne
-    @JoinColumn(name = "username", referencedColumnName = "username", unique = true)
+    @JoinColumn(name = "account_id")
     private Account account;
 
     @OneToMany(mappedBy = "employee")
