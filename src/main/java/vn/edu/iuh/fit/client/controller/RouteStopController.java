@@ -1,4 +1,4 @@
-package vn.edu.iuh.fit.server.controller;
+package vn.edu.iuh.fit.client.controller;
 
 import vn.edu.iuh.fit.server.model.RouteStop;
 

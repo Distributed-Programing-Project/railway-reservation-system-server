@@ -1,6 +1,6 @@
-package vn.edu.iuh.fit.server.controller.impl;
+package vn.edu.iuh.fit.client.controller.impl;
 
-import vn.edu.iuh.fit.server.controller.ScheduleDetailController;
+import vn.edu.iuh.fit.client.controller.ScheduleDetailController;
 
 import java.util.Set;
 

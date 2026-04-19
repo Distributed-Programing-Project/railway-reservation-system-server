@@ -1,6 +1,6 @@
-package vn.edu.iuh.fit.server.controller.impl;
+package vn.edu.iuh.fit.client.controller.impl;
 
-import vn.edu.iuh.fit.server.controller.TrainController;
+import vn.edu.iuh.fit.client.controller.TrainController;
 
 public class TrainControllerImpl implements TrainController {
     @Override

@@ -1,6 +1,6 @@
-package vn.edu.iuh.fit.server.controller.impl;
+package vn.edu.iuh.fit.client.controller.impl;
 
-import vn.edu.iuh.fit.server.controller.RouteStopController;
+import vn.edu.iuh.fit.client.controller.RouteStopController;
 import vn.edu.iuh.fit.server.model.RouteStop;
 
 import java.util.List;

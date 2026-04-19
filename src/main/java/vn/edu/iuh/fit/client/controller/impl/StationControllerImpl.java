@@ -1,6 +1,6 @@
-package vn.edu.iuh.fit.server.controller.impl;
+package vn.edu.iuh.fit.client.controller.impl;
 
-import vn.edu.iuh.fit.server.controller.StationController;
+import vn.edu.iuh.fit.client.controller.StationController;
 import vn.edu.iuh.fit.server.model.Station;
 
 import java.util.List;
