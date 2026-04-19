@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+
+<StackPane xmlns="http://javafx.com/javafx/8.0.171"
+           xmlns:fx="http://javafx.com/fxml/1"
+           stylesheets="@../css/statistics-management-styles.css">
+
+    <VBox spacing="15">
+        <padding>
+            <Insets top="15" right="15" bottom="15" left="15"/>
+        </padding>
+        
+        <HBox alignment="CENTER_LEFT" spacing="15">
+            <Label text="Thống kê chi tiết theo tuyến đường" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="Xuất Excel" fx:id="btnExportExcel" styleClass="action-button" style="-fx-background-color: #217346; -fx-padding: 10 20; -fx-font-size: 13px;"/>
+            <Button text="📄 Xuất PDF" fx:id="btnExportPDF" styleClass="action-button" style="-fx-padding: 10 20; -fx-font-size: 13px;"/>
+        </HBox>
+
+        <!-- Lọc và Tìm Kiếm -->
+        <TitledPane text="Bộ Lọc và Tìm Kiếm" animated="true" collapsible="true" expanded="false" style="-fx-font-size: 14px; -fx-font-weight: bold;">
+            <VBox spacing="15" style="-fx-padding: 15; -fx-background-color: white;">
+                <!-- ô tìm kiếm -->
+                <HBox alignment="CENTER_LEFT" spacing="15">
+                    <TextField fx:id="txtSearch" promptText="Tìm tên tuyến..." prefWidth="220" styleClass="search-field"/>
+                    <TextField fx:id="txtMaTuyen" promptText="🏷️ Tìm mã tuyến..." prefWidth="160" styleClass="search-field"/>
+                    <TextField fx:id="txtTiLe" promptText="Tỷ lệ lấp đầy > %" prefWidth="170" styleClass="search-field"/>
+                    <Button text="🔄 Làm mới" styleClass="secondary-button" style="-fx-padding: 8 15;"/>
+                </HBox>
+
+                <!-- Lọc theo ngày (dành cho nhân viên) -->
+                <HBox fx:id="dateFilterBox" spacing="15" alignment="CENTER_LEFT" visible="false">
+                    <Label text="Lọc theo ngày:" style="-fx-font-weight: bold; -fx-font-size: 13px;"/>
+                    <DatePicker fx:id="dpDate" prefWidth="180"/>
+                    <Button text="📥 Lọc" styleClass="action-button" style="-fx-background-color: #4472C4; -fx-padding: 8 16;"/>
+                </HBox>
+                
+                <!-- Lọc theo tháng/năm (dành cho quản lý) -->
+                <VBox fx:id="monthYearFilterBox" spacing="12" visible="false">
+                    <HBox spacing="12" alignment="CENTER_LEFT">
+                        <Label text="Lọc theo tháng:" style="-fx-font-weight: bold; -fx-font-size: 13px;"/>
+                        <ComboBox fx:id="cbMonth" prefWidth="120" promptText="Chọn tháng"/>
+                        <Label text="Năm:"/>
+                        <Spinner fx:id="spYear" prefWidth="110"/>
+                        <Button text="📥 Lọc" styleClass="action-button" style="-fx-background-color: #4472C4; -fx-padding: 8 15;"/>
+                    </HBox>
+                    <Separator style="-fx-background-color: #e0e0e0; -fx-padding: 0;"/>
+                    <HBox spacing="12" alignment="CENTER_LEFT">
+                        <Label text="Hoặc lọc theo năm:" style="-fx-font-weight: bold; -fx-font-size: 13px;"/>
+                        <Spinner fx:id="spYearOnly" prefWidth="110"/>
+                        <Button text="📥 Lọc" styleClass="action-button" style="-fx-background-color: #4472C4; -fx-padding: 8 15;"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+        </TitledPane>
+
+        <TabPane VBox.vgrow="ALWAYS" tabClosingPolicy="UNAVAILABLE" style="-fx-font-size: 13px;">
+            <Tab text="Thống kê Tuyến" style="-fx-font-size: 13px;">
+                <VBox spacing="5" style="-fx-background-color: white;">
+                    <padding>
+                        <Insets top="8" right="8" bottom="8" left="8"/>
+                    </padding>
+                    <TableView fx:id="tableStats" VBox.vgrow="ALWAYS" style="-fx-font-size: 12px;">
+                        <columnResizePolicy>
+                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                        </columnResizePolicy>
+                        <columns>
+                            <TableColumn text="Mã tuyến" fx:id="colMaTuyen"/>
+                            <TableColumn text="Tên tuyến" fx:id="colTenTuyen"/>
+                            <TableColumn text="Tổng vé bán" fx:id="colTongVe"/>
+                            <TableColumn text="Số vé trống" fx:id="colSoVeTrong"/>
+                            <TableColumn text="Tỷ lệ lấp đầy" fx:id="colTiLe"/>
+                            <TableColumn text="Số chuyến" fx:id="colSoChuyen"/>
+                            <TableColumn text="Doanh thu (VND)" fx:id="colDoanhThu"/>
+                            <TableColumn text="Doanh thu TB/Chuyến" fx:id="colDoanhThuTB"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+            <Tab text="👥 Top 10 Khách Hàng" style="-fx-font-size: 13px;">
+                <VBox spacing="5" style="-fx-background-color: white;">
+                    <padding>
+                        <Insets top="8" right="8" bottom="8" left="8"/>
+                    </padding>
+                    <TableView fx:id="tableTopCustomers" VBox.vgrow="ALWAYS" style="-fx-font-size: 12px;">
+                        <columnResizePolicy>
+                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                        </columnResizePolicy>
+                        <columns>
+                            <TableColumn text="Mã KH" fx:id="colMaKH"/>
+                            <TableColumn text="Tên Khách Hàng" fx:id="colTenKH"/>
+                            <TableColumn text="Số Điện Thoại" fx:id="colSDT"/>
+                            <TableColumn text="Số Vé Đã Mua" fx:id="colSoVeDaMua"/>
+                            <TableColumn text="Tổng Tiền (VND)" fx:id="colTongTienKH"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+        </TabPane>
+    </VBox>
+    
+    <StackPane fx:id="loadingPane" visible="false" style="-fx-background-color: rgba(255, 255, 255, 0.7);">
+        <ProgressIndicator maxWidth="50" maxHeight="50"/>
+    </StackPane>
+</StackPane>
