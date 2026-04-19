@@ -1,9 +1,7 @@
 package vn.edu.iuh.fit.server.model;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -21,40 +19,34 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import vn.edu.iuh.fit.server.constant.InvoiceType;
+import vn.edu.iuh.fit.server.constant.SeatType;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter
 @Getter
-@ToString(exclude = { "customer", "employee", "details" })
+@ToString(exclude = {"carriage", "scheduleDetails"})
 @Builder
 @Entity
-@Table(name = "invoices")
-public class Invoice {
+@Table(name = "seats")
+public class Seat {
+
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
-  @Column(name = "invoice_id", length = 36)
+  @Column(name = "seat_id", length = 36)
   private String id;
 
-  @Column(name = "issue_date")
-  private LocalDateTime issueDate;
-
-  @Column(name = "total_amount")
-  private double totalAmount;
+  @Column(name = "sequence_number")
+  private int number;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "invoice_type")
-  private InvoiceType type;
+  @Column(name = "seat_type")
+  private SeatType type;
 
   @ManyToOne
-  @JoinColumn(name = "customer_id")
-  private Customer customer;
+  @JoinColumn(name = "carriage_id")
+  private Carriage carriage;
 
-  @ManyToOne
-  @JoinColumn(name = "employee_id")
-  private Employee employee;
-
-  @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL)
-  private List<InvoiceDetail> details;
+  @OneToMany(mappedBy = "seat")
+  private List<ScheduleDetail> scheduleDetails;
 }
