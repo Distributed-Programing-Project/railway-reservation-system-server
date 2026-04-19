@@ -1,9 +1,6 @@
 package vn.edu.iuh.fit.server.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.List;
@@ -18,6 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 public class TrainStation {
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private int id;
     private String position;
     private int kmMarker; // Lấy mốc Hà Nội là chuẩn là 0km

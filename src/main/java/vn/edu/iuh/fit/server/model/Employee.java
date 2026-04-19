@@ -16,6 +16,7 @@ import java.util.List;
 @Builder
 public class Employee {
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "employee_id", length = 20)
     private String employeeId;
 
