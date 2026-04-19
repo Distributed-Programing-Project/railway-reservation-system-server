@@ -2,7 +2,7 @@ package vn.edu.iuh.fit.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import vn.edu.iuh.fit.common.enums.EmployeeStatus;
+import vn.edu.iuh.fit.server.constraint.EmployeeStatus;
 
 import java.time.LocalDate;
 import java.util.List;
