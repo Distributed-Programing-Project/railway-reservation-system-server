@@ -2,8 +2,7 @@ package vn.edu.iuh.fit.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.UuidGenerator;
-import vn.edu.iuh.fit.common.enums.StationStatus;
+import vn.edu.iuh.fit.server.constant.StationStatus;
 
 import java.util.List;
 
