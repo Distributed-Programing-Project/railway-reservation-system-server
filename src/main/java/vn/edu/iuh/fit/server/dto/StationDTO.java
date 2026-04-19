@@ -1,8 +1,6 @@
 package vn.edu.iuh.fit.server.dto;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
-import java.time.LocalDate;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DailyRevenueDTO implements Serializable {
-    private LocalDate day;
-    private BigDecimal revenue;
+public class StationDTO implements Serializable {
+    private String id;
+    private String name;
+    private Float destinationKm;
 }
