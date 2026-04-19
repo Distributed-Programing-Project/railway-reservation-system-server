@@ -1,6 +1,4 @@
-package vn.edu.iuh.fit.common.enums;
-
-import lombok.AllArgsConstructor;
+package vn.edu.iuh.fit.server.constant;
 
 public enum StatusSchedule {
     DRAFT,

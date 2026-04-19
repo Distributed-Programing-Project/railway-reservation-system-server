@@ -2,7 +2,7 @@ package vn.edu.iuh.fit.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import vn.edu.iuh.fit.common.enums.StatusSchedule;
+import vn.edu.iuh.fit.server.constant.StatusSchedule;
 
 
 @Table(name = "schedules")
