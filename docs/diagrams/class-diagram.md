@@ -47,117 +47,117 @@ classDiagram
 
     class Account {
         <<entity>>
-        -String id «UUID»
-        -String username «unique»
-        -String password
-        -boolean active
+        id : String «UUID»
+        username : String «unique»
+        password : String
+        active : boolean
     }
 
     class Employee {
         <<entity>>
-        -String employeeId «UUID»
-        -String employeeName
-        -String nationalId «CCCD»
-        -LocalDate dateOfBirth
-        -Boolean gender
-        -String phoneNumber
-        -String email
-        -Boolean isManager
-        -EmployeeStatus employeeStatus
-        -LocalDate createdAt
-        -LocalDate updatedAt
+        employeeId : String «UUID»
+        employeeName : String
+        nationalId : String «CCCD»
+        dateOfBirth : LocalDate
+        gender : Boolean
+        phoneNumber : String
+        email : String
+        isManager : Boolean
+        employeeStatus : EmployeeStatus
+        createdAt : LocalDate
+        updatedAt : LocalDate
     }
 
     class Customer {
         <<entity>>
-        -String id «UUID»
-        -String name
-        -String idCard
-        -String passport
-        -String phoneNumber
-        -String email
+        id : String «UUID»
+        name : String
+        idCard : String
+        passport : String
+        phoneNumber : String
+        email : String
     }
 
     class Train {
         <<entity>>
-        -String id «UUID»
-        -TrainStatus status
+        id : String «UUID»
+        status : TrainStatus
     }
 
     class Carriage {
         <<entity>>
-        -String id «UUID»
-        -int number
-        -CarriageType type
+        id : String «UUID»
+        number : int
+        type : CarriageType
     }
 
     class Seat {
         <<entity>>
-        -String id «UUID»
-        -int number
-        -SeatType type
+        id : String «UUID»
+        number : int
+        type : SeatType
     }
 
     class Station {
         <<entity>>
-        -String id «UUID»
-        -String name
-        -Float destinationKm
+        id : String «UUID»
+        name : String
+        destinationKm : Float
     }
 
     class Route {
         <<entity>>
-        -String id «UUID»
-        -String routeCode
-        -RouteStatus status
-        -Double priceBasic
+        id : String «UUID»
+        routeCode : String
+        status : RouteStatus
+        priceBasic : Double
     }
 
     class RouteStop {
         <<entity>>
-        -String id «UUID»
-        -int orderStop
+        id : String «UUID»
+        orderStop : int
     }
 
     class Schedule {
         <<entity>>
-        -String id «UUID»
-        -LocalDateTime departureTime
-        -LocalDateTime arrivalTime
-        -StatusSchedule status
+        id : String «UUID»
+        departureTime : LocalDateTime
+        arrivalTime : LocalDateTime
+        status : StatusSchedule
     }
 
     class ScheduleDetail {
         <<entity>>
-        -String id «UUID»
-        -BigDecimal priceSeat
+        id : String «UUID»
+        priceSeat : BigDecimal
     }
 
     class Ticket {
         <<entity>>
-        -String id «UUID»
-        -TicketType type
-        -boolean roundTrip
-        -TicketStatus status
-        -String qrCode
+        id : String «UUID»
+        type : TicketType
+        roundTrip : boolean
+        status : TicketStatus
+        qrCode : String
     }
 
     class Invoice {
         <<entity>>
-        -String id «UUID»
-        -LocalDateTime issueDate
-        -double totalAmount
-        -InvoiceType type
+        id : String «UUID»
+        issueDate : LocalDateTime
+        totalAmount : double
+        type : InvoiceType
     }
 
     class InvoiceDetail {
         <<entity>>
-        -String id «UUID»
-        -double subTotal
-        -double discount
-        -double insurance
-        -boolean isReturned
-        -double refundAmount
+        id : String «UUID»
+        subTotal : double
+        discount : double
+        insurance : double
+        isReturned : boolean
+        refundAmount : double
     }
 
     %% ══════════════════════════════════════
@@ -222,133 +222,133 @@ classDiagram
 
     class AccountDTO {
         <<DTO / Serializable>>
-        +String id
-        +String username
-        +boolean active
+        id : String
+        username : String
+        active : boolean
     }
 
     class TrainDTO {
         <<DTO / Serializable>>
-        +String id
-        +TrainStatus status
+        id : String
+        status : TrainStatus
     }
 
     class CarriageDTO {
         <<DTO / Serializable>>
-        +String id
-        +int number
-        +CarriageType type
-        +String trainId
+        id : String
+        number : int
+        type : CarriageType
+        trainId : String
     }
 
     class SeatDTO {
         <<DTO / Serializable>>
-        +String id
-        +int number
-        +SeatType type
-        +String carriageId
+        id : String
+        number : int
+        type : SeatType
+        carriageId : String
     }
 
     class StationDTO {
         <<DTO / Serializable>>
-        +String id
-        +String name
-        +Float destinationKm
+        id : String
+        name : String
+        destinationKm : Float
     }
 
     class RouteDTO {
         <<DTO / Serializable>>
-        +String id
-        +String routeCode
-        +String departureStationId
-        +String destinationStationId
-        +RouteStatus status
-        +Double priceBasic
+        id : String
+        routeCode : String
+        departureStationId : String
+        destinationStationId : String
+        status : RouteStatus
+        priceBasic : Double
     }
 
     class RouteStopDTO {
         <<DTO / Serializable>>
-        +String id
-        +int orderStop
-        +String stationStopId
-        +String routeId
+        id : String
+        orderStop : int
+        stationStopId : String
+        routeId : String
     }
 
     class ScheduleDTO {
         <<DTO / Serializable>>
-        +String id
-        +LocalDateTime departureTime
-        +LocalDateTime arrivalTime
-        +StatusSchedule status
-        +String trainId
-        +String routeId
+        id : String
+        departureTime : LocalDateTime
+        arrivalTime : LocalDateTime
+        status : StatusSchedule
+        trainId : String
+        routeId : String
     }
 
     class ScheduleDetailDTO {
         <<DTO / Serializable>>
-        +String id
-        +double seatPrice
-        +String scheduleId
-        +String seatId
-        +String routeStopId
+        id : String
+        seatPrice : double
+        scheduleId : String
+        seatId : String
+        routeStopId : String
     }
 
     class CustomerDTO {
         <<DTO / Serializable>>
-        +String id
-        +String name
-        +String idCard
-        +String passport
-        +String phoneNumber
-        +String email
+        id : String
+        name : String
+        idCard : String
+        passport : String
+        phoneNumber : String
+        email : String
     }
 
     class TicketDTO {
         <<DTO / Serializable>>
-        +String id
-        +String customerId
-        +String scheduleDetailId
-        +TicketType type
-        +boolean roundTrip
-        +TicketStatus status
-        +String qrCode
+        id : String
+        customerId : String
+        scheduleDetailId : String
+        type : TicketType
+        roundTrip : boolean
+        status : TicketStatus
+        qrCode : String
     }
 
     class EmployeeDTO {
         <<DTO / Serializable>>
-        +String employeeId
-        +String employeeName
-        +String nationalId
-        +LocalDate dateOfBirth
-        +Boolean gender
-        +String phoneNumber
-        +String email
-        +Boolean isManager
-        +String employmentStatus
-        +LocalDate createdAt
-        +LocalDate updatedAt
+        employeeId : String
+        employeeName : String
+        nationalId : String
+        dateOfBirth : LocalDate
+        gender : Boolean
+        phoneNumber : String
+        email : String
+        isManager : Boolean
+        employmentStatus : String
+        createdAt : LocalDate
+        updatedAt : LocalDate
     }
 
     class InvoiceDTO {
         <<DTO / Serializable>>
-        +String id
-        +LocalDateTime issueDate
-        +double totalAmount
-        +InvoiceType type
-        +String customerId
-        +String employeeId
+        id : String
+        issueDate : LocalDateTime
+        totalAmount : double
+        type : InvoiceType
+        customerId : String
+        employeeId : String
     }
 
     class InvoiceDetailDTO {
         <<DTO / Serializable>>
-        +String id
-        +String invoiceId
-        +String ticketId
-        +double subTotal
-        +double discount
-        +double insurance
-        +boolean isReturned
-        +double refundAmount
+        id : String
+        invoiceId : String
+        ticketId : String
+        subTotal : double
+        discount : double
+        insurance : double
+        isReturned : boolean
+        refundAmount : double
     }
 
     %% Entity ↔ DTO mapping
