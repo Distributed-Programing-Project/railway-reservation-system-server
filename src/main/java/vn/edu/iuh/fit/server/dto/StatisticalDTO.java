@@ -1,9 +1,8 @@
-package vn.edu.iuh.fit.common.dto;
+package vn.edu.iuh.fit.server.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 import lombok.*;
 

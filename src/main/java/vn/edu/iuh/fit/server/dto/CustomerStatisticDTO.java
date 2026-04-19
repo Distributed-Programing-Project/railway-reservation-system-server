@@ -1,4 +1,4 @@
-package vn.edu.iuh.fit.common.dto;
+package vn.edu.iuh.fit.server.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
