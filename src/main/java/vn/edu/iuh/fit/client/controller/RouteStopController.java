@@ -1,27 +1,27 @@
 package vn.edu.iuh.fit.client.controller;
 
-import vn.edu.iuh.fit.server.model.RouteStop;
+import vn.edu.iuh.fit.server.dto.RouteStopDTO;
 
 import java.util.List;
 
 public class RouteStopController {
-        public List<RouteStop> findAllRouteStops() {
+        public List<RouteStopDTO> findAllRouteStops() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-        public List<RouteStop> findRouteStopsByRouteId(String routeId) {
+        public List<RouteStopDTO> findRouteStopsByRouteId(String routeId) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-        public RouteStop findRouteStopById(String routeStopId) {
+        public RouteStopDTO findRouteStopById(String routeStopId) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-        public boolean createRouteStop(RouteStop routeStop) {
+        public boolean createRouteStop(RouteStopDTO routeStop) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-        public boolean updateRouteStop(RouteStop routeStop) {
+        public boolean updateRouteStop(RouteStopDTO routeStop) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 

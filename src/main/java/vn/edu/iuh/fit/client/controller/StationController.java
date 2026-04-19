@@ -1,11 +1,11 @@
 package vn.edu.iuh.fit.client.controller;
 
-import vn.edu.iuh.fit.server.model.Station;
+import vn.edu.iuh.fit.server.dto.StationDTO;
 
 import java.util.List;
 
 public class StationController {
-        public List<Station> findAllStations() {
+        public List<StationDTO> findAllStations() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
@@ -13,11 +13,11 @@ public class StationController {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-        public Station findStationByName(String stationName) {
+        public StationDTO findStationByName(String stationName) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-        public Station findStationById(String stationId) {
+        public StationDTO findStationById(String stationId) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 }
