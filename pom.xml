@@ -14,6 +14,10 @@
         <maven.compiler.target>21</maven.compiler.target>
         <maven.compiler.source>21</maven.compiler.source>
         <junit.version>5.11.0</junit.version>
+        <javafx.version>21.0.8</javafx.version>
+        <atlantafx.version>2.1.0</atlantafx.version>
+        <controlsfx.version>11.2.3</controlsfx.version>
+        <ikonli.version>12.4.0</ikonli.version>
     </properties>
 
     <dependencies>
@@ -21,6 +25,36 @@
         <groupId>org.hibernate.orm</groupId>
         <artifactId>hibernate-core</artifactId>
         <version>7.0.4.Final</version>
+    </dependency>
+    <dependency>
+        <groupId>org.openjfx</groupId>
+        <artifactId>javafx-controls</artifactId>
+        <version>${javafx.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.openjfx</groupId>
+        <artifactId>javafx-fxml</artifactId>
+        <version>${javafx.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>io.github.mkpaz</groupId>
+        <artifactId>atlantafx-base</artifactId>
+        <version>${atlantafx.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.controlsfx</groupId>
+        <artifactId>controlsfx</artifactId>
+        <version>${controlsfx.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.kordamp.ikonli</groupId>
+        <artifactId>ikonli-javafx</artifactId>
+        <version>${ikonli.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.kordamp.ikonli</groupId>
+        <artifactId>ikonli-bootstrapicons-pack</artifactId>
+        <version>${ikonli.version}</version>
     </dependency>
     <dependency>
         <groupId>org.glassfish.jaxb</groupId>
