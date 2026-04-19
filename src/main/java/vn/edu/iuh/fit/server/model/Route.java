@@ -2,7 +2,7 @@ package vn.edu.iuh.fit.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import vn.edu.iuh.fit.server.constant.StationStatus;
+import vn.edu.iuh.fit.server.constant.RouteStatus;
 
 import java.util.List;
 
@@ -16,7 +16,11 @@ import java.util.List;
 public class Route {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "route_id", length = 36)
     private String id;
+
+    @Column(name = "route_code", length = 20)
+    private String routeCode;
 
     @ToString.Exclude()
     @ManyToOne
@@ -29,7 +33,7 @@ public class Route {
     private Station destinationStation ;  // Điểm đến
 
     @Enumerated(EnumType.STRING)
-    private StationStatus status;
+    private RouteStatus status;
 
     @Column(name="price_basic")
     private Double priceBasic;

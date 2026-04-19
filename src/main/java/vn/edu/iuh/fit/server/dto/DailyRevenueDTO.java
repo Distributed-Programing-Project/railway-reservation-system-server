@@ -1,18 +1,19 @@
 package vn.edu.iuh.fit.server.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Getter
-@Setter
-@AllArgsConstructor
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
 @NoArgsConstructor
-public class DailyRevenueDTO {
+@AllArgsConstructor
+@Builder
+public class DailyRevenueDTO implements Serializable {
     private LocalDate day;
     private BigDecimal revenue;
 }

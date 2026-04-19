@@ -1,18 +1,18 @@
 package vn.edu.iuh.fit.server.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-
+import java.io.Serializable;
 import java.math.BigDecimal;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString
-
-public class CustomerStatisticDTO {
+public class CustomerStatisticDTO implements Serializable {
     private String customerId;
     private String customerName;
     private String phoneNumber;

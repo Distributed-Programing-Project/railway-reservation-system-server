@@ -1,5 +1,7 @@
 package vn.edu.iuh.fit.server.dto;
 
+import java.io.Serializable;
+
 import lombok.*;
 
 import java.time.LocalDate;
@@ -8,7 +10,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class EmployeeDTO {
+public class EmployeeDTO implements Serializable {
 
     private String employeeId;
     private String employeeName;

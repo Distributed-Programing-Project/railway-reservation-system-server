@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class InvoiceDetailDTO implements Serializable {
+  private String id;
   private String invoiceId;
   private String ticketId;
   private double subTotal;

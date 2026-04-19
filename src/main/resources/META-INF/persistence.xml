@@ -5,14 +5,20 @@
              version="3.2">
     <persistence-unit name="mariadb-pu">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
-        <class>vn.edu.iuh.fit.server.model.Schedule</class>
+        <class>vn.edu.iuh.fit.server.model.Account</class>
+        <class>vn.edu.iuh.fit.server.model.Carriage</class>
+        <class>vn.edu.iuh.fit.server.model.Customer</class>
+        <class>vn.edu.iuh.fit.server.model.Employee</class>
+        <class>vn.edu.iuh.fit.server.model.Invoice</class>
+        <class>vn.edu.iuh.fit.server.model.InvoiceDetail</class>
         <class>vn.edu.iuh.fit.server.model.Route</class>
         <class>vn.edu.iuh.fit.server.model.RouteStop</class>
-        <class>vn.edu.iuh.fit.server.model.Train</class>
-        <class>vn.edu.iuh.fit.server.model.Ticket</class>
-        <class>vn.edu.iuh.fit.server.model.Seat</class>
+        <class>vn.edu.iuh.fit.server.model.Schedule</class>
         <class>vn.edu.iuh.fit.server.model.ScheduleDetail</class>
+        <class>vn.edu.iuh.fit.server.model.Seat</class>
         <class>vn.edu.iuh.fit.server.model.Station</class>
+        <class>vn.edu.iuh.fit.server.model.Ticket</class>
+        <class>vn.edu.iuh.fit.server.model.Train</class>
 
         <properties>
             <property name="jakarta.persistence.jdbc.driver"
