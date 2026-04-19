@@ -1,24 +1,45 @@
 package vn.edu.iuh.fit.client.controller;
 
-public interface RouteController {
-    void initialize();
 
-    void setParentController();
+public class RouteController {
+        public void initialize() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void setEditMode(String routeId);
+        public void setParentController() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleAddRoute();
+        public void setEditMode(String routeId) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleEditRoute();
+        public void handleAddRoute() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleDeleteRoute();
+        public void handleEditRoute() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleRefresh();
+        public void handleDeleteRoute() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleDevelopRoute();
+        public void handleRefresh() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleSave();
+        public void handleDevelopRoute() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleCancel();
+        public void handleSave() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+        public void handleCancel() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 }
 

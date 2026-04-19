@@ -1,34 +1,65 @@
 package vn.edu.iuh.fit.client.controller;
 
-public interface ScheduleController {
-    void initialize();
 
-    void setParentController();
+public class ScheduleController {
+        public void initialize() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void setAddMode();
+        public void setParentController() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void setEditMode(String scheduleId);
+        public void setAddMode() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handlePrevPage();
+        public void setEditMode(String scheduleId) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleNextPage();
+        public void handlePrevPage() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleAddSchedule();
+        public void handleNextPage() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleEditSchedule();
+        public void handleAddSchedule() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleDeleteSchedule();
+        public void handleEditSchedule() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleGenerateSchedules();
+        public void handleDeleteSchedule() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleRefresh();
+        public void handleGenerateSchedules() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleViewSeatsDetail();
+        public void handleRefresh() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleSave();
+        public void handleViewSeatsDetail() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleGenerate();
+        public void handleSave() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleCancel();
+        public void handleGenerate() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+        public void handleCancel() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 }
 

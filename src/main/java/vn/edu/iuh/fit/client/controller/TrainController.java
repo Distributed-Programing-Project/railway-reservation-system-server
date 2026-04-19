@@ -1,16 +1,29 @@
 package vn.edu.iuh.fit.client.controller;
 
-public interface TrainController {
-    void initialize();
 
-    void handleSearch();
+public class TrainController {
+        public void initialize() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleShowAll();
+        public void handleSearch() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleRefresh();
+        public void handleShowAll() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleCreateTrain();
+        public void handleRefresh() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    void handleConfigureTrain();
+        public void handleCreateTrain() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+        public void handleConfigureTrain() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 }
 

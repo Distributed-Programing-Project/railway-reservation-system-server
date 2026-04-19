@@ -1,12 +1,19 @@
 package vn.edu.iuh.fit.client.controller;
 
+
 import java.util.Set;
 
-public interface ScheduleDetailController {
-    Set<Integer> getSoldSeatIds(String scheduleId);
+public class ScheduleDetailController {
+        public Set<Integer> getSoldSeatIds(String scheduleId) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    int createScheduleDetail(String scheduleId, int seatId, double seatPrice, String status);
+        public int createScheduleDetail(String scheduleId, int seatId, double seatPrice, String status) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    boolean updateSeatStatus(int scheduleDetailId, String newStatus);
+        public boolean updateSeatStatus(int scheduleDetailId, String newStatus) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 }
 

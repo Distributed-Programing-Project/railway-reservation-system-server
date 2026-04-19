@@ -4,13 +4,21 @@ import vn.edu.iuh.fit.server.model.Station;
 
 import java.util.List;
 
-public interface StationController {
-    List<Station> findAllStations();
+public class StationController {
+        public List<Station> findAllStations() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    List<String> findAllStationNames();
+        public List<String> findAllStationNames() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    Station findStationByName(String stationName);
+        public Station findStationByName(String stationName) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    Station findStationById(String stationId);
+        public Station findStationById(String stationId) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 }
 

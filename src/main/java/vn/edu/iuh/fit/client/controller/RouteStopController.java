@@ -4,17 +4,29 @@ import vn.edu.iuh.fit.server.model.RouteStop;
 
 import java.util.List;
 
-public interface RouteStopController {
-    List<RouteStop> findAllRouteStops();
+public class RouteStopController {
+        public List<RouteStop> findAllRouteStops() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    List<RouteStop> findRouteStopsByRouteId(String routeId);
+        public List<RouteStop> findRouteStopsByRouteId(String routeId) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    RouteStop findRouteStopById(String routeStopId);
+        public RouteStop findRouteStopById(String routeStopId) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    boolean createRouteStop(RouteStop routeStop);
+        public boolean createRouteStop(RouteStop routeStop) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    boolean updateRouteStop(RouteStop routeStop);
+        public boolean updateRouteStop(RouteStop routeStop) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 
-    boolean deleteRouteStop(String routeStopId);
+        public boolean deleteRouteStop(String routeStopId) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 }
 
