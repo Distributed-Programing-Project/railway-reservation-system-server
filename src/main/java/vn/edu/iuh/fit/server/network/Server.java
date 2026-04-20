@@ -40,12 +40,17 @@ public class Server {
 
     private void handleClient(Socket clientSocket) {
         log.info("Client connected: {}", clientSocket.getRemoteSocketAddress());
+        try {
+            clientSocket.setSoTimeout(30_000);
+            clientSocket.setKeepAlive(true);
+        } catch (Exception e) {
+            log.error("Failed to configure socket: {}", clientSocket.getRemoteSocketAddress(), e);
+            return;
+        }
         try (
             ObjectOutputStream out = new ObjectOutputStream(clientSocket.getOutputStream());
             ObjectInputStream in  = new ObjectInputStream(clientSocket.getInputStream())
         ) {
-            clientSocket.setSoTimeout(30_000);
-            clientSocket.setKeepAlive(true);
             while (true) {
                 Request request = (Request) in.readObject();
                 log.debug("Received action: {}", request.getAction());
