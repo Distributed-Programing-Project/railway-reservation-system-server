@@ -25,7 +25,7 @@ public class Employee {
     @Column(name = "employee_code", unique = true, nullable = false, length = 10)
     private String employeeCode;
 
-    @Column(name = "employee_name", nullable = false, length = 100)
+    @Column(name = "employee_name", nullable = false, columnDefinition = "NVARCHAR(100)")
     private String employeeName;
 
     @Column(name = "national_id", unique = true, nullable = false, length = 12)
