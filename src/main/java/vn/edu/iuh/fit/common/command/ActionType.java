@@ -3,5 +3,11 @@ package vn.edu.iuh.fit.common.command;
 public enum ActionType {
     LOGIN,
     FILTER_SCHEDULE,
-    CREATE_SCHEDULE
+    CREATE_SCHEDULE,
+
+    CREATE_EMPLOYEE,
+    CREATE_EMPLOYEE_ACCOUNT,
+    DELETE_EMPLOYEE,
+    FIND_ALL_EMPLOYEES,
+    RESET_EMPLOYEE_PASSWORD
 }
