@@ -26,5 +26,9 @@ public class ScheduleDTO implements Serializable {
 
     private StatusSchedule status;
     private String trainId;
+    private String trainName;
     private String routeId;
+    private String routeCode;
+    private String departureStationName;
+    private String destinationStationName;
 }

@@ -1,23 +1,29 @@
 package vn.edu.iuh.fit.server.service;
 
+import vn.edu.iuh.fit.server.dto.ScheduleDTO;
+import vn.edu.iuh.fit.server.dto.ScheduleFilterDTO;
 import vn.edu.iuh.fit.server.model.Schedule;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+import vn.edu.iuh.fit.common.response.Response;
+
 public interface ScheduleService {
-    boolean createSchedule(Schedule schedule);
+    Response createSchedule(ScheduleDTO scheduleDTO);
 
-    boolean updateSchedule(Schedule schedule);
+    Response updateSchedule(ScheduleDTO scheduleDTO);
 
-    boolean deleteSchedule(String scheduleId);
+    Response deleteSchedule(String scheduleId);
 
-    Schedule findScheduleById(String scheduleId);
+    Response findScheduleById(String scheduleId);
 
-    List<Schedule> findAllSchedules();
+    Response findAllSchedules();
 
-    List<Schedule> searchSchedules(String routeId, String trainId, LocalDateTime fromDateTime, LocalDateTime toDateTime, String status);
+    Response searchSchedules(String routeId, String trainId, LocalDateTime fromDateTime, LocalDateTime toDateTime,
+            String status);
 
-    List<Schedule> findSchedulesByStationIds(String departureStationId, String destinationStationId);
+    Response findSchedulesByStationIds(String departureStationId, String destinationStationId);
+
+    Response filterSchedules(ScheduleFilterDTO filter);
 }
-
