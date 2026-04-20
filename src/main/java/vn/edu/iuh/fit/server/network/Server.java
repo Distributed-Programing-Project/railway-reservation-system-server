@@ -22,7 +22,7 @@ public class Server {
     public static final int SERVER_PORT = 9090;
     private static final Logger log = LoggerFactory.getLogger(Server.class);
 
-    private final ExecutorService threadPool = Executors.newCachedThreadPool();
+    private final ExecutorService threadPool = Executors.newFixedThreadPool(100);
     private final RequestRouter router = new RequestRouter();
 
     public void start() {
