@@ -1,8 +1,10 @@
 package vn.edu.iuh.fit.server.repository.impl;
 
+import vn.edu.iuh.fit.server.model.Route;
 import vn.edu.iuh.fit.server.model.Schedule;
 import vn.edu.iuh.fit.server.model.ScheduleDetail;
 import vn.edu.iuh.fit.server.model.Seat;
+import vn.edu.iuh.fit.server.model.Train;
 import vn.edu.iuh.fit.server.repository.ScheduleRepository;
 import vn.edu.iuh.fit.server.dto.ScheduleFilterDTO;
 
@@ -19,6 +21,8 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
     @Override
     public Schedule createScheduleWithDetails(Schedule schedule, String trainId) {
         return doInTransaction(em -> {
+            schedule.setTrain(em.getReference(Train.class, schedule.getTrain().getId()));
+            schedule.setRoute(em.getReference(Route.class, schedule.getRoute().getId()));
             em.persist(schedule);
 
             // Fetch all seats for the given train

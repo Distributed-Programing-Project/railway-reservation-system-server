@@ -112,6 +112,7 @@ public class EmployeeRepositoryImpl extends AbstractGenericRepositoryImpl<Employ
     public Employee softDeleteEmployee(String employeeId) {
         return doInTransaction(em -> {
             Employee employee = em.find(Employee.class, employeeId);
+            if (employee == null) throw new IllegalArgumentException("Nhân viên không tồn tại: id=" + employeeId);
             employee.setEmployeeStatus(EmployeeStatus.INACTIVE);
             employee.setUpdatedAt(LocalDate.now());
             if (employee.getAccount() != null) {
@@ -125,6 +126,7 @@ public class EmployeeRepositoryImpl extends AbstractGenericRepositoryImpl<Employ
     public String resetAccountPassword(String employeeId, String hashedPassword) {
         return doInTransaction(em -> {
             Employee employee = em.find(Employee.class, employeeId);
+            if (employee == null) throw new IllegalArgumentException("Nhân viên không tồn tại: id=" + employeeId);
             Account account = employee.getAccount();
             account.setPassword(hashedPassword);
             return account.getUsername();
