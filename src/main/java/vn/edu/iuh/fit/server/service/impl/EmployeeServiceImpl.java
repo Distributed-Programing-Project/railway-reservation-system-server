@@ -10,11 +10,11 @@ import vn.edu.iuh.fit.server.dto.EmployeeDTO;
 import vn.edu.iuh.fit.server.dto.EmployeeFilterDTO;
 import vn.edu.iuh.fit.server.dto.EmployeePageDTO;
 import vn.edu.iuh.fit.server.mapper.EmployeeMapper;
-import vn.edu.iuh.fit.server.model.Account;
 import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.repository.EmployeeRepository;
 import vn.edu.iuh.fit.server.repository.impl.EmployeeRepositoryImpl;
 import vn.edu.iuh.fit.server.service.EmployeeService;
+import vn.edu.iuh.fit.server.util.ValidationUtils;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -27,22 +27,18 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public Response createEmployee(EmployeeDTO employeeDTO) {
-        if (employeeDTO == null) return Response.error("Thông tin nhân viên không được để trống");
-        if (isBlank(employeeDTO.getEmployeeName())) return Response.error("Họ tên không được để trống");
-        if (employeeDTO.getDateOfBirth() == null) return Response.error("Ngày sinh không được để trống");
-        if (employeeDTO.getIsManager() == null) return Response.error("Loại nhân viên không được để trống");
-        if (!isValidNationalId(employeeDTO.getNationalId()))
-            return Response.error("CCCD phải gồm 9 hoặc 12 chữ số");
-        if (!isValidPhone(employeeDTO.getPhoneNumber()))
-            return Response.error("Số điện thoại phải gồm đúng 10 chữ số");
-        if (!isValidEmail(employeeDTO.getEmail()))
-            return Response.error("Email không đúng định dạng");
+        List<String> errors = ValidationUtils.validate(employeeDTO);
+        if (!errors.isEmpty()) {
+            return Response.error(String.join(", ", errors));
+        }
 
         try {
-            if (repository.existsByNationalId(employeeDTO.getNationalId()))
+            if (repository.existsByNationalId(employeeDTO.getNationalId())) {
                 return Response.error("CCCD đã được đăng ký cho nhân viên khác");
-            if (repository.existsByEmail(employeeDTO.getEmail()))
+            }
+            if (repository.existsByEmail(employeeDTO.getEmail())) {
                 return Response.error("Email đã được sử dụng bởi tài khoản khác");
+            }
 
             String employeeCode = repository.generateEmployeeCode(employeeDTO.getIsManager());
 
@@ -71,19 +67,25 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public Response createEmployeeAccount(String employeeId) {
-        if (isBlank(employeeId)) return Response.error("ID nhân viên không được để trống");
+        if (employeeId == null || employeeId.isBlank()) {
+            return Response.error("ID nhân viên không được để trống");
+        }
 
         try {
             Employee employee = repository.findEmployeeById(employeeId);
-            if (employee == null) return Response.error("Không tìm thấy nhân viên: id=" + employeeId);
-            if (employee.getAccount() != null) return Response.error("Nhân viên đã được cấp tài khoản");
+            if (employee == null) {
+                return Response.error("Không tìm thấy nhân viên: id=" + employeeId);
+            }
+            if (employee.getAccount() != null) {
+                return Response.error("Nhân viên đã được cấp tài khoản");
+            }
 
             String rawPassword = generateRawPassword();
             String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
 
-            Account account = repository.createAndLinkAccount(employeeId, employee.getEmployeeCode(), hashedPassword);
-            log.info("Account created for employee: employeeId={}, username={}", employeeId, account.getUsername());
-            return buildAccountCreatedResponse("Cấp tài khoản thành công", account.getUsername(), rawPassword);
+            String username = repository.createAndLinkAccount(employeeId, employee.getEmployeeCode(), hashedPassword);
+            log.info("Account created for employee: employeeId={}, username={}", employeeId, username);
+            return buildAccountCreatedResponse("Cấp tài khoản thành công", username, rawPassword);
         } catch (Exception e) {
             log.error("Failed to create account for employee: employeeId={}", employeeId, e);
             return Response.error("Lỗi hệ thống, vui lòng thử lại");
@@ -92,13 +94,18 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public Response softDeleteEmployee(String employeeId) {
-        if (isBlank(employeeId)) return Response.error("ID nhân viên không được để trống");
+        if (employeeId == null || employeeId.isBlank()) {
+            return Response.error("ID nhân viên không được để trống");
+        }
 
         try {
             Employee employee = repository.findEmployeeById(employeeId);
-            if (employee == null) return Response.error("Không tìm thấy nhân viên: id=" + employeeId);
-            if (employee.getEmployeeStatus() == EmployeeStatus.INACTIVE)
+            if (employee == null) {
+                return Response.error("Không tìm thấy nhân viên: id=" + employeeId);
+            }
+            if (employee.getEmployeeStatus() == EmployeeStatus.INACTIVE) {
                 return Response.error("Nhân viên này đã bị xoá khỏi hệ thống");
+            }
 
             Employee updatedEmployee = repository.softDeleteEmployee(employeeId);
             log.info("Employee soft-deleted: employeeId={}", employeeId);
@@ -111,19 +118,25 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public Response resetEmployeePassword(String employeeId) {
-        if (isBlank(employeeId)) return Response.error("ID nhân viên không được để trống");
+        if (employeeId == null || employeeId.isBlank()) {
+            return Response.error("ID nhân viên không được để trống");
+        }
 
         try {
             Employee employee = repository.findEmployeeById(employeeId);
-            if (employee == null) return Response.error("Không tìm thấy nhân viên: id=" + employeeId);
-            if (employee.getAccount() == null) return Response.error("Nhân viên chưa được cấp tài khoản");
+            if (employee == null) {
+                return Response.error("Không tìm thấy nhân viên: id=" + employeeId);
+            }
+            if (employee.getAccount() == null) {
+                return Response.error("Nhân viên chưa được cấp tài khoản");
+            }
 
             String rawPassword = generateRawPassword();
             String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
 
-            Account account = repository.resetAccountPassword(employeeId, hashedPassword);
+            String username = repository.resetAccountPassword(employeeId, hashedPassword);
             log.info("Password reset for employee: employeeId={}", employeeId);
-            return buildAccountCreatedResponse("Reset mật khẩu thành công", account.getUsername(), rawPassword);
+            return buildAccountCreatedResponse("Reset mật khẩu thành công", username, rawPassword);
         } catch (Exception e) {
             log.error("Failed to reset password for employee: employeeId={}", employeeId, e);
             return Response.error("Lỗi hệ thống, vui lòng thử lại");
@@ -135,7 +148,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         try {
             EmployeeFilterDTO filter = filterDTO != null ? filterDTO : new EmployeeFilterDTO();
             int page = filter.getPage();
-            int size = filter.getSize() > 0 ? filter.getSize() : 20;
+            int size = filter.getSize();
             EmployeeStatus statusFilter = filter.getStatusFilter();
 
             List<Employee> employees = repository.findAllEmployees(page, size, statusFilter);
@@ -155,22 +168,6 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
     }
 
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
-    }
-
-    private boolean isValidNationalId(String nationalId) {
-        return nationalId != null && nationalId.matches("\\d{9}|\\d{12}");
-    }
-
-    private boolean isValidPhone(String phoneNumber) {
-        return phoneNumber != null && phoneNumber.matches("\\d{10}");
-    }
-
-    private boolean isValidEmail(String email) {
-        return email != null && email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
-    }
-
     private String generateRawPassword() {
         return UUID.randomUUID().toString().replace("-", "").substring(0, 12);
     }
@@ -182,3 +179,4 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .build());
     }
 }
+

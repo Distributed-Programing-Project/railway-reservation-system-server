@@ -53,6 +53,7 @@ public class Employee {
     @Column(name = "employment_status", nullable = false, length = 50)
     private EmployeeStatus employeeStatus;
 
+    @Builder.Default
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDate createdAt = LocalDate.now();
 
@@ -66,7 +67,7 @@ public class Employee {
     private Account account;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "employee")
+    @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
     @ToString.Exclude
     private List<Invoice> invoiceList;
 }

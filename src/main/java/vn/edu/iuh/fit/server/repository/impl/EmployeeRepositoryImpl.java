@@ -35,7 +35,9 @@ public class EmployeeRepositoryImpl extends AbstractGenericRepositoryImpl<Employ
                     ? "SELECT e FROM Employee e LEFT JOIN FETCH e.account ORDER BY e.createdAt DESC"
                     : "SELECT e FROM Employee e LEFT JOIN FETCH e.account WHERE e.employeeStatus = :status ORDER BY e.createdAt DESC";
             var query = em.createQuery(jpql, Employee.class);
-            if (statusFilter != null) query.setParameter("status", statusFilter);
+            if (statusFilter != null) {
+                query.setParameter("status", statusFilter);
+            }
             return query.setFirstResult(page * size).setMaxResults(size).getResultList();
         });
     }
@@ -47,7 +49,9 @@ public class EmployeeRepositoryImpl extends AbstractGenericRepositoryImpl<Employ
                     ? "SELECT COUNT(e) FROM Employee e"
                     : "SELECT COUNT(e) FROM Employee e WHERE e.employeeStatus = :status";
             var query = em.createQuery(jpql, Long.class);
-            if (statusFilter != null) query.setParameter("status", statusFilter);
+            if (statusFilter != null) {
+                query.setParameter("status", statusFilter);
+            }
             return query.getSingleResult();
         });
     }
@@ -88,7 +92,7 @@ public class EmployeeRepositoryImpl extends AbstractGenericRepositoryImpl<Employ
     }
 
     @Override
-    public Account createAndLinkAccount(String employeeId, String username, String hashedPassword) {
+    public String createAndLinkAccount(String employeeId, String username, String hashedPassword) {
         return doInTransaction(em -> {
             Account account = Account.builder()
                     .username(username)
@@ -100,7 +104,7 @@ public class EmployeeRepositoryImpl extends AbstractGenericRepositoryImpl<Employ
             Employee employee = em.find(Employee.class, employeeId);
             employee.setAccount(account);
             employee.setUpdatedAt(LocalDate.now());
-            return account;
+            return account.getUsername();
         });
     }
 
@@ -118,12 +122,12 @@ public class EmployeeRepositoryImpl extends AbstractGenericRepositoryImpl<Employ
     }
 
     @Override
-    public Account resetAccountPassword(String employeeId, String hashedPassword) {
+    public String resetAccountPassword(String employeeId, String hashedPassword) {
         return doInTransaction(em -> {
             Employee employee = em.find(Employee.class, employeeId);
             Account account = employee.getAccount();
             account.setPassword(hashedPassword);
-            return account;
+            return account.getUsername();
         });
     }
 }

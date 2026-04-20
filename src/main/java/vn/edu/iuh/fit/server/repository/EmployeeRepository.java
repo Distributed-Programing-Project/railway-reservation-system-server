@@ -22,9 +22,9 @@ public interface EmployeeRepository {
 
     String generateEmployeeCode(Boolean isManager);
 
-    Account createAndLinkAccount(String employeeId, String username, String hashedPassword);
+    String createAndLinkAccount(String employeeId, String username, String hashedPassword);
 
     Employee softDeleteEmployee(String employeeId);
 
-    Account resetAccountPassword(String employeeId, String hashedPassword);
+    String resetAccountPassword(String employeeId, String hashedPassword);
 }
