@@ -1,5 +1,6 @@
 package vn.edu.iuh.fit.server.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import vn.edu.iuh.fit.server.constant.EmployeeStatus;
@@ -11,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @Setter
 @Getter
-@ToString(exclude = {"account", "invoiceList"})
+@ToString
 @Builder
 @Entity
 @Table(name = "employees")
@@ -21,11 +22,17 @@ public class Employee {
     @Column(name = "employee_id", length = 36)
     private String employeeId;
 
+    @Column(name = "employee_code", unique = true, nullable = false, length = 10)
+    private String employeeCode;
+
     @Column(name = "employee_name", nullable = false, length = 100)
     private String employeeName;
 
-    @Column(name = "national_id", unique = true, nullable = false, length = 11)
-    private String nationalId; // CCCD
+    @Column(name = "national_id", unique = true, nullable = false, length = 12)
+    private String nationalId;
+
+    @Column(name = "address", columnDefinition = "NVARCHAR(255)")
+    private String address;
 
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
@@ -52,10 +59,14 @@ public class Employee {
     @Column(name = "updated_at")
     private LocalDate updatedAt;
 
+    @JsonIgnore
     @OneToOne
     @JoinColumn(name = "account_id")
+    @ToString.Exclude
     private Account account;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "employee")
+    @ToString.Exclude
     private List<Invoice> invoiceList;
 }
