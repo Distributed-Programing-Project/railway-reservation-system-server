@@ -19,16 +19,16 @@ graph TD
 
     DB[("MariaDB (Hibernate/JPA)")]
 
-    UI <-->|Tương tác| Controller
-    Controller -->|1. Request (ActionType.FILTER_SCHEDULE)| ClientSocket
-    ClientSocket -->|2. TCP Network (Object Stream)| ServerSocket
+    UI <-->|"Tương tác"| Controller
+    Controller -->|"1. Request (ActionType.FILTER_SCHEDULE)"| ClientSocket
+    ClientSocket -->|"2. TCP Network (Object Stream)"| ServerSocket
     ServerSocket --> Router
-    Router -->|3. Route Request| Service
-    Service -->|4. JPA Query (Criteria/JPQL)| Repo
-    Repo <-->|5. JDBC| DB
-    Service -->|6. Map to DTO| Router
-    Router -->|7. Response (Success, Page<ScheduleDTO>)| ServerSocket
-    ServerSocket -->|8. TCP Network| ClientSocket
+    Router -->|"3. Route Request"| Service
+    Service -->|"4. JPA Query (Criteria/JPQL)"| Repo
+    Repo <-->|"5. JDBC"| DB
+    Service -->|"6. Map to DTO"| Router
+    Router -->|"7. Response (Success, Page ScheduleDTO)"| ServerSocket
+    ServerSocket -->|"8. TCP Network"| ClientSocket
     ClientSocket --> Controller
 ```
 
