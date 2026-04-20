@@ -22,6 +22,9 @@ public class Train {
   @Column(name = "train_id", length = 36)
   private String id;
 
+  @Column(name = "train_code", unique = true, nullable = false, length = 10)
+  private String trainCode;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "status", length = 50)
   private TrainStatus status;

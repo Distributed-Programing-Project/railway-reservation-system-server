@@ -19,5 +19,7 @@ public interface ScheduleRepository {
     List<Schedule> searchSchedules(String routeId, String trainId, LocalDateTime fromDateTime, LocalDateTime toDateTime, String status);
 
     List<Schedule> findSchedulesByStationIds(String departureStationId, String destinationStationId);
+
+    List<Schedule> filterSchedules(vn.edu.iuh.fit.server.dto.ScheduleFilterDTO filter);
 }
 
