@@ -55,6 +55,12 @@ public class Invoice {
   @JoinColumn(name = "employee_id")
   private Employee employee;
 
+  @Column(name = "tax_code")
+  private String taxCode;
+
+  @Column(name = "company_name", columnDefinition = "NVARCHAR(255)")
+  private String companyName;
+
   @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL)
   private List<InvoiceDetail> details;
 }

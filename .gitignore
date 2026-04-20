@@ -36,10 +36,12 @@ build/
 CLAUDE.md
 .claude/
 
+### Gemini ###
+GEMINI.md
+.gemini/
+
 ### VS Code ###
 .vscode/
 
 ### Mac OS ###
 .DS_Store
-
-.clinerules

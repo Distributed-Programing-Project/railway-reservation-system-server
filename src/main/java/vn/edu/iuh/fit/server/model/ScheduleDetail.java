@@ -32,4 +32,7 @@ public class ScheduleDetail {
     @ManyToOne
     @JoinColumn(name = "route_stop_id")
     private RouteStop routeStop;
+
+    @Version
+    private int version;
 }
