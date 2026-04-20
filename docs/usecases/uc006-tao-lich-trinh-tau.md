@@ -88,3 +88,6 @@ graph LR
 
 2. **Logic Service (Bước Lưu Database):** Khi tạo `Schedule`, bắt buộc phải tự động Generate (sinh ra) danh sách `ScheduleDetail` (Kho ghế).
    - **Lý do (Vấn đề thực tế):** Bảng `Schedule` chỉ mang ý nghĩa là "Ngày mai Tàu SE1 sẽ chạy tuyến Bắc-Nam". Cái thực sự được mang ra bán cho khách là từng cái ghế trên chuyến tàu đó (bảng `ScheduleDetail`). Nếu tạo `Schedule` xong mà hệ thống không tự động quét bảng `Carriage` (Toa) và `Seat` (Ghế) của tàu SE1 để đẻ ra 500 cái `ScheduleDetail` tương ứng, thì chuyến tàu này sẽ trống rỗng, không có ghế nào để khách chọn mua cả! (Giá vé `priceSeat` tạm thời có thể set = 0 vì đang ở trạng thái DRAFT).
+
+3. **Xử lý RouteStop trong ScheduleDetail:** Khi generate danh sách `ScheduleDetail`, trường khóa ngoại `routeStop` bắt buộc set bằng `null`.
+   - **Lý do (Vấn đề thực tế):** Nghiệp vụ của UC-006 chỉ tập trung tạo lịch trình nguyên chuyến (từ Ga gốc tới Ga đích). Lịch trình cho các ga dừng dọc đường (`RouteStop`) và phân bổ ghế cho từng chặng nhỏ sẽ được thực hiện ở một UC nâng cao khác. Hiện tại `ScheduleDetail` sinh ra đại diện cho toàn tuyến, do đó `routeStop` phải để `null`.
