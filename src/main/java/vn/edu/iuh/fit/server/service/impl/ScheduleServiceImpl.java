@@ -14,11 +14,15 @@ import vn.edu.iuh.fit.server.mapper.ScheduleMapper;
 import vn.edu.iuh.fit.server.util.ValidationUtils;
 
 import vn.edu.iuh.fit.common.response.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public class ScheduleServiceImpl implements ScheduleService {
+
+    private static final Logger log = LoggerFactory.getLogger(ScheduleServiceImpl.class);
 
     private final ScheduleRepository repository = new ScheduleRepositoryImpl();
 
@@ -30,10 +34,6 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
 
         try {
-            // Business Rule Validation
-            if (scheduleDTO.getDepartureTime().isBefore(LocalDateTime.now())) {
-                return Response.error("Ngày hoặc giờ khởi hành không được ở quá khứ");
-            }
             if (scheduleDTO.getDepartureTime().isBefore(LocalDateTime.now().plusDays(1))) {
                 return Response.error("Ngày khởi hành phải cách ít nhất 1 ngày so với hôm nay");
             }
@@ -57,8 +57,10 @@ public class ScheduleServiceImpl implements ScheduleService {
                     .build();
 
             Schedule savedSchedule = repository.createScheduleWithDetails(schedule, scheduleDTO.getTrainId());
+            log.info("Schedule created: id={}, trainId={}", savedSchedule.getId(), scheduleDTO.getTrainId());
             return Response.success("Tạo lịch trình thành công", savedSchedule.getId());
         } catch (Exception e) {
+            log.error("Failed to create schedule: trainId={}, routeId={}", scheduleDTO.getTrainId(), scheduleDTO.getRouteId(), e);
             return Response.error("Lỗi khi tạo lịch trình: " + e.getMessage());
         }
     }
@@ -80,39 +82,40 @@ public class ScheduleServiceImpl implements ScheduleService {
             List<ScheduleDTO> scheduleDTOList = ScheduleMapper.toDtoList(schedules);
             return Response.success("Lọc lịch trình thành công", scheduleDTOList);
         } catch (Exception e) {
+            log.error("Failed to filter schedules", e);
             return Response.error("Lỗi khi lọc lịch trình: " + e.getMessage());
         }
     }
 
     @Override
     public Response updateSchedule(ScheduleDTO scheduleDTO) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return Response.error("Chưa hỗ trợ");
     }
 
     @Override
     public Response deleteSchedule(String scheduleId) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return Response.error("Chưa hỗ trợ");
     }
 
     @Override
     public Response findScheduleById(String scheduleId) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return Response.error("Chưa hỗ trợ");
     }
 
     @Override
     public Response findAllSchedules() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return Response.error("Chưa hỗ trợ");
     }
 
     @Override
     public Response searchSchedules(String routeId, String trainId, LocalDateTime fromDateTime,
             LocalDateTime toDateTime, String status) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return Response.error("Chưa hỗ trợ");
     }
 
     @Override
     public Response findSchedulesByStationIds(String departureStationId, String destinationStationId) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return Response.error("Chưa hỗ trợ");
     }
 }
 
