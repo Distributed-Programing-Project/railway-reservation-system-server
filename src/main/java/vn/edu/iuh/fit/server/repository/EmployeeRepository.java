@@ -1,7 +1,6 @@
 package vn.edu.iuh.fit.server.repository;
 
 import vn.edu.iuh.fit.server.constant.EmployeeStatus;
-import vn.edu.iuh.fit.server.model.Account;
 import vn.edu.iuh.fit.server.model.Employee;
 
 import java.util.List;
