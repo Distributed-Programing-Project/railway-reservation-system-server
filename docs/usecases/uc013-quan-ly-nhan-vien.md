@@ -127,6 +127,11 @@ Nhân viên Quản lý có thể tạo hồ sơ nhân viên mới, cấp tài kh
 | size | int | ✗ | Kích thước trang (mặc định 20) |
 | statusFilter | EmployeeStatus | ✗ | Lọc theo trạng thái; null = lấy tất cả |
 
+### Reset mật khẩu (`RESET_EMPLOYEE_PASSWORD`)
+| Field | Kiểu | Bắt buộc | Mô tả |
+|---|---|---|---|
+| employeeId | String | ✓ | UUID của nhân viên cần reset mật khẩu |
+
 ---
 
 ## Dữ liệu ra (Server → Client)
@@ -167,6 +172,12 @@ Nhân viên Quản lý có thể tạo hồ sơ nhân viên mới, cấp tài kh
 | totalElements | long | Tổng số nhân viên |
 | totalPages | int | Tổng số trang |
 | currentPage | int | Trang hiện tại |
+
+### Reset mật khẩu thành công
+| Field | Kiểu | Mô tả |
+|---|---|---|
+| username | String | Tên đăng nhập của nhân viên |
+| temporaryPassword | String | Mật khẩu mới dạng plaintext (chỉ hiển thị 1 lần) |
 
 ---
 
