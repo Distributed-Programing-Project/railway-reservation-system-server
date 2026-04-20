@@ -58,7 +58,7 @@ Nhân viên Quản lý có thể tra cứu tàu theo mác tàu, lập tàu mới
    - `HARD_SEAT` — Toa ngồi cứng: 64 ghế (`SeatType.HARD_SEAT`).
    - `SOFT_SEAT` — Toa ngồi mềm: 56 ghế (`SeatType.SOFT_SEAT`).
    - `SOFT_SEAT_AC` — Toa ngồi mềm cao cấp: 56 ghế (`SeatType.VIP_SEAT`).
-   - `BERTH_6` — Toa giường 6: 64 giường (`SeatType.BERTH_6`).
+   - `BERTH_6` — Toa giường 6: 42 giường (`SeatType.BERTH_6`).
    - `BERTH_4` — Toa giường 4: 36 giường (`SeatType.BERTH_4`).
 4. Quản lý nhấn **"Lưu"**.
 5. Hệ thống tạo `Carriage` mới (`type`, `trainId = null`, `number = 0`) trong một transaction, đồng thời sinh toàn bộ `Seat` tương ứng với `number` từ 1 đến N.

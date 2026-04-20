@@ -60,7 +60,15 @@ Nhân viên Quản lý có thể tạo hồ sơ nhân viên mới, cấp tài kh
 9. Hệ thống cập nhật `employeeStatus = INACTIVE`, `account.active = false` (nếu tài khoản tồn tại), `updatedAt = ngày hiện tại`.
 10. Hệ thống lưu thay đổi và hiển thị thông báo xoá mềm thành công.
 
-### Luồng D — Xem danh sách nhân viên
+### Luồng D — Reset mật khẩu
+
+1. Quản lý chọn nhân viên trong danh sách và chọn **Reset mật khẩu**.
+2. Hệ thống hiển thị hộp thoại xác nhận: "Bạn có chắc chắn muốn đặt lại mật khẩu cho nhân viên này?".
+3. Quản lý xác nhận.
+4. Hệ thống sinh một mật khẩu ngẫu nhiên mới, băm (hash) và lưu vào Database.
+5. Hệ thống hiển thị mật khẩu mới dạng plaintext trên màn hình để quản lý gửi cho nhân viên. (Mật khẩu chỉ hiện 1 lần).
+
+### Luồng E — Xem danh sách nhân viên
 
 1. Quản lý vào màn hình Quản lý nhân viên.
 2. Hệ thống load danh sách nhân viên có phân trang (mặc định: page 0, size 20), có thể lọc theo trạng thái (`ACTIVE` / `PAUSE` / `INACTIVE`).
@@ -191,6 +199,7 @@ graph LR
         UC2(["Cấp tài khoản"])
         UC3(["Xoá mềm nhân viên"])
         UC4(["Xem danh sách nhân viên"])
+        UC5(["Reset mật khẩu"])
         SUB1(["Validate thông tin đầu vào"])
         SUB2(["Sinh employeeCode tự động"])
         SUB3(["Sinh mật khẩu ngẫu nhiên & hash"])
@@ -203,10 +212,12 @@ graph LR
     QL --> UC2
     QL --> UC3
     QL --> UC4
+    QL --> UC5
 
     UC1 -. "«include»" .-> SUB1
     UC1 -. "«include»" .-> SUB2
     UC2 -. "«include»" .-> SUB3
+    UC5 -. "«include»" .-> SUB3
     UC3 -. "«include»" .-> SUB4
     UC3 -. "«include»" .-> SUB5
     UC3 -. "«include»" .-> SUB6
