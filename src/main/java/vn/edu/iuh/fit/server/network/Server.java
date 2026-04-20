@@ -1,0 +1,79 @@
+package vn.edu.iuh.fit.server.network;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import vn.edu.iuh.fit.common.request.Request;
+import vn.edu.iuh.fit.common.response.Response;
+
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+public class Server {
+
+    public static final int SERVER_PORT = 9090;
+    private static final Logger log = LoggerFactory.getLogger(Server.class);
+
+    private final ExecutorService threadPool = Executors.newFixedThreadPool(100);
+    private final RequestRouter router = new RequestRouter();
+
+    public void start() {
+        registerShutdownHook();
+        try (ServerSocket serverSocket = new ServerSocket(SERVER_PORT)) {
+            log.info("Server started on port {}", SERVER_PORT);
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
+                threadPool.submit(() -> handleClient(clientSocket));
+            }
+        } catch (IOException e) {
+            log.error("Server failed to start", e);
+        }
+    }
+
+    private void handleClient(Socket clientSocket) {
+        log.info("Client connected: {}", clientSocket.getRemoteSocketAddress());
+        try (
+            ObjectOutputStream out = new ObjectOutputStream(clientSocket.getOutputStream());
+            ObjectInputStream in  = new ObjectInputStream(clientSocket.getInputStream())
+        ) {
+            clientSocket.setSoTimeout(30_000);
+            clientSocket.setKeepAlive(true);
+            while (true) {
+                Request request = (Request) in.readObject();
+                log.debug("Received action: {}", request.getAction());
+                Response response = router.route(request);
+                out.writeObject(response);
+                out.reset();
+            }
+        } catch (EOFException | SocketException e) {
+            log.info("Client disconnected: {}", clientSocket.getRemoteSocketAddress());
+        } catch (SocketTimeoutException e) {
+            log.warn("Client timed out: {}", clientSocket.getRemoteSocketAddress());
+        } catch (Exception e) {
+            log.error("Error handling client: {}", clientSocket.getRemoteSocketAddress(), e);
+        }
+    }
+
+    private void registerShutdownHook() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            threadPool.shutdown();
+            try {
+                threadPool.awaitTermination(10, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                threadPool.shutdownNow();
+            }
+        }));
+    }
+
+    public static void main(String[] args) {
+        new Server().start();
+    }
+}

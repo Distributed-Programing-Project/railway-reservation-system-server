@@ -15,16 +15,17 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
     public ScheduleRepositoryImpl() {
         super(Schedule.class);
     }
+
     @Override
     public Schedule createScheduleWithDetails(Schedule schedule, String trainId) {
         return doInTransaction(em -> {
             em.persist(schedule);
-            
+
             // Fetch all seats for the given train
             List<Seat> seats = em.createQuery("SELECT s FROM Seat s WHERE s.carriage.train.id = :trainId", Seat.class)
-                                 .setParameter("trainId", trainId)
-                                 .getResultList();
-            
+                    .setParameter("trainId", trainId)
+                    .getResultList();
+
             // Batch insert ScheduleDetails (avoid OOM)
             int batchSize = 50;
             for (int i = 0; i < seats.size(); i++) {
@@ -35,13 +36,13 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
                         .routeStop(null)
                         .build();
                 em.persist(detail);
-                
+
                 if (i > 0 && i % batchSize == 0) {
                     em.flush();
                     em.clear();
                 }
             }
-            
+
             return schedule;
         });
     }
@@ -68,6 +69,7 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
 
     @Override
     public List<Schedule> searchSchedules(String routeId, String trainId, LocalDateTime fromDateTime, LocalDateTime toDateTime, String status) {
+
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
@@ -79,7 +81,8 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
     @Override
     public List<Schedule> filterSchedules(ScheduleFilterDTO filter) {
         return doWithEntityManager(em -> {
-            StringBuilder jpql = new StringBuilder("SELECT s FROM Schedule s JOIN FETCH s.route r JOIN FETCH r.departureStation JOIN FETCH r.destinationStation JOIN FETCH s.train t WHERE 1=1 ");
+            StringBuilder jpql = new StringBuilder(
+                    "SELECT s FROM Schedule s JOIN FETCH s.route r JOIN FETCH r.departureStation JOIN FETCH r.destinationStation JOIN FETCH s.train t WHERE 1=1 ");
             if (filter.getDepartureStationId() != null && !filter.getDepartureStationId().isEmpty()) {
                 jpql.append("AND r.departureStation.id = :depId ");
             }
@@ -101,7 +104,7 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
             jpql.append("ORDER BY s.departureTime DESC");
 
             var query = em.createQuery(jpql.toString(), Schedule.class);
-            
+
             if (filter.getDepartureStationId() != null && !filter.getDepartureStationId().isEmpty()) {
                 query.setParameter("depId", filter.getDepartureStationId());
             }
@@ -123,9 +126,8 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
 
             query.setFirstResult(filter.getPage() * filter.getSize());
             query.setMaxResults(filter.getSize());
-            
+
             return query.getResultList();
         });
     }
 }
-
