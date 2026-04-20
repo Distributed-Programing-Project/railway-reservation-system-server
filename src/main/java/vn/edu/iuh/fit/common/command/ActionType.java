@@ -2,12 +2,12 @@ package vn.edu.iuh.fit.common.command;
 
 public enum ActionType {
     LOGIN,
+    FILTER_SCHEDULE,
+    CREATE_SCHEDULE,
 
-    // Ticket Actions
-    FIND_TICKET_BY_CUSTOMER_ID_CARD,
-    EXCHANGE_TICKETS,
-    
-    // Schedule Actions
-    FIND_SCHEDULES,
-    FIND_SCHEDULE_DETAILS_BY_SCHEDULE_ID,
+    CREATE_EMPLOYEE,
+    CREATE_EMPLOYEE_ACCOUNT,
+    DELETE_EMPLOYEE,
+    FIND_ALL_EMPLOYEES,
+    RESET_EMPLOYEE_PASSWORD
 }

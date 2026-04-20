@@ -45,3 +45,7 @@ GEMINI.md
 
 ### Mac OS ###
 .DS_Store
+
+# JPA config (local only)
+src/main/resources/META-INF/persistence.xml
+

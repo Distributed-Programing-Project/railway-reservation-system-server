@@ -5,25 +5,34 @@ import vn.edu.iuh.fit.server.repository.TrainRepository;
 
 import java.util.List;
 
-public class TrainRepositoryImpl implements TrainRepository {
+public class TrainRepositoryImpl extends AbstractGenericRepositoryImpl<Train, String>
+        implements TrainRepository {
+
+    public TrainRepositoryImpl() {
+        super(Train.class);
+    }
+
     @Override
     public List<Train> findAllTrains() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return doWithEntityManager(em ->
+                em.createQuery("SELECT t FROM Train t", Train.class).getResultList());
     }
 
     @Override
     public List<Train> getAllTrains() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return findAllTrains();
     }
 
     @Override
     public Train findById(String trainId) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return doWithEntityManager(em -> em.find(Train.class, trainId));
     }
 
     @Override
-    public boolean existsByTrainCode(String trainId) {
-        throw new UnsupportedOperationException("Not implemented yet");
+    public boolean existsByTrainCode(String trainCode) {
+        return doWithEntityManager(em ->
+                em.createQuery("SELECT COUNT(t) FROM Train t WHERE t.trainCode = :code", Long.class)
+                        .setParameter("code", trainCode)
+                        .getSingleResult() > 0);
     }
 }
-

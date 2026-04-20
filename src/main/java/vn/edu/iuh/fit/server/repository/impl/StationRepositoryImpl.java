@@ -5,25 +5,37 @@ import vn.edu.iuh.fit.server.repository.StationRepository;
 
 import java.util.List;
 
-public class StationRepositoryImpl implements StationRepository {
+public class StationRepositoryImpl extends AbstractGenericRepositoryImpl<Station, String>
+        implements StationRepository {
+
+    public StationRepositoryImpl() {
+        super(Station.class);
+    }
+
     @Override
     public List<Station> findAllStations() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return doWithEntityManager(em ->
+                em.createQuery("SELECT s FROM Station s", Station.class).getResultList());
     }
 
     @Override
     public List<String> findAllStationNames() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return doWithEntityManager(em ->
+                em.createQuery("SELECT s.name FROM Station s", String.class).getResultList());
     }
 
     @Override
     public Station findStationByName(String stationName) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return doWithEntityManager(em ->
+                em.createQuery("SELECT s FROM Station s WHERE s.name = :name", Station.class)
+                        .setParameter("name", stationName)
+                        .getResultStream()
+                        .findFirst()
+                        .orElse(null));
     }
 
     @Override
     public Station findStationById(String stationId) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return doWithEntityManager(em -> em.find(Station.class, stationId));
     }
 }
-
