@@ -1,12 +1,12 @@
-﻿package vn.edu.iuh.fit.server.constant;
+package vn.edu.iuh.fit.server.constant;
 
 public enum TicketStatus {
-    BOOKED("ÄÃ£ Ä‘áº·t"),
-    PAID("ÄÃ£ thanh toÃ¡n"),
-    CANCELLED("ÄÃ£ há»§y"),
-    USED("ÄÃ£ sá»­ dá»¥ng"),
-    EXPIRED("Háº¿t háº¡n"),
-    EXCHANGED("ÄÃ£ Ä‘á»•i"),
+    BOOKED("Đã đặt"),
+    PAID("Đã thanh toán"),
+    CANCELLED("Đã hủy"),
+    USED("Đã sử dụng"),
+    EXPIRED("Hết hạn"),
+    EXCHANGED("Đã đổi"),
     RETURNED("Đã trả vé");
 
     private final String name;
@@ -19,4 +19,3 @@ public enum TicketStatus {
         return name;
     }
 }
-
