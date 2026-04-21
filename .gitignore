@@ -37,8 +37,8 @@ CLAUDE.md
 .claude/
 
 ### Gemini ###
-GEMINI.md
-.gemini/
+CODEX.md
+.codex/
 
 ### VS Code ###
 .vscode/
