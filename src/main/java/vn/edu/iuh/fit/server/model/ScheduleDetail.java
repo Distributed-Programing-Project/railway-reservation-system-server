@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Setter
 @Getter
+@ToString
 @Builder
 @Entity
 @Table(name =  "schedule_details")
@@ -15,6 +16,7 @@ public class ScheduleDetail {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "schedule_detail_id", length = 36)
     private String id;
 
     @Column(name = "price_seat")
