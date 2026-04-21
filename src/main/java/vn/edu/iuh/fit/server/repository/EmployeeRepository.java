@@ -1,5 +1,6 @@
 package vn.edu.iuh.fit.server.repository;
 
+import jakarta.persistence.EntityManager;
 import vn.edu.iuh.fit.server.constant.EmployeeStatus;
 import vn.edu.iuh.fit.server.model.Employee;
 
@@ -7,23 +8,14 @@ import java.util.List;
 
 public interface EmployeeRepository {
 
-    Employee saveEmployee(Employee employee);
-
-    Employee findEmployeeById(String employeeId);
-
-    List<Employee> findAllEmployees(int page, int size, EmployeeStatus statusFilter);
-
-    long countEmployees(EmployeeStatus statusFilter);
-
-    boolean existsByNationalId(String nationalId);
-
-    boolean existsByEmail(String email);
-
-    String generateEmployeeCode(Boolean isManager);
-
-    String createAndLinkAccount(String employeeId, String username, String hashedPassword);
-
-    Employee softDeleteEmployee(String employeeId);
-
-    String resetAccountPassword(String employeeId, String hashedPassword);
+    Employee saveEmployee(EntityManager em, Employee employee);
+    Employee findEmployeeById(EntityManager em, String employeeId);
+    List<Employee> findAllEmployees(EntityManager em, int page, int size, EmployeeStatus statusFilter);
+    long countEmployees(EntityManager em, EmployeeStatus statusFilter);
+    boolean existsByNationalId(EntityManager em, String nationalId);
+    boolean existsByEmail(EntityManager em, String email);
+    String generateEmployeeCode(EntityManager em, Boolean isManager);
+    String createAndLinkAccount(EntityManager em, String employeeId, String username, String hashedPassword);
+    Employee softDeleteEmployee(EntityManager em, String employeeId);
+    String resetAccountPassword(EntityManager em, String employeeId, String hashedPassword);
 }

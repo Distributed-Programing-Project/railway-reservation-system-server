@@ -1,20 +1,21 @@
 package vn.edu.iuh.fit.server.repository;
 
+import jakarta.persistence.EntityManager;
 import vn.edu.iuh.fit.server.model.RouteStop;
 
 import java.util.List;
 
 public interface RouteStopRepository {
-    List<RouteStop> findAllRouteStops();
+    List<RouteStop> findAllRouteStops(EntityManager em);
 
-    List<RouteStop> findRouteStopsByRouteId(String routeId);
+    List<RouteStop> findRouteStopsByRouteId(EntityManager em, String routeId);
 
-    RouteStop findRouteStopById(String routeStopId);
+    RouteStop findRouteStopById(EntityManager em, String routeStopId);
 
-    boolean createRouteStop(RouteStop routeStop);
+    boolean createRouteStop(EntityManager em, RouteStop routeStop);
 
-    boolean updateRouteStop(RouteStop routeStop);
+    boolean updateRouteStop(EntityManager em, RouteStop routeStop);
 
-    boolean deleteRouteStop(String routeStopId);
+    boolean deleteRouteStop(EntityManager em, String routeStopId);
 }
 
