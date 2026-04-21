@@ -1,26 +1,27 @@
 package vn.edu.iuh.fit.server.repository;
 
+import jakarta.persistence.EntityManager;
 import vn.edu.iuh.fit.server.model.Route;
 
 import java.util.List;
 
 public interface RouteRepository {
-    boolean createRoute(Route route);
+    boolean createRoute(EntityManager em, Route route);
 
-    boolean updateRoute(Route route);
+    boolean updateRoute(EntityManager em, Route route);
 
-    Route findReverseRoute(String routeId);
+    Route findReverseRoute(EntityManager em, String routeId);
 
-    boolean hasSchedules(String routeId);
+    boolean hasSchedules(EntityManager em, String routeId);
 
-    boolean deleteRoute(String routeId);
+    boolean deleteRoute(EntityManager em, String routeId);
 
-    Route findRouteById(String routeId);
+    Route findRouteById(EntityManager em, String routeId);
 
-    List<Route> findAllRoutes();
+    List<Route> findAllRoutes(EntityManager em);
 
-    List<Route> searchRoutes(String departureStationId, String destinationStationId, String status);
+    List<Route> searchRoutes(EntityManager em, String departureStationId, String destinationStationId, String status);
 
-    List<Route> getAllRoutes();
+    List<Route> getAllRoutes(EntityManager em);
 }
 

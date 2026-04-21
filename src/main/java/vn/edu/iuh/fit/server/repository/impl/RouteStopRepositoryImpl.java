@@ -1,5 +1,6 @@
 package vn.edu.iuh.fit.server.repository.impl;
 
+import jakarta.persistence.EntityManager;
 import vn.edu.iuh.fit.server.model.RouteStop;
 import vn.edu.iuh.fit.server.repository.RouteStopRepository;
 
@@ -13,49 +14,41 @@ public class RouteStopRepositoryImpl extends AbstractGenericRepositoryImpl<Route
     }
 
     @Override
-    public List<RouteStop> findAllRouteStops() {
-        return doWithEntityManager(em ->
-                em.createQuery("SELECT rs FROM RouteStop rs", RouteStop.class).getResultList());
+    public List<RouteStop> findAllRouteStops(EntityManager em) {
+        return em.createQuery("SELECT rs FROM RouteStop rs", RouteStop.class).getResultList();
     }
 
     @Override
-    public List<RouteStop> findRouteStopsByRouteId(String routeId) {
-        return doWithEntityManager(em ->
-                em.createQuery("SELECT rs FROM RouteStop rs WHERE rs.route.id = :id ORDER BY rs.stopOrder ASC", RouteStop.class)
-                        .setParameter("id", routeId)
-                        .getResultList());
+    public List<RouteStop> findRouteStopsByRouteId(EntityManager em, String routeId) {
+        return em.createQuery("SELECT rs FROM RouteStop rs WHERE rs.route.id = :id ORDER BY rs.stopOrder ASC", RouteStop.class)
+                .setParameter("id", routeId)
+                .getResultList();
     }
 
     @Override
-    public RouteStop findRouteStopById(String routeStopId) {
-        return doWithEntityManager(em -> em.find(RouteStop.class, routeStopId));
+    public RouteStop findRouteStopById(EntityManager em, String routeStopId) {
+        return em.find(RouteStop.class, routeStopId);
     }
 
     @Override
-    public boolean createRouteStop(RouteStop routeStop) {
-        return doInTransaction(em -> {
-            em.persist(routeStop);
+    public boolean createRouteStop(EntityManager em, RouteStop routeStop) {
+        em.persist(routeStop);
+        return true;
+    }
+
+    @Override
+    public boolean updateRouteStop(EntityManager em, RouteStop routeStop) {
+        em.merge(routeStop);
+        return true;
+    }
+
+    @Override
+    public boolean deleteRouteStop(EntityManager em, String routeStopId) {
+        RouteStop routeStop = em.find(RouteStop.class, routeStopId);
+        if (routeStop != null) {
+            em.remove(routeStop);
             return true;
-        });
-    }
-
-    @Override
-    public boolean updateRouteStop(RouteStop routeStop) {
-        return doInTransaction(em -> {
-            em.merge(routeStop);
-            return true;
-        });
-    }
-
-    @Override
-    public boolean deleteRouteStop(String routeStopId) {
-        return doInTransaction(em -> {
-            RouteStop routeStop = em.find(RouteStop.class, routeStopId);
-            if (routeStop != null) {
-                em.remove(routeStop);
-                return true;
-            }
-            return false;
-        });
+        }
+        return false;
     }
 }
