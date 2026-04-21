@@ -16,4 +16,6 @@ public class CustomerDTO implements Serializable {
   private String name;
   private String idCard;
   private String passport;
+  private String phoneNumber;
+  private String email;
 }

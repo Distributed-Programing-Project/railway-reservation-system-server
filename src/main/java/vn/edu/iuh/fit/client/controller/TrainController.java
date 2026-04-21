@@ -1,35 +1,28 @@
-package vn.edu.iuh.fit.server.controller.impl;
+package vn.edu.iuh.fit.client.controller;
 
-import vn.edu.iuh.fit.server.controller.TrainController;
 
-public class TrainControllerImpl implements TrainController {
-    @Override
-    public void initialize() {
+public class TrainController {
+        public void initialize() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void handleSearch() {
+        public void handleSearch() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void handleShowAll() {
+        public void handleShowAll() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void handleRefresh() {
+        public void handleRefresh() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void handleCreateTrain() {
+        public void handleCreateTrain() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void handleConfigureTrain() {
+        public void handleConfigureTrain() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 }

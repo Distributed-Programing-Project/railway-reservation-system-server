@@ -1,7 +1,10 @@
 package vn.edu.iuh.fit.common.response;
 
+import lombok.ToString;
+
 import java.io.Serializable;
 
+@ToString
 public class Response implements Serializable {
 
     private static final long serialVersionUID = 1L;

@@ -17,6 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import vn.edu.iuh.fit.server.constant.TicketStatus;
 import vn.edu.iuh.fit.server.constant.TicketType;
 
 @NoArgsConstructor
@@ -49,8 +50,9 @@ public class Ticket {
   @Column(name = "is_round_trip")
   private boolean roundTrip;
 
-  @Column(name = "status")
-  private String status;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "status", length = 50)
+  private TicketStatus status;
 
   @Column(name = "qr_code", columnDefinition = "TEXT")
   private String qrCode;

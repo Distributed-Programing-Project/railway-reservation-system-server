@@ -1,80 +1,64 @@
-package vn.edu.iuh.fit.server.controller.impl;
+package vn.edu.iuh.fit.client.controller;
 
-import vn.edu.iuh.fit.server.controller.ScheduleController;
 
-public class ScheduleControllerImpl implements ScheduleController {
-    @Override
-    public void initialize() {
+public class ScheduleController {
+        public void initialize() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void setParentController() {
+        public void setParentController() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void setAddMode() {
+        public void setAddMode() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void setEditMode(String scheduleId) {
+        public void setEditMode(String scheduleId) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void handlePrevPage() {
+        public void handlePrevPage() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void handleNextPage() {
+        public void handleNextPage() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void handleAddSchedule() {
+        public void handleAddSchedule() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void handleEditSchedule() {
+        public void handleEditSchedule() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void handleDeleteSchedule() {
+        public void handleDeleteSchedule() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void handleGenerateSchedules() {
+        public void handleGenerateSchedules() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void handleRefresh() {
+        public void handleRefresh() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void handleViewSeatsDetail() {
+        public void handleViewSeatsDetail() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void handleSave() {
+        public void handleSave() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void handleGenerate() {
+        public void handleGenerate() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public void handleCancel() {
+        public void handleCancel() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 }

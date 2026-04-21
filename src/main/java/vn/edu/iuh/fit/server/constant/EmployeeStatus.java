@@ -2,7 +2,7 @@ package vn.edu.iuh.fit.server.constant;
 
 
 public enum EmployeeStatus {
-    ACTIVE("Đang làm"), PAUSE("Tạm nghĩ"), INACTIVE("Đã nghĩ làm");
+    ACTIVE("Đang làm"), PAUSE("Tạm nghỉ"), INACTIVE("Đã nghỉ làm");
 
     private final String status;
 

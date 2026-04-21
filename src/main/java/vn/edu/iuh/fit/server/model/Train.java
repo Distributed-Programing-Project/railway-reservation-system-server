@@ -2,12 +2,8 @@ package vn.edu.iuh.fit.server.model;
 
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
+import vn.edu.iuh.fit.server.constant.TrainStatus;
 
 import java.util.List;
 
@@ -26,8 +22,12 @@ public class Train {
   @Column(name = "train_id", length = 36)
   private String id;
 
-  @Column(name = "status", columnDefinition = "NVARCHAR(50)")
-  private String status;
+  @Column(name = "train_code", unique = true, nullable = false, length = 10)
+  private String trainCode;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "status", length = 50)
+  private TrainStatus status;
 
   @OneToMany(mappedBy = "train")
   private List<Carriage> carriages;

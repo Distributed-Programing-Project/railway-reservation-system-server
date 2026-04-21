@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import vn.edu.iuh.fit.server.constant.TicketStatus;
 import vn.edu.iuh.fit.server.constant.TicketType;
 
 @Data
@@ -15,9 +16,9 @@ import vn.edu.iuh.fit.server.constant.TicketType;
 public class TicketDTO implements Serializable {
   private String id;
   private String customerId;
-  private int scheduleDetailId;
+  private String scheduleDetailId;
   private TicketType type;
   private boolean roundTrip;
-  private String status;
+  private TicketStatus status;
   private String qrCode;
 }

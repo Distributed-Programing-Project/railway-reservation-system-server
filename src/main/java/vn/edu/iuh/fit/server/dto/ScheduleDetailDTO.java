@@ -12,8 +12,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ScheduleDetailDTO implements Serializable {
-  private int id;
+  private String id;
   private double seatPrice;
   private String scheduleId;
   private String seatId;
+  private String routeStopId;
 }
