@@ -14,7 +14,10 @@ import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.repository.EmployeeRepository;
 import vn.edu.iuh.fit.server.repository.impl.EmployeeRepositoryImpl;
 import vn.edu.iuh.fit.server.service.EmployeeService;
+import vn.edu.iuh.fit.server.util.JPAUtils;
 import vn.edu.iuh.fit.server.util.ValidationUtils;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -32,15 +35,18 @@ public class EmployeeServiceImpl implements EmployeeService {
             return Response.error(String.join(", ", errors));
         }
 
+        EntityManager em = JPAUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
         try {
-            if (repository.existsByNationalId(employeeDTO.getNationalId())) {
+            tx.begin();
+            if (repository.existsByNationalId(em, employeeDTO.getNationalId())) {
                 return Response.error("CCCD đã được đăng ký cho nhân viên khác");
             }
-            if (repository.existsByEmail(employeeDTO.getEmail())) {
+            if (repository.existsByEmail(em, employeeDTO.getEmail())) {
                 return Response.error("Email đã được sử dụng bởi tài khoản khác");
             }
 
-            String employeeCode = repository.generateEmployeeCode(employeeDTO.getIsManager());
+            String employeeCode = repository.generateEmployeeCode(em, employeeDTO.getIsManager());
 
             Employee employee = Employee.builder()
                     .employeeCode(employeeCode)
@@ -56,12 +62,16 @@ public class EmployeeServiceImpl implements EmployeeService {
                     .createdAt(LocalDate.now())
                     .build();
 
-            Employee savedEmployee = repository.saveEmployee(employee);
+            Employee savedEmployee = repository.saveEmployee(em, employee);
+            tx.commit();
             log.info("Employee created: employeeCode={}, id={}", savedEmployee.getEmployeeCode(), savedEmployee.getEmployeeId());
             return Response.success("Tạo nhân viên thành công", EmployeeMapper.toDto(savedEmployee));
         } catch (Exception e) {
+            if (tx.isActive()) tx.rollback();
             log.error("Failed to create employee: nationalId={}", employeeDTO.getNationalId(), e);
-            return Response.error("Lỗi hệ thống, vui lòng thử lại");
+            return Response.error("Lỗi hệ thống, vui lòng thử lại: " + e.getMessage());
+        } finally {
+            em.close();
         }
     }
 
@@ -71,8 +81,11 @@ public class EmployeeServiceImpl implements EmployeeService {
             return Response.error("ID nhân viên không được để trống");
         }
 
+        EntityManager em = JPAUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
         try {
-            Employee employee = repository.findEmployeeById(employeeId);
+            tx.begin();
+            Employee employee = repository.findEmployeeById(em, employeeId);
             if (employee == null) {
                 return Response.error("Không tìm thấy nhân viên: id=" + employeeId);
             }
@@ -83,12 +96,16 @@ public class EmployeeServiceImpl implements EmployeeService {
             String rawPassword = generateRawPassword();
             String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
 
-            String username = repository.createAndLinkAccount(employeeId, employee.getEmployeeCode(), hashedPassword);
+            String username = repository.createAndLinkAccount(em, employeeId, employee.getEmployeeCode(), hashedPassword);
+            tx.commit();
             log.info("Account created for employee: employeeId={}, username={}", employeeId, username);
             return buildAccountCreatedResponse("Cấp tài khoản thành công", username, rawPassword);
         } catch (Exception e) {
+            if (tx.isActive()) tx.rollback();
             log.error("Failed to create account for employee: employeeId={}", employeeId, e);
-            return Response.error("Lỗi hệ thống, vui lòng thử lại");
+            return Response.error("Lỗi hệ thống, vui lòng thử lại: " + e.getMessage());
+        } finally {
+            em.close();
         }
     }
 
@@ -98,8 +115,11 @@ public class EmployeeServiceImpl implements EmployeeService {
             return Response.error("ID nhân viên không được để trống");
         }
 
+        EntityManager em = JPAUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
         try {
-            Employee employee = repository.findEmployeeById(employeeId);
+            tx.begin();
+            Employee employee = repository.findEmployeeById(em, employeeId);
             if (employee == null) {
                 return Response.error("Không tìm thấy nhân viên: id=" + employeeId);
             }
@@ -107,12 +127,16 @@ public class EmployeeServiceImpl implements EmployeeService {
                 return Response.error("Nhân viên này đã bị xoá khỏi hệ thống");
             }
 
-            Employee updatedEmployee = repository.softDeleteEmployee(employeeId);
+            Employee updatedEmployee = repository.softDeleteEmployee(em, employeeId);
+            tx.commit();
             log.info("Employee soft-deleted: employeeId={}", employeeId);
             return Response.success("Xoá mềm nhân viên thành công", EmployeeMapper.toDto(updatedEmployee));
         } catch (Exception e) {
+            if (tx.isActive()) tx.rollback();
             log.error("Failed to soft-delete employee: employeeId={}", employeeId, e);
-            return Response.error("Lỗi hệ thống, vui lòng thử lại");
+            return Response.error("Lỗi hệ thống, vui lòng thử lại: " + e.getMessage());
+        } finally {
+            em.close();
         }
     }
 
@@ -122,8 +146,11 @@ public class EmployeeServiceImpl implements EmployeeService {
             return Response.error("ID nhân viên không được để trống");
         }
 
+        EntityManager em = JPAUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
         try {
-            Employee employee = repository.findEmployeeById(employeeId);
+            tx.begin();
+            Employee employee = repository.findEmployeeById(em, employeeId);
             if (employee == null) {
                 return Response.error("Không tìm thấy nhân viên: id=" + employeeId);
             }
@@ -134,25 +161,30 @@ public class EmployeeServiceImpl implements EmployeeService {
             String rawPassword = generateRawPassword();
             String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
 
-            String username = repository.resetAccountPassword(employeeId, hashedPassword);
+            String username = repository.resetAccountPassword(em, employeeId, hashedPassword);
+            tx.commit();
             log.info("Password reset for employee: employeeId={}", employeeId);
             return buildAccountCreatedResponse("Reset mật khẩu thành công", username, rawPassword);
         } catch (Exception e) {
+            if (tx.isActive()) tx.rollback();
             log.error("Failed to reset password for employee: employeeId={}", employeeId, e);
-            return Response.error("Lỗi hệ thống, vui lòng thử lại");
+            return Response.error("Lỗi hệ thống, vui lòng thử lại: " + e.getMessage());
+        } finally {
+            em.close();
         }
     }
 
     @Override
     public Response findAllEmployees(EmployeeFilterDTO filterDTO) {
+        EntityManager em = JPAUtils.getEntityManager();
         try {
             EmployeeFilterDTO filter = filterDTO != null ? filterDTO : new EmployeeFilterDTO();
             int page = filter.getPage();
             int size = filter.getSize();
             EmployeeStatus statusFilter = filter.getStatusFilter();
 
-            List<Employee> employees = repository.findAllEmployees(page, size, statusFilter);
-            long totalElements = repository.countEmployees(statusFilter);
+            List<Employee> employees = repository.findAllEmployees(em, page, size, statusFilter);
+            long totalElements = repository.countEmployees(em, statusFilter);
             int totalPages = (int) Math.ceil((double) totalElements / size);
 
             EmployeePageDTO pageDTO = EmployeePageDTO.builder()
@@ -164,7 +196,9 @@ public class EmployeeServiceImpl implements EmployeeService {
             return Response.success("Lấy danh sách nhân viên thành công", pageDTO);
         } catch (Exception e) {
             log.error("Failed to find all employees", e);
-            return Response.error("Lỗi hệ thống, vui lòng thử lại");
+            return Response.error("Lỗi hệ thống, vui lòng thử lại: " + e.getMessage());
+        } finally {
+            em.close();
         }
     }
 
