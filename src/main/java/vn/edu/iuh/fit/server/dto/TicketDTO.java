@@ -21,4 +21,6 @@ public class TicketDTO implements Serializable {
   private boolean roundTrip;
   private TicketStatus status;
   private String qrCode;
+  private String originalTicketId;
+  private boolean exchanged;
 }

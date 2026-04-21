@@ -1,32 +1,13 @@
-package vn.edu.iuh.fit.server.service.impl;
-
-import vn.edu.iuh.fit.server.dto.ScheduleCreateDTO;
-import vn.edu.iuh.fit.server.dto.ScheduleDTO;
-import vn.edu.iuh.fit.server.dto.ScheduleFilterDTO;
-import vn.edu.iuh.fit.server.model.Route;
-import vn.edu.iuh.fit.server.model.Schedule;
-import vn.edu.iuh.fit.server.model.Train;
-import vn.edu.iuh.fit.server.constant.StatusSchedule;
-import vn.edu.iuh.fit.server.service.ScheduleService;
-import vn.edu.iuh.fit.server.repository.ScheduleRepository;
-import vn.edu.iuh.fit.server.repository.impl.ScheduleRepositoryImpl;
-import vn.edu.iuh.fit.server.mapper.ScheduleMapper;
-import vn.edu.iuh.fit.server.messages.ScheduleMessages;
-import vn.edu.iuh.fit.server.util.ValidationUtils;
-
-import vn.edu.iuh.fit.common.response.Response;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
+import vn.edu.iuh.fit.server.util.JPAUtils;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 
 public class ScheduleServiceImpl implements ScheduleService {
 
     private static final Logger log = LoggerFactory.getLogger(ScheduleServiceImpl.class);
 
     private final ScheduleRepository repository = new ScheduleRepositoryImpl();
+    private final EmployeeRepository employeeRepository = new EmployeeRepositoryImpl();
 
     @Override
     public Response createSchedule(ScheduleCreateDTO scheduleDTO) {
@@ -35,13 +16,27 @@ public class ScheduleServiceImpl implements ScheduleService {
             return Response.error(String.join(", ", errors));
         }
 
+        Employee requester = findRequester(scheduleDTO.getRequestEmployeeId());
+        if (requester == null) {
+            return Response.error("Không tìm thấy nhân viên: id=" + scheduleDTO.getRequestEmployeeId());
+        }
+        if (!Boolean.TRUE.equals(requester.getIsManager())) {
+            return Response.error("Bạn không có quyền thực hiện thao tác này");
+        }
+
+        if (scheduleDTO.getDepartureTime().isBefore(LocalDateTime.now().plusDays(1))) {
+            return Response.error(ScheduleMessages.DEPARTURE_TIME_MIN_ONE_DAY);
+        }
+        if (scheduleDTO.getArrivalTime().isBefore(scheduleDTO.getDepartureTime())) {
+            return Response.error(ScheduleMessages.ARRIVAL_TIME_INVALID);
+        }
+
+        EntityManager em = JPAUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
         try {
-            Train train = new Train();
-            train.setId(scheduleDTO.getTrainId());
-
-            Route route = new Route();
-            route.setId(scheduleDTO.getRouteId());
-
+            tx.begin();
+            Train train = Train.builder().id(scheduleDTO.getTrainId()).build();
+            Route route = Route.builder().id(scheduleDTO.getRouteId()).build();
             Schedule schedule = Schedule.builder()
                     .train(train)
                     .route(route)
@@ -50,12 +45,25 @@ public class ScheduleServiceImpl implements ScheduleService {
                     .status(StatusSchedule.DRAFT)
                     .build();
 
-            Schedule savedSchedule = repository.createScheduleWithDetails(schedule, scheduleDTO.getTrainId());
+            Schedule savedSchedule = repository.createScheduleWithDetails(em, schedule, scheduleDTO.getTrainId());
+            tx.commit();
             log.info("Schedule created: id={}, trainId={}", savedSchedule.getId(), scheduleDTO.getTrainId());
             return Response.success(ScheduleMessages.CREATE_SUCCESS, savedSchedule.getId());
         } catch (Exception e) {
+            if (tx.isActive()) tx.rollback();
             log.error("Failed to create schedule: trainId={}, routeId={}", scheduleDTO.getTrainId(), scheduleDTO.getRouteId(), e);
             return Response.error(ScheduleMessages.CREATE_FAILED_PREFIX + e.getMessage());
+        } finally {
+            em.close();
+        }
+    }
+
+    private Employee findRequester(String employeeId) {
+        EntityManager em = JPAUtils.getEntityManager();
+        try {
+            return employeeRepository.findEmployeeById(em, employeeId);
+        } finally {
+            if (em.isOpen()) em.close();
         }
     }
 
@@ -66,13 +74,16 @@ public class ScheduleServiceImpl implements ScheduleService {
             return Response.error(String.join(", ", errors));
         }
 
+        EntityManager em = JPAUtils.getEntityManager();
         try {
-            List<Schedule> schedules = repository.filterSchedules(filter);
+            List<Schedule> schedules = repository.filterSchedules(em, filter);
             List<ScheduleDTO> scheduleDTOList = ScheduleMapper.toDtoList(schedules);
             return Response.success(ScheduleMessages.FILTER_SUCCESS, scheduleDTOList);
         } catch (Exception e) {
             log.error("Failed to filter schedules", e);
             return Response.error(ScheduleMessages.FILTER_FAILED_PREFIX + e.getMessage());
+        } finally {
+            em.close();
         }
     }
 
@@ -83,8 +94,11 @@ public class ScheduleServiceImpl implements ScheduleService {
             return Response.error(String.join(", ", errors));
         }
 
+        EntityManager em = JPAUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
         try {
-            Schedule existingSchedule = repository.findScheduleById(scheduleDTO.getId());
+            tx.begin();
+            Schedule existingSchedule = repository.findScheduleById(em, scheduleDTO.getId());
             if (existingSchedule == null) {
                 return Response.error(ScheduleMessages.scheduleNotFoundById(scheduleDTO.getId()));
             }
@@ -96,18 +110,20 @@ public class ScheduleServiceImpl implements ScheduleService {
             scheduleToUpdate.setId(existingSchedule.getId());
             scheduleToUpdate.setStatus(existingSchedule.getStatus());
 
-            boolean updated = repository.updateSchedule(scheduleToUpdate);
+            boolean updated = repository.updateSchedule(em, scheduleToUpdate);
             if (!updated) {
                 return Response.error(ScheduleMessages.updateFailedById(scheduleDTO.getId()));
             }
 
-            Schedule updatedSchedule = repository.findScheduleById(scheduleDTO.getId());
-            ScheduleDTO updatedScheduleDTO = ScheduleMapper.toDto(updatedSchedule);
+            tx.commit();
             log.info("Schedule updated: id={}", scheduleDTO.getId());
-            return Response.success(ScheduleMessages.UPDATE_SUCCESS, updatedScheduleDTO);
+            return Response.success(ScheduleMessages.UPDATE_SUCCESS, scheduleDTO);
         } catch (Exception e) {
+            if (tx.isActive()) tx.rollback();
             log.error("Failed to update schedule: id={}", scheduleDTO.getId(), e);
             return Response.error(ScheduleMessages.UPDATE_FAILED_PREFIX + e.getMessage());
+        } finally {
+            em.close();
         }
     }
 
@@ -117,8 +133,11 @@ public class ScheduleServiceImpl implements ScheduleService {
             return Response.error(ScheduleMessages.SCHEDULE_ID_REQUIRED);
         }
 
+        EntityManager em = JPAUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
         try {
-            Schedule existingSchedule = repository.findScheduleById(scheduleId);
+            tx.begin();
+            Schedule existingSchedule = repository.findScheduleById(em, scheduleId);
             if (existingSchedule == null) {
                 return Response.error(ScheduleMessages.scheduleNotFoundById(scheduleId));
             }
@@ -126,16 +145,20 @@ public class ScheduleServiceImpl implements ScheduleService {
                 return Response.error(ScheduleMessages.DRAFT_DELETE_ONLY);
             }
 
-            boolean deleted = repository.deleteSchedule(scheduleId);
+            boolean deleted = repository.deleteSchedule(em, scheduleId);
             if (!deleted) {
                 return Response.error(ScheduleMessages.deleteFailedById(scheduleId));
             }
 
+            tx.commit();
             log.info("Schedule deleted: id={}", scheduleId);
             return Response.success(ScheduleMessages.DELETE_SUCCESS, scheduleId);
         } catch (Exception e) {
+            if (tx.isActive()) tx.rollback();
             log.error("Failed to delete schedule: id={}", scheduleId, e);
             return Response.error(ScheduleMessages.DELETE_FAILED_PREFIX + e.getMessage());
+        } finally {
+            em.close();
         }
     }
 
@@ -145,8 +168,9 @@ public class ScheduleServiceImpl implements ScheduleService {
             return Response.error(ScheduleMessages.SCHEDULE_ID_REQUIRED);
         }
 
+        EntityManager em = JPAUtils.getEntityManager();
         try {
-            Schedule schedule = repository.findScheduleById(scheduleId);
+            Schedule schedule = repository.findScheduleById(em, scheduleId);
             if (schedule == null) {
                 return Response.error(ScheduleMessages.scheduleNotFoundById(scheduleId));
             }
@@ -156,18 +180,23 @@ public class ScheduleServiceImpl implements ScheduleService {
         } catch (Exception e) {
             log.error("Failed to find schedule by id: id={}", scheduleId, e);
             return Response.error(ScheduleMessages.FIND_BY_ID_FAILED_PREFIX + e.getMessage());
+        } finally {
+            em.close();
         }
     }
 
     @Override
     public Response findAllSchedules() {
+        EntityManager em = JPAUtils.getEntityManager();
         try {
-            List<Schedule> schedules = repository.findAllSchedules();
+            List<Schedule> schedules = repository.findAllSchedules(em);
             List<ScheduleDTO> scheduleDTOList = ScheduleMapper.toDtoList(schedules);
             return Response.success(ScheduleMessages.FIND_ALL_SUCCESS, scheduleDTOList);
         } catch (Exception e) {
             log.error("Failed to find all schedules", e);
             return Response.error(ScheduleMessages.FIND_ALL_FAILED_PREFIX + e.getMessage());
+        } finally {
+            em.close();
         }
     }
 
@@ -191,13 +220,16 @@ public class ScheduleServiceImpl implements ScheduleService {
             }
         }
 
+        EntityManager em = JPAUtils.getEntityManager();
         try {
-            List<Schedule> schedules = repository.searchSchedules(routeId, trainId, fromDateTime, toDateTime, normalizedStatus);
+            List<Schedule> schedules = repository.searchSchedules(em, routeId, trainId, fromDateTime, toDateTime, normalizedStatus);
             List<ScheduleDTO> scheduleDTOList = ScheduleMapper.toDtoList(schedules);
             return Response.success(ScheduleMessages.SEARCH_SUCCESS, scheduleDTOList);
         } catch (Exception e) {
             log.error("Failed to search schedules: routeId={}, trainId={}", routeId, trainId, e);
             return Response.error(ScheduleMessages.SEARCH_FAILED_PREFIX + e.getMessage());
+        } finally {
+            em.close();
         }
     }
 
@@ -210,15 +242,19 @@ public class ScheduleServiceImpl implements ScheduleService {
             return Response.error(ScheduleMessages.DESTINATION_STATION_REQUIRED);
         }
 
+        EntityManager em = JPAUtils.getEntityManager();
         try {
-            List<Schedule> schedules = repository.findSchedulesByStationIds(departureStationId, destinationStationId);
+            List<Schedule> schedules = repository.findSchedulesByStationIds(em, departureStationId, destinationStationId);
             List<ScheduleDTO> scheduleDTOList = ScheduleMapper.toDtoList(schedules);
             return Response.success(ScheduleMessages.FIND_BY_STATION_SUCCESS, scheduleDTOList);
         } catch (Exception e) {
             log.error("Failed to find schedules by station ids: departureStationId={}, destinationStationId={}",
                     departureStationId, destinationStationId, e);
             return Response.error(ScheduleMessages.FIND_BY_STATION_FAILED_PREFIX + e.getMessage());
+        } finally {
+            em.close();
         }
     }
 }
+
 

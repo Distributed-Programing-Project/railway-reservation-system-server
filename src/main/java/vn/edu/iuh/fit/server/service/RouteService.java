@@ -20,7 +20,5 @@ public interface RouteService {
     List<Route> findAllRoutes();
 
     List<Route> searchRoutes(String departureStationId, String destinationStationId, String status);
-
-    List<Route> getAllRoutes();
 }
 
