@@ -26,12 +26,15 @@ public class ScheduleDetailRepositoryImpl extends AbstractGenericRepositoryImpl<
         // A seat (ScheduleDetail) is sold if there's a Ticket for it that is not
         // CANCELLED
         String jpql = "SELECT sd.seat.id FROM Ticket t JOIN t.scheduleDetail sd " +
-                "WHERE sd.schedule.id = :scheduleId AND t.status != :cancelledStatus";
+                "WHERE sd.schedule.id = :scheduleId AND t.status NOT IN (:cancelledStatus, :exchangedStatus)";
+
 
         List<String> seatIds = em.createQuery(jpql, String.class)
                 .setParameter("scheduleId", scheduleId)
                 .setParameter("cancelledStatus", TicketStatus.CANCELLED)
+                .setParameter("exchangedStatus", TicketStatus.EXCHANGED)
                 .getResultList();
+
 
         return new HashSet<>(seatIds);
     }

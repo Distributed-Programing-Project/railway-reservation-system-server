@@ -24,30 +24,30 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
         schedule.setTrain(em.getReference(Train.class, schedule.getTrain().getId()));
         schedule.setRoute(em.getReference(Route.class, schedule.getRoute().getId()));
         em.persist(schedule);
+        String scheduleId = schedule.getId();
 
-        // Fetch all seats for the given train
-        List<Seat> seats = em.createQuery("SELECT s FROM Seat s WHERE s.carriage.train.id = :trainId", Seat.class)
+        List<String> seatIds = em.createQuery(
+                "SELECT s.id FROM Seat s WHERE s.carriage.train.id = :trainId", String.class)
                 .setParameter("trainId", trainId)
                 .getResultList();
 
-        // Batch insert ScheduleDetails (avoid OOM)
         int batchSize = 50;
-        for (int i = 0; i < seats.size(); i++) {
+        for (int i = 0; i < seatIds.size(); i++) {
             ScheduleDetail detail = ScheduleDetail.builder()
-                    .schedule(schedule)
-                    .seat(seats.get(i))
+                    .schedule(em.getReference(Schedule.class, scheduleId))
+                    .seat(em.getReference(Seat.class, seatIds.get(i)))
                     .priceSeat(BigDecimal.ZERO)
                     .routeStop(null)
                     .build();
             em.persist(detail);
 
-            if (i > 0 && i % batchSize == 0) {
+            if ((i + 1) % batchSize == 0) {
                 em.flush();
                 em.clear();
             }
         }
 
-        return schedule;
+        return em.getReference(Schedule.class, scheduleId);
     }
 
     @Override

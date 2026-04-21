@@ -2,19 +2,24 @@ package vn.edu.iuh.fit.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.ToString;
+
 import java.math.BigDecimal;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter
 @Getter
+@ToString
 @Builder
+
 @Entity
 @Table(name =  "schedule_details")
 public class ScheduleDetail {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "schedule_detail_id", length = 36)
     private String id;
 
     @Column(name = "price_seat")
@@ -32,6 +37,7 @@ public class ScheduleDetail {
     @ManyToOne
     @JoinColumn(name = "route_stop_id")
     private RouteStop routeStop;
+
 
     @Version
     private int version;
