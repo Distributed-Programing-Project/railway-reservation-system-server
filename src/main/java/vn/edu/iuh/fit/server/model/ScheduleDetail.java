@@ -2,6 +2,8 @@ package vn.edu.iuh.fit.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.ToString;
+
 import java.math.BigDecimal;
 
 @NoArgsConstructor
@@ -10,6 +12,7 @@ import java.math.BigDecimal;
 @Getter
 @ToString
 @Builder
+
 @Entity
 @Table(name =  "schedule_details")
 public class ScheduleDetail {
@@ -34,4 +37,8 @@ public class ScheduleDetail {
     @ManyToOne
     @JoinColumn(name = "route_stop_id")
     private RouteStop routeStop;
+
+
+    @Version
+    private int version;
 }
