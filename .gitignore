@@ -35,9 +35,11 @@ build/
 ### Claude Code ###
 CLAUDE.md
 .claude/
-
+.agents
 ### VS Code ###
 .vscode/
 
 ### Mac OS ###
 .DS_Store
+.dao 
+.controller
