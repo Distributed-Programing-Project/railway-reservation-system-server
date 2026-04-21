@@ -6,6 +6,7 @@
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
+      fx:controller="vn.edu.iuh.fit.client.controller.GenerateSchedulesDialogController"
       spacing="20" style="-fx-padding: 30; -fx-background-color: #f8f9fa;">
 
     <Label text="Tự Động Tạo Lịch Trình" 
@@ -63,9 +64,11 @@
     <!-- Buttons -->
     <HBox spacing="15" alignment="CENTER">
         <Button text="Tạo Lịch Trình" 
-                style="-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-padding: 10 30;"/>
+                style="-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-padding: 10 30;"
+                onAction="#handleGenerate"/>
         <Button text="Hủy" 
-                style="-fx-background-color: #6c757d; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 10 30;"/>
+                style="-fx-background-color: #6c757d; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 10 30;"
+                onAction="#handleCancel"/>
     </HBox>
 
 </VBox>

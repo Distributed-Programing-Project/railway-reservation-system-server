@@ -13,6 +13,8 @@ import vn.edu.iuh.fit.server.service.StatisticsService;
 import vn.edu.iuh.fit.server.service.impl.EmployeeServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.ScheduleServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.StatisticsServiceImpl;
+import vn.edu.iuh.fit.server.messages.CommonMessages;
+
 
 public class RequestRouter {
 
@@ -22,10 +24,12 @@ public class RequestRouter {
 
     public Response route(Request request) {
         if (request == null || request.getAction() == null) {
-            return Response.error("Invalid request");
+            return Response.error(CommonMessages.INVALID_REQUEST);
         }
+
         return switch (request.getAction()) {
-            case LOGIN                   -> Response.error("Not implemented yet");
+            case LOGIN                   -> Response.error(CommonMessages.NOT_IMPLEMENTED);
+
 
             case FILTER_SCHEDULE         -> scheduleService.filterSchedules(castData(request, ScheduleFilterDTO.class));
             case CREATE_SCHEDULE         -> scheduleService.createSchedule(castData(request, ScheduleCreateDTO.class));
@@ -38,7 +42,8 @@ public class RequestRouter {
 
             case GET_STATISTICS          -> statisticsService.getStatistics(castData(request, StatisticsRequestDTO.class));
 
-            default                      -> Response.error("Unknown action: " + request.getAction());
+            default                      -> Response.error(String.format(CommonMessages.UNKNOWN_ACTION, request.getAction()));
+
         };
     }
 
@@ -46,8 +51,8 @@ public class RequestRouter {
         try {
             return type.cast(request.getData());
         } catch (ClassCastException e) {
-            throw new IllegalArgumentException(
-                    "Expected " + type.getSimpleName() + " for action " + request.getAction());
+            throw new IllegalArgumentException(String.format(CommonMessages.CAST_DATA_ERROR, type.getSimpleName()));
         }
+
     }
 }
