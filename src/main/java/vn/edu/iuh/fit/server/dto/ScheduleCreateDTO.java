@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import vn.edu.iuh.fit.server.messages.ScheduleMessages;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -18,23 +19,23 @@ import java.time.LocalDateTime;
 public class ScheduleCreateDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @NotBlank(message = "Mã tàu không được để trống")
+    @NotBlank(message = ScheduleMessages.TRAIN_ID_REQUIRED)
     private String trainId;
 
-    @NotBlank(message = "Mã tuyến không được để trống")
+    @NotBlank(message = ScheduleMessages.ROUTE_ID_REQUIRED)
     private String routeId;
 
-    @NotNull(message = "Thời gian khởi hành không được để trống")
+    @NotNull(message = ScheduleMessages.DEPARTURE_TIME_REQUIRED)
     private LocalDateTime departureTime;
 
     private LocalDateTime arrivalTime;
 
-    @AssertTrue(message = "Ngày khởi hành phải cách ít nhất 1 ngày so với hôm nay")
+    @AssertTrue(message = ScheduleMessages.DEPARTURE_TIME_MIN_ONE_DAY)
     public boolean isDepartureTimeAtLeastOneDayFromNow() {
         return departureTime == null || !departureTime.isBefore(LocalDateTime.now().plusDays(1));
     }
 
-    @AssertTrue(message = "Ngày giờ đến dự kiến không được nhỏ hơn giờ khởi hành")
+    @AssertTrue(message = ScheduleMessages.ARRIVAL_TIME_INVALID)
     public boolean isArrivalTimeValid() {
         return departureTime == null || arrivalTime == null || !arrivalTime.isBefore(departureTime);
     }

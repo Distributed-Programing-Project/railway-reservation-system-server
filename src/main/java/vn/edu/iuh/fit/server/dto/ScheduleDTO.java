@@ -13,16 +13,17 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.server.constant.StatusSchedule;
+import vn.edu.iuh.fit.server.messages.ScheduleMessages;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ScheduleDTO implements Serializable {
-    @NotBlank(message = "Mã lịch trình không được để trống")
+    @NotBlank(message = ScheduleMessages.SCHEDULE_ID_REQUIRED)
     private String id;
 
-    @NotNull(message = "Thời gian khởi hành không được để trống")
+    @NotNull(message = ScheduleMessages.DEPARTURE_TIME_REQUIRED)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime departureTime;
 
@@ -31,24 +32,24 @@ public class ScheduleDTO implements Serializable {
 
     private StatusSchedule status;
 
-    @NotBlank(message = "Mã tàu không được để trống")
+    @NotBlank(message = ScheduleMessages.TRAIN_ID_REQUIRED)
     private String trainId;
 
     private String trainName;
 
-    @NotBlank(message = "Mã tuyến không được để trống")
+    @NotBlank(message = ScheduleMessages.ROUTE_ID_REQUIRED)
     private String routeId;
 
     private String routeCode;
     private String departureStationName;
     private String destinationStationName;
 
-    @AssertTrue(message = "Ngày khởi hành phải cách ít nhất 1 ngày so với hôm nay")
+    @AssertTrue(message = ScheduleMessages.DEPARTURE_TIME_MIN_ONE_DAY)
     public boolean isDepartureTimeAtLeastOneDayFromNow() {
         return departureTime == null || !departureTime.isBefore(LocalDateTime.now().plusDays(1));
     }
 
-    @AssertTrue(message = "Ngày giờ đến dự kiến không được nhỏ hơn giờ khởi hành")
+    @AssertTrue(message = ScheduleMessages.ARRIVAL_TIME_INVALID)
     public boolean isArrivalTimeValid() {
         return departureTime == null || arrivalTime == null || !arrivalTime.isBefore(departureTime);
     }
