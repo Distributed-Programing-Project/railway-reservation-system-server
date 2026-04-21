@@ -6,7 +6,8 @@ public enum TicketStatus {
     CANCELLED("Đã hủy"),
     USED("Đã sử dụng"),
     EXPIRED("Hết hạn"),
-    EXCHANGED("Đã đổi");
+    EXCHANGED("Đã đổi"),
+    RETURNED("Đã trả vé");
 
     private final String name;
 

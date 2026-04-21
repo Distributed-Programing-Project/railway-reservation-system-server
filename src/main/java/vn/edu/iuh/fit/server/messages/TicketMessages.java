@@ -21,8 +21,30 @@ public final class TicketMessages {
     public static final String DATA_INVALID_PREFIX = "Dữ liệu không hợp lệ: ";
     public static final String COUNT_MISMATCH = "Số lượng vé cũ và ghế mới phải khớp nhau.";
     public static final String SOME_TICKETS_INVALID = "Một số vé không tồn tại hoặc không hợp lệ.";
+    public static final String ID_CARD_REQUIRED = "Số CCCD không được để trống";
+    public static final String REFUND_AMOUNT_INVALID = "Số tiền hoàn trả phải lớn hơn hoặc bằng 0";
+    public static final String DATA_CONFLICT = "Ghế bạn chọn vừa có người khác đặt nhanh hơn. Vui lòng thử lại!";
+    public static final String SCHEDULE_DETAIL_NOT_FOUND = "Không tìm thấy chi tiết lịch trình: %s";
+    
+    // Return Ticket
+    public static final String RETURN_SUCCESS = "Trả vé thành công";
+    public static final String PREVIEW_SUCCESS = "Tính toán số tiền hoàn trả thành công";
+    public static final String SEARCH_FAILED_PREFIX = "Lỗi khi tìm kiếm vé trả: ";
+    public static final String PREVIEW_FAILED_PREFIX = "Lỗi khi xem trước số tiền hoàn: ";
+    public static final String RETURN_FAILED_PREFIX = "Lỗi khi thực hiện trả vé: ";
+    public static final String TICKET_NOT_RETURNABLE = "Vé %s không ở trạng thái hợp lệ để trả.";
+    public static final String NOT_ELIGIBLE_BY_TIME = "Vé %s không đủ điều kiện trả vì thời gian khởi hành còn dưới 4 tiếng.";
+    public static final String REFUND_AMOUNT_MISMATCH = "Số tiền hoàn trả không khớp với tính toán của hệ thống.";
+    public static final String CUSTOMER_MISMATCH = "Tất cả các vé phải thuộc cùng một khách hàng để thực hiện trả theo lô.";
+    public static final String TICKET_IDS_REQUIRED = "Danh sách mã vé không được để trống.";
+    public static final String TICKET_IDS_DUPLICATE = "Danh sách mã vé chứa các giá trị trùng lặp.";
+    public static final String SCHEDULE_NOT_FOUND = "Không tìm thấy thông tin lịch trình cho vé này.";
 
     public static String ticketNotFound(String id) {
         return String.format(TICKET_NOT_FOUND, id);
+    }
+
+    public static String scheduleDetailNotFound(String id) {
+        return String.format(SCHEDULE_DETAIL_NOT_FOUND, id);
     }
 }
