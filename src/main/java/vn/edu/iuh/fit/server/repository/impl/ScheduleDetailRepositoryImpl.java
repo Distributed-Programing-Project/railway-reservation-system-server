@@ -22,17 +22,23 @@ public class ScheduleDetailRepositoryImpl extends AbstractGenericRepositoryImpl<
     }
 
     @Override
+    public ScheduleDetail updateScheduleDetail(EntityManager em, ScheduleDetail scheduleDetail) {
+        return em.merge(scheduleDetail);
+    }
+
+    @Override
     public Set<String> getSoldSeatIds(EntityManager em, String scheduleId) {
         // A seat (ScheduleDetail) is sold if there's a Ticket for it that is not
         // CANCELLED
         String jpql = "SELECT sd.seat.id FROM Ticket t JOIN t.scheduleDetail sd " +
-                "WHERE sd.schedule.id = :scheduleId AND t.status NOT IN (:cancelledStatus, :exchangedStatus)";
+                "WHERE sd.schedule.id = :scheduleId AND t.status NOT IN (:cancelledStatus, :exchangedStatus, :returnedStatus)";
 
 
         List<String> seatIds = em.createQuery(jpql, String.class)
                 .setParameter("scheduleId", scheduleId)
                 .setParameter("cancelledStatus", TicketStatus.CANCELLED)
                 .setParameter("exchangedStatus", TicketStatus.EXCHANGED)
+                .setParameter("returnedStatus", TicketStatus.RETURNED)
                 .getResultList();
 
 

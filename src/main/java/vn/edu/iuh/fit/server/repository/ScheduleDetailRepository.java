@@ -14,4 +14,6 @@ public interface ScheduleDetailRepository {
     Set<String> getSoldSeatIds(EntityManager em, String scheduleId);
 
     ScheduleDetail findById(String id, EntityManager em);
+
+    ScheduleDetail updateScheduleDetail(EntityManager em, ScheduleDetail scheduleDetail);
 }
