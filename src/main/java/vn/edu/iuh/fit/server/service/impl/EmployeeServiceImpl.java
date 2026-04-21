@@ -71,6 +71,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             log.error("Failed to create employee: nationalId={}", employeeDTO.getNationalId(), e);
             return Response.error("Lỗi hệ thống, vui lòng thử lại: " + e.getMessage());
         } finally {
+            if (tx.isActive()) tx.rollback();
             em.close();
         }
     }
@@ -105,6 +106,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             log.error("Failed to create account for employee: employeeId={}", employeeId, e);
             return Response.error("Lỗi hệ thống, vui lòng thử lại: " + e.getMessage());
         } finally {
+            if (tx.isActive()) tx.rollback();
             em.close();
         }
     }
@@ -136,6 +138,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             log.error("Failed to soft-delete employee: employeeId={}", employeeId, e);
             return Response.error("Lỗi hệ thống, vui lòng thử lại: " + e.getMessage());
         } finally {
+            if (tx.isActive()) tx.rollback();
             em.close();
         }
     }
@@ -170,6 +173,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             log.error("Failed to reset password for employee: employeeId={}", employeeId, e);
             return Response.error("Lỗi hệ thống, vui lòng thử lại: " + e.getMessage());
         } finally {
+            if (tx.isActive()) tx.rollback();
             em.close();
         }
     }
