@@ -1,5 +1,6 @@
 package vn.edu.iuh.fit.server.repository.impl;
 
+import jakarta.persistence.EntityManager;
 import vn.edu.iuh.fit.server.model.Station;
 import vn.edu.iuh.fit.server.repository.StationRepository;
 
@@ -13,29 +14,26 @@ public class StationRepositoryImpl extends AbstractGenericRepositoryImpl<Station
     }
 
     @Override
-    public List<Station> findAllStations() {
-        return doWithEntityManager(em ->
-                em.createQuery("SELECT s FROM Station s", Station.class).getResultList());
+    public List<Station> findAllStations(EntityManager em) {
+        return em.createQuery("SELECT s FROM Station s", Station.class).getResultList();
     }
 
     @Override
-    public List<String> findAllStationNames() {
-        return doWithEntityManager(em ->
-                em.createQuery("SELECT s.name FROM Station s", String.class).getResultList());
+    public List<String> findAllStationNames(EntityManager em) {
+        return em.createQuery("SELECT s.name FROM Station s", String.class).getResultList();
     }
 
     @Override
-    public Station findStationByName(String stationName) {
-        return doWithEntityManager(em ->
-                em.createQuery("SELECT s FROM Station s WHERE s.name = :name", Station.class)
-                        .setParameter("name", stationName)
-                        .getResultStream()
-                        .findFirst()
-                        .orElse(null));
+    public Station findStationByName(EntityManager em, String stationName) {
+        return em.createQuery("SELECT s FROM Station s WHERE s.name = :name", Station.class)
+                .setParameter("name", stationName)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
-    public Station findStationById(String stationId) {
-        return doWithEntityManager(em -> em.find(Station.class, stationId));
+    public Station findStationById(EntityManager em, String stationId) {
+        return em.find(Station.class, stationId);
     }
 }
