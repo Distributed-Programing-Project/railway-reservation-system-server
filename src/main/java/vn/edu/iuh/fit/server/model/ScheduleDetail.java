@@ -19,6 +19,7 @@ public class ScheduleDetail {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "schedule_detail_id", length = 36)
     private String id;
 
     @Column(name = "price_seat")

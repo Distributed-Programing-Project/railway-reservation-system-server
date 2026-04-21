@@ -3,12 +3,15 @@ package vn.edu.iuh.fit.server.service.impl;
 import vn.edu.iuh.fit.server.dto.ScheduleCreateDTO;
 import vn.edu.iuh.fit.server.dto.ScheduleDTO;
 import vn.edu.iuh.fit.server.dto.ScheduleFilterDTO;
+import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.model.Route;
 import vn.edu.iuh.fit.server.model.Schedule;
 import vn.edu.iuh.fit.server.model.Train;
 import vn.edu.iuh.fit.server.constant.StatusSchedule;
 import vn.edu.iuh.fit.server.service.ScheduleService;
+import vn.edu.iuh.fit.server.repository.EmployeeRepository;
 import vn.edu.iuh.fit.server.repository.ScheduleRepository;
+import vn.edu.iuh.fit.server.repository.impl.EmployeeRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.ScheduleRepositoryImpl;
 import vn.edu.iuh.fit.server.mapper.ScheduleMapper;
 import vn.edu.iuh.fit.server.util.JPAUtils;
@@ -28,6 +31,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private static final Logger log = LoggerFactory.getLogger(ScheduleServiceImpl.class);
 
     private final ScheduleRepository repository = new ScheduleRepositoryImpl();
+    private final EmployeeRepository employeeRepository = new EmployeeRepositoryImpl();
 
     @Override
     public Response createSchedule(ScheduleCreateDTO scheduleDTO) {
@@ -36,24 +40,27 @@ public class ScheduleServiceImpl implements ScheduleService {
             return Response.error(String.join(", ", errors));
         }
 
+        Employee requester = findRequester(scheduleDTO.getRequestEmployeeId());
+        if (requester == null) {
+            return Response.error("Không tìm thấy nhân viên: id=" + scheduleDTO.getRequestEmployeeId());
+        }
+        if (!Boolean.TRUE.equals(requester.getIsManager())) {
+            return Response.error("Bạn không có quyền thực hiện thao tác này");
+        }
+
+        if (scheduleDTO.getDepartureTime().isBefore(LocalDateTime.now().plusDays(1))) {
+            return Response.error("Ngày khởi hành phải cách ít nhất 1 ngày so với hôm nay");
+        }
+        if (scheduleDTO.getArrivalTime().isBefore(scheduleDTO.getDepartureTime())) {
+            return Response.error("Ngày giờ đến dự kiến không được nhỏ hơn giờ khởi hành");
+        }
+
         EntityManager em = JPAUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
         try {
             tx.begin();
-            if (scheduleDTO.getDepartureTime().isBefore(LocalDateTime.now().plusDays(1))) {
-                return Response.error("Ngày khởi hành phải cách ít nhất 1 ngày so với hôm nay");
-            }
-            if (scheduleDTO.getArrivalTime() != null
-                    && scheduleDTO.getArrivalTime().isBefore(scheduleDTO.getDepartureTime())) {
-                return Response.error("Ngày giờ đến dự kiến không được nhỏ hơn giờ khởi hành");
-            }
-
-            Train train = new Train();
-            train.setId(scheduleDTO.getTrainId());
-
-            Route route = new Route();
-            route.setId(scheduleDTO.getRouteId());
-
+            Train train = Train.builder().id(scheduleDTO.getTrainId()).build();
+            Route route = Route.builder().id(scheduleDTO.getRouteId()).build();
             Schedule schedule = Schedule.builder()
                     .train(train)
                     .route(route)
@@ -71,7 +78,17 @@ public class ScheduleServiceImpl implements ScheduleService {
             log.error("Failed to create schedule: trainId={}, routeId={}", scheduleDTO.getTrainId(), scheduleDTO.getRouteId(), e);
             return Response.error("Lỗi khi tạo lịch trình: " + e.getMessage());
         } finally {
+            if (tx.isActive()) tx.rollback();
             em.close();
+        }
+    }
+
+    private Employee findRequester(String employeeId) {
+        EntityManager em = JPAUtils.getEntityManager();
+        try {
+            return employeeRepository.findEmployeeById(em, employeeId);
+        } finally {
+            if (em.isOpen()) em.close();
         }
     }
 
