@@ -1,7 +1,9 @@
 package vn.edu.iuh.fit.server.mapper;
 
 import vn.edu.iuh.fit.server.dto.ScheduleDTO;
+import vn.edu.iuh.fit.server.model.Route;
 import vn.edu.iuh.fit.server.model.Schedule;
+import vn.edu.iuh.fit.server.model.Train;
 
 import java.util.List;
 
@@ -34,7 +36,21 @@ public class ScheduleMapper {
 
     public static Schedule toEntity(ScheduleDTO dto) {
         if (dto == null) return null;
-        return mapper.toObject(mapper.toMap(dto), Schedule.class);
+        Schedule schedule = mapper.toObject(mapper.toMap(dto), Schedule.class);
+
+        if (dto.getTrainId() != null && !dto.getTrainId().isBlank()) {
+            Train train = new Train();
+            train.setId(dto.getTrainId());
+            schedule.setTrain(train);
+        }
+
+        if (dto.getRouteId() != null && !dto.getRouteId().isBlank()) {
+            Route route = new Route();
+            route.setId(dto.getRouteId());
+            schedule.setRoute(route);
+        }
+
+        return schedule;
     }
 
     public static List<ScheduleDTO> toDtoList(List<Schedule> schedules) {

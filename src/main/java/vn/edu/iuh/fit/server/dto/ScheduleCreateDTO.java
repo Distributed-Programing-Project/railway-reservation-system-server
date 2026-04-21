@@ -1,5 +1,6 @@
 package vn.edu.iuh.fit.server.dto;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -27,4 +28,14 @@ public class ScheduleCreateDTO implements Serializable {
     private LocalDateTime departureTime;
 
     private LocalDateTime arrivalTime;
+
+    @AssertTrue(message = "Ngày khởi hành phải cách ít nhất 1 ngày so với hôm nay")
+    public boolean isDepartureTimeAtLeastOneDayFromNow() {
+        return departureTime == null || !departureTime.isBefore(LocalDateTime.now().plusDays(1));
+    }
+
+    @AssertTrue(message = "Ngày giờ đến dự kiến không được nhỏ hơn giờ khởi hành")
+    public boolean isArrivalTimeValid() {
+        return departureTime == null || arrivalTime == null || !arrivalTime.isBefore(departureTime);
+    }
 }

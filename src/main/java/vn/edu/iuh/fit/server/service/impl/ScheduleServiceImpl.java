@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 public class ScheduleServiceImpl implements ScheduleService {
@@ -34,14 +35,6 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
 
         try {
-            if (scheduleDTO.getDepartureTime().isBefore(LocalDateTime.now().plusDays(1))) {
-                return Response.error("Ngày khởi hành phải cách ít nhất 1 ngày so với hôm nay");
-            }
-            if (scheduleDTO.getArrivalTime() != null
-                    && scheduleDTO.getArrivalTime().isBefore(scheduleDTO.getDepartureTime())) {
-                return Response.error("Ngày giờ đến dự kiến không được nhỏ hơn giờ khởi hành");
-            }
-
             Train train = new Train();
             train.setId(scheduleDTO.getTrainId());
 
@@ -73,11 +66,6 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
 
         try {
-            if (filter.getFromDate() != null && filter.getToDate() != null
-                    && filter.getFromDate().isAfter(filter.getToDate())) {
-                return Response.error("Từ ngày không được lớn hơn Đến ngày.");
-            }
-
             List<Schedule> schedules = repository.filterSchedules(filter);
             List<ScheduleDTO> scheduleDTOList = ScheduleMapper.toDtoList(schedules);
             return Response.success("Lọc lịch trình thành công", scheduleDTOList);
@@ -89,33 +77,147 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public Response updateSchedule(ScheduleDTO scheduleDTO) {
-        return Response.error("Chưa hỗ trợ");
+        List<String> errors = ValidationUtils.validate(scheduleDTO);
+        if (!errors.isEmpty()) {
+            return Response.error(String.join(", ", errors));
+        }
+
+        try {
+            Schedule existingSchedule = repository.findScheduleById(scheduleDTO.getId());
+            if (existingSchedule == null) {
+                return Response.error("Không tìm thấy lịch trình: id=" + scheduleDTO.getId());
+            }
+            if (existingSchedule.getStatus() != StatusSchedule.DRAFT) {
+                return Response.error("Chỉ được phép sửa lịch trình khi đang ở trạng thái Nháp");
+            }
+
+            Schedule scheduleToUpdate = ScheduleMapper.toEntity(scheduleDTO);
+            scheduleToUpdate.setId(existingSchedule.getId());
+            scheduleToUpdate.setStatus(existingSchedule.getStatus());
+
+            boolean updated = repository.updateSchedule(scheduleToUpdate);
+            if (!updated) {
+                return Response.error("Không thể cập nhật lịch trình: id=" + scheduleDTO.getId());
+            }
+
+            Schedule updatedSchedule = repository.findScheduleById(scheduleDTO.getId());
+            ScheduleDTO updatedScheduleDTO = ScheduleMapper.toDto(updatedSchedule);
+            log.info("Schedule updated: id={}", scheduleDTO.getId());
+            return Response.success("Cập nhật lịch trình thành công", updatedScheduleDTO);
+        } catch (Exception e) {
+            log.error("Failed to update schedule: id={}", scheduleDTO.getId(), e);
+            return Response.error("Lỗi khi cập nhật lịch trình: " + e.getMessage());
+        }
     }
 
     @Override
     public Response deleteSchedule(String scheduleId) {
-        return Response.error("Chưa hỗ trợ");
+        if (scheduleId == null || scheduleId.isBlank()) {
+            return Response.error("Mã lịch trình không được để trống");
+        }
+
+        try {
+            Schedule existingSchedule = repository.findScheduleById(scheduleId);
+            if (existingSchedule == null) {
+                return Response.error("Không tìm thấy lịch trình: id=" + scheduleId);
+            }
+            if (existingSchedule.getStatus() != StatusSchedule.DRAFT) {
+                return Response.error("Chỉ được phép xoá lịch trình khi đang ở trạng thái Nháp");
+            }
+
+            boolean deleted = repository.deleteSchedule(scheduleId);
+            if (!deleted) {
+                return Response.error("Không thể xoá lịch trình: id=" + scheduleId);
+            }
+
+            log.info("Schedule deleted: id={}", scheduleId);
+            return Response.success("Xoá lịch trình thành công", scheduleId);
+        } catch (Exception e) {
+            log.error("Failed to delete schedule: id={}", scheduleId, e);
+            return Response.error("Lỗi khi xoá lịch trình: " + e.getMessage());
+        }
     }
 
     @Override
     public Response findScheduleById(String scheduleId) {
-        return Response.error("Chưa hỗ trợ");
+        if (scheduleId == null || scheduleId.isBlank()) {
+            return Response.error("Mã lịch trình không được để trống");
+        }
+
+        try {
+            Schedule schedule = repository.findScheduleById(scheduleId);
+            if (schedule == null) {
+                return Response.error("Không tìm thấy lịch trình: id=" + scheduleId);
+            }
+
+            ScheduleDTO scheduleDTO = ScheduleMapper.toDto(schedule);
+            return Response.success("Lấy lịch trình thành công", scheduleDTO);
+        } catch (Exception e) {
+            log.error("Failed to find schedule by id: id={}", scheduleId, e);
+            return Response.error("Lỗi khi tìm lịch trình: " + e.getMessage());
+        }
     }
 
     @Override
     public Response findAllSchedules() {
-        return Response.error("Chưa hỗ trợ");
+        try {
+            List<Schedule> schedules = repository.findAllSchedules();
+            List<ScheduleDTO> scheduleDTOList = ScheduleMapper.toDtoList(schedules);
+            return Response.success("Lấy danh sách lịch trình thành công", scheduleDTOList);
+        } catch (Exception e) {
+            log.error("Failed to find all schedules", e);
+            return Response.error("Lỗi khi lấy danh sách lịch trình: " + e.getMessage());
+        }
     }
 
     @Override
     public Response searchSchedules(String routeId, String trainId, LocalDateTime fromDateTime,
             LocalDateTime toDateTime, String status) {
-        return Response.error("Chưa hỗ trợ");
+        if (fromDateTime != null && toDateTime != null && fromDateTime.isAfter(toDateTime)) {
+            return Response.error("Thời gian bắt đầu không được lớn hơn thời gian kết thúc");
+        }
+
+        String normalizedStatus = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                normalizedStatus = StatusSchedule.valueOf(status.trim().toUpperCase()).name();
+            } catch (IllegalArgumentException e) {
+                String allowedStatuses = Arrays.stream(StatusSchedule.values())
+                        .map(Enum::name)
+                        .reduce((left, right) -> left + ", " + right)
+                        .orElse("");
+                return Response.error("Trạng thái không hợp lệ. Giá trị hợp lệ: " + allowedStatuses);
+            }
+        }
+
+        try {
+            List<Schedule> schedules = repository.searchSchedules(routeId, trainId, fromDateTime, toDateTime, normalizedStatus);
+            List<ScheduleDTO> scheduleDTOList = ScheduleMapper.toDtoList(schedules);
+            return Response.success("Tìm kiếm lịch trình thành công", scheduleDTOList);
+        } catch (Exception e) {
+            log.error("Failed to search schedules: routeId={}, trainId={}", routeId, trainId, e);
+            return Response.error("Lỗi khi tìm kiếm lịch trình: " + e.getMessage());
+        }
     }
 
     @Override
     public Response findSchedulesByStationIds(String departureStationId, String destinationStationId) {
-        return Response.error("Chưa hỗ trợ");
+        if (departureStationId == null || departureStationId.isBlank()) {
+            return Response.error("Ga đi không được để trống");
+        }
+        if (destinationStationId == null || destinationStationId.isBlank()) {
+            return Response.error("Ga đến không được để trống");
+        }
+
+        try {
+            List<Schedule> schedules = repository.findSchedulesByStationIds(departureStationId, destinationStationId);
+            List<ScheduleDTO> scheduleDTOList = ScheduleMapper.toDtoList(schedules);
+            return Response.success("Lấy lịch trình theo ga thành công", scheduleDTOList);
+        } catch (Exception e) {
+            log.error("Failed to find schedules by station ids: departureStationId={}, destinationStationId={}",
+                    departureStationId, destinationStationId, e);
+            return Response.error("Lỗi khi lấy lịch trình theo ga: " + e.getMessage());
+        }
     }
 }
 

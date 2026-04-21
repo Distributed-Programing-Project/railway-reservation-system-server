@@ -1,5 +1,6 @@
 package vn.edu.iuh.fit.server.dto;
 
+import jakarta.validation.constraints.AssertTrue;
 import java.io.Serializable;
 import java.time.LocalDate;
 
@@ -28,4 +29,9 @@ public class ScheduleFilterDTO implements Serializable {
     
     @Builder.Default
     private int size = 20;
+
+    @AssertTrue(message = "Từ ngày không được lớn hơn Đến ngày.")
+    public boolean isDateRangeValid() {
+        return fromDate == null || toDate == null || !fromDate.isAfter(toDate);
+    }
 }
