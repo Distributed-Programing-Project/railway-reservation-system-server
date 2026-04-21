@@ -16,6 +16,10 @@ import vn.edu.iuh.fit.common.response.Response;
 import vn.edu.iuh.fit.server.constant.InvoiceType;
 import vn.edu.iuh.fit.server.constant.TicketStatus;
 import vn.edu.iuh.fit.server.dto.ExchangeTicketRequestDTO;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.stream.Collectors;
+
 import vn.edu.iuh.fit.server.model.Invoice;
 import vn.edu.iuh.fit.server.model.InvoiceDetail;
 import vn.edu.iuh.fit.server.model.ScheduleDetail;
@@ -65,9 +69,16 @@ public class TicketServiceImpl implements TicketService {
       if (validationRes != null)
         return validationRes;
 
+      // Map lại danh sách vé cũ theo ID để đảm bảo lấy đúng thứ tự mapping với ghế mới
+      Map<String, Ticket> ticketMap = oldTickets.stream()
+          .collect(Collectors.toMap(Ticket::getId, t -> t));
+
       double totalOldPrice = 0;
       double totalNewPrice = 0;
       List<Ticket> newTickets = new ArrayList<>();
+
+      // Cache danh sách ghế đã bán theo lịch trình để tránh N+1 Query
+      Map<String, Set<String>> soldSeatIdsMap = new HashMap<>();
 
       // 5. Giải phóng ghế từ vé cũ
       for (Ticket oldTicket : oldTickets) {
@@ -81,7 +92,10 @@ public class TicketServiceImpl implements TicketService {
 
       // 6. Xử lý đặt chỗ mới và tạo vé mới
       for (int i = 0; i < requestDTO.getNewScheduleDetailIds().size(); i++) {
+        String oldTicketId = requestDTO.getOldTicketIds().get(i);
         String newSeatId = requestDTO.getNewScheduleDetailIds().get(i);
+
+        Ticket oldTicket = ticketMap.get(oldTicketId);
 
         // Tìm thông tin lịch trình ghế mới qua Repo
         ScheduleDetail newSeat = scheduleDetailRepository.findById(newSeatId, em);
@@ -89,13 +103,19 @@ public class TicketServiceImpl implements TicketService {
           throw new IllegalArgumentException("Không tìm thấy lịch trình ghế: " + newSeatId);
         }
 
-        // Kiểm tra ghế trống dựa trên logic của Leader (getSoldSeatIds)
+        // Kiểm tra ghế trống (Sử dụng Cache để tránh lặp lại query cùng một chuyến tàu)
         String scheduleId = newSeat.getSchedule().getId();
-        Set<String> soldSeatIds = scheduleDetailRepository.getSoldSeatIds(em, scheduleId);
+        Set<String> soldSeatIds = soldSeatIdsMap.computeIfAbsent(scheduleId,
+            id -> scheduleDetailRepository.getSoldSeatIds(em, id));
 
         if (soldSeatIds.contains(newSeat.getSeat().getId())) {
-          return Response.error("Ghế số " + newSeat.getSeat().getNumber() + " đã có người đặt.");
+          return Response.error("Ghế số " + newSeat.getSeat().getNumber() + " của chuyến "
+              + newSeat.getSchedule().getTrain().getTrainCode() + " đã có người đặt.");
         }
+
+        // Đánh dấu ghế này đã được chọn trong request này để tránh chọn trùng
+        soldSeatIds.add(newSeat.getSeat().getId());
+
 
         totalNewPrice += newSeat.getPriceSeat().doubleValue();
 
@@ -104,11 +124,11 @@ public class TicketServiceImpl implements TicketService {
 
         // Build vé mới
         Ticket newTicket = Ticket.builder()
-            .customer(oldTickets.get(i).getCustomer())
+            .customer(oldTicket.getCustomer())
             .scheduleDetail(newSeat)
-            .type(oldTickets.get(i).getType()) // Giữ nguyên đối tượng (Người lớn/Trẻ em)
-            .roundTrip(oldTickets.get(i).isRoundTrip())
-            .originalTicketId(oldTickets.get(i).getId()) // Lưu vết vé cũ
+            .type(oldTicket.getType()) // Giữ nguyên đối tượng (Người lớn/Trẻ em)
+            .roundTrip(oldTicket.isRoundTrip())
+            .originalTicketId(oldTicket.getId()) // Lưu vết vé cũ
             .status(TicketStatus.PAID)
             .exchanged(false)
             .build();
@@ -121,6 +141,7 @@ public class TicketServiceImpl implements TicketService {
 
         newTickets.add(newTicket);
       }
+
 
       // 7. Tạo Hóa đơn đổi vé (Invoice EXCHANGE)
       double totalFee = oldTickets.size() * EXCHANGE_FEE;
