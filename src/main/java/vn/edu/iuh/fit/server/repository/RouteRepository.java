@@ -21,7 +21,5 @@ public interface RouteRepository {
     List<Route> findAllRoutes(EntityManager em);
 
     List<Route> searchRoutes(EntityManager em, String departureStationId, String destinationStationId, String status);
-
-    List<Route> getAllRoutes(EntityManager em);
 }
 
