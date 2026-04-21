@@ -10,6 +10,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import vn.edu.iuh.fit.server.messages.TicketMessages;
+import vn.edu.iuh.fit.server.messages.EmployeeMessages;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,13 +20,13 @@ import lombok.NoArgsConstructor;
 public class ReturnTicketConfirmDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @NotEmpty(message = "ticketIds is required")
+    @NotEmpty(message = TicketMessages.TICKET_IDS_REQUIRED)
     private List<String> ticketIds;
 
-    @Min(value = 0, message = "refundAmount must be >= 0")
+    @Min(value = 0, message = TicketMessages.REFUND_AMOUNT_INVALID)
     private double refundAmount;
 
-    @NotEmpty(message = "employeeId is required")
+    @NotEmpty(message = EmployeeMessages.EMPLOYEE_ID_REQUIRED)
     private String employeeId;
 }
 

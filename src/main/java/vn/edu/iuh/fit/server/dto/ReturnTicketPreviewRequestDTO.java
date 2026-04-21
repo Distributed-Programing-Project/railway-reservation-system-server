@@ -9,6 +9,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import vn.edu.iuh.fit.server.messages.TicketMessages;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,7 +18,7 @@ import lombok.NoArgsConstructor;
 public class ReturnTicketPreviewRequestDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @NotEmpty(message = "ticketIds is required")
+    @NotEmpty(message = TicketMessages.TICKET_IDS_REQUIRED)
     private List<String> ticketIds;
 }
 

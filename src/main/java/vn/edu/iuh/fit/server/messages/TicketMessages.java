@@ -21,6 +21,8 @@ public final class TicketMessages {
     public static final String DATA_INVALID_PREFIX = "Dữ liệu không hợp lệ: ";
     public static final String COUNT_MISMATCH = "Số lượng vé cũ và ghế mới phải khớp nhau.";
     public static final String SOME_TICKETS_INVALID = "Một số vé không tồn tại hoặc không hợp lệ.";
+    public static final String ID_CARD_REQUIRED = "Số CCCD không được để trống";
+    public static final String REFUND_AMOUNT_INVALID = "Số tiền hoàn trả phải lớn hơn hoặc bằng 0";
     public static final String DATA_CONFLICT = "Ghế bạn chọn vừa có người khác đặt nhanh hơn. Vui lòng thử lại!";
     public static final String SCHEDULE_DETAIL_NOT_FOUND = "Không tìm thấy chi tiết lịch trình: %s";
     

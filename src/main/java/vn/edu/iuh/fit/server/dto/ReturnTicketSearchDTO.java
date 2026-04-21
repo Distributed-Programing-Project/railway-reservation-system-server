@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import vn.edu.iuh.fit.server.messages.TicketMessages;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,7 +17,7 @@ import lombok.NoArgsConstructor;
 public class ReturnTicketSearchDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @NotEmpty(message = "idCard is required")
+    @NotEmpty(message = TicketMessages.ID_CARD_REQUIRED)
     private String idCard;
 }
 
