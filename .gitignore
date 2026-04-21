@@ -43,3 +43,4 @@ CLAUDE.md
 .DS_Store
 .dao 
 .controller
+**/META-INF
