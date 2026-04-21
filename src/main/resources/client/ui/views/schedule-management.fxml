@@ -6,6 +6,7 @@
 
 <StackPane xmlns="http://javafx.com/javafx"
            xmlns:fx="http://javafx.com/fxml"
+           fx:controller="vn.edu.iuh.fit.client.controller.ScheduleController"
            prefWidth="1200" prefHeight="700">
 
     <!-- Main Content -->
@@ -32,11 +33,12 @@
                 <ComboBox fx:id="trainCombo" promptText="Tất cả mã tàu" prefWidth="150" styleClass="filter-combo"/>
                 <ComboBox fx:id="statusCombo" promptText="Tất cả trạng thái" prefWidth="150" styleClass="filter-combo"/>
                 
-                <Button text="Thêm" styleClass="add-button"/>
+                <Button text="Thêm" styleClass="add-button" onAction="#handleAddSchedule"/>
                 
                 <Button text="Gen Lịch Trình" 
                         styleClass="primary-button" 
-                        style="-fx-background-color: #28a745; -fx-text-fill: white;"/>
+                        style="-fx-background-color: #28a745; -fx-text-fill: white;"
+                        onAction="#handleGenerateSchedules"/>
                 
                 <Region HBox.hgrow="ALWAYS"/>
             </HBox>
@@ -60,17 +62,17 @@
 
             <!-- Pagination Controls -->
             <HBox spacing="15" alignment="CENTER">
-                <Button fx:id="prevButton" text="Trang trước" styleClass="secondary-button"/>
+                <Button fx:id="prevButton" text="Trang trước" styleClass="secondary-button" onAction="#handlePrevPage"/>
                 <Label fx:id="pageLabel" text="Trang 1/1" styleClass="page-label" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
-                <Button fx:id="nextButton" text="Trang sau" styleClass="secondary-button"/>
+                <Button fx:id="nextButton" text="Trang sau" styleClass="secondary-button" onAction="#handleNextPage"/>
             </HBox>
 
             <!-- Action Buttons -->
             <HBox spacing="15" alignment="CENTER_RIGHT">
-                <Button text="Chi tiết lịch trình" styleClass="secondary-button"/>
-                <Button text="Làm mới" styleClass="secondary-button"/>
-                <Button text="Sửa" styleClass="primary-button"/>
-                <Button text="Xóa" styleClass="danger-button"/>
+                <Button text="Chi tiết lịch trình" styleClass="secondary-button" onAction="#handleViewSeatsDetail"/>
+                <Button text="Làm mới" styleClass="secondary-button" onAction="#handleRefresh"/>
+                <Button text="Sửa" styleClass="primary-button" onAction="#handleEditSchedule"/>
+                <Button text="Xóa" styleClass="danger-button" onAction="#handleDeleteSchedule"/>
             </HBox>
         </VBox>
     </center>

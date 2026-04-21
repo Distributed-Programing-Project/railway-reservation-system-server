@@ -6,6 +6,7 @@
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
+      fx:controller="vn.edu.iuh.fit.client.controller.AddScheduleDialogController"
       spacing="15" prefWidth="500" prefHeight="500">
     
     <padding>
@@ -56,7 +57,7 @@
     
     <!-- Buttons -->
     <HBox spacing="10" alignment="CENTER_RIGHT">
-        <Button text="Hủy" prefWidth="100" styleClass="secondary-button"/>
-        <Button text="Lưu" prefWidth="100" styleClass="primary-button"/>
+        <Button text="Hủy" prefWidth="100" styleClass="secondary-button" onAction="#handleCancel"/>
+        <Button text="Lưu" prefWidth="100" styleClass="primary-button" onAction="#handleSave"/>
     </HBox>
 </VBox>
