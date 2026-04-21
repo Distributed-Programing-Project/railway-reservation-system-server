@@ -46,9 +46,5 @@ public class RouteServiceImpl implements RouteService {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public List<Route> getAllRoutes() {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
 }
 

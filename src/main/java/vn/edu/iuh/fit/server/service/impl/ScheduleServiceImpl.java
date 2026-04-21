@@ -36,18 +36,18 @@ public class ScheduleServiceImpl implements ScheduleService {
             return Response.error(String.join(", ", errors));
         }
 
+        if (scheduleDTO.getDepartureTime().isBefore(LocalDateTime.now().plusDays(1))) {
+            return Response.error("Ngày khởi hành phải cách ít nhất 1 ngày so với hôm nay");
+        }
+        if (scheduleDTO.getArrivalTime() != null
+                && scheduleDTO.getArrivalTime().isBefore(scheduleDTO.getDepartureTime())) {
+            return Response.error("Ngày giờ đến dự kiến không được nhỏ hơn giờ khởi hành");
+        }
+
         EntityManager em = JPAUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
         try {
             tx.begin();
-            if (scheduleDTO.getDepartureTime().isBefore(LocalDateTime.now().plusDays(1))) {
-                return Response.error("Ngày khởi hành phải cách ít nhất 1 ngày so với hôm nay");
-            }
-            if (scheduleDTO.getArrivalTime() != null
-                    && scheduleDTO.getArrivalTime().isBefore(scheduleDTO.getDepartureTime())) {
-                return Response.error("Ngày giờ đến dự kiến không được nhỏ hơn giờ khởi hành");
-            }
-
             Train train = new Train();
             train.setId(scheduleDTO.getTrainId());
 
@@ -71,6 +71,7 @@ public class ScheduleServiceImpl implements ScheduleService {
             log.error("Failed to create schedule: trainId={}, routeId={}", scheduleDTO.getTrainId(), scheduleDTO.getRouteId(), e);
             return Response.error("Lỗi khi tạo lịch trình: " + e.getMessage());
         } finally {
+            if (tx.isActive()) tx.rollback();
             em.close();
         }
     }
