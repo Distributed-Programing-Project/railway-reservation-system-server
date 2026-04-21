@@ -157,7 +157,7 @@ public class TicketServiceImpl implements TicketService {
       rollbackQuietly(transaction);
       log.warn("Xung đột dữ liệu (Race condition) khi chiếm ghế.");
       return Response.error("Ghế bạn chọn vừa có người khác đặt nhanh hơn. Vui lòng thử lại!");
-    } catch (Exception e) {
+    } catch (IllegalArgumentException e) {
       rollbackQuietly(transaction);
       log.error("Lỗi nghiệp vụ đổi vé: ", e);
       return Response.error("Lỗi hệ thống: " + e.getMessage());
