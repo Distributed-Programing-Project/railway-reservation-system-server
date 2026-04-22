@@ -9,6 +9,7 @@ import vn.edu.iuh.fit.server.dto.ReturnTicketPreviewRequestDTO;
 import vn.edu.iuh.fit.server.dto.ReturnTicketSearchDTO;
 import vn.edu.iuh.fit.server.dto.ScheduleCreateDTO;
 import vn.edu.iuh.fit.server.dto.ScheduleFilterDTO;
+import vn.edu.iuh.fit.server.dto.ScheduleUpdateDTO;
 import vn.edu.iuh.fit.server.dto.StatisticsRequestDTO;
 import vn.edu.iuh.fit.server.service.EmployeeService;
 import vn.edu.iuh.fit.server.service.ScheduleService;
@@ -37,6 +38,7 @@ public class RequestRouter {
 
             case FILTER_SCHEDULE         -> scheduleService.filterSchedules(castData(request, ScheduleFilterDTO.class));
             case CREATE_SCHEDULE         -> scheduleService.createSchedule(castData(request, ScheduleCreateDTO.class));
+            case UPDATE_SCHEDULE         -> scheduleService.updateSchedule(castData(request, ScheduleUpdateDTO.class));
 
             case CREATE_EMPLOYEE         -> employeeService.createEmployee(castData(request, EmployeeDTO.class));
             case CREATE_EMPLOYEE_ACCOUNT -> employeeService.createEmployeeAccount(castData(request, String.class));

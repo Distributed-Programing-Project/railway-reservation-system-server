@@ -1,6 +1,7 @@
 package vn.edu.iuh.fit.server.mapper;
 
 import vn.edu.iuh.fit.server.dto.ScheduleDTO;
+import vn.edu.iuh.fit.server.dto.ScheduleUpdateDTO;
 import vn.edu.iuh.fit.server.model.Route;
 import vn.edu.iuh.fit.server.model.Schedule;
 import vn.edu.iuh.fit.server.model.Train;
@@ -51,6 +52,21 @@ public class ScheduleMapper {
         }
 
         return schedule;
+    }
+
+    public static Schedule toEntityForUpdate(ScheduleUpdateDTO dto) {
+        if (dto == null) return null;
+        Train train = new Train();
+        train.setId(dto.getTrainId());
+        Route route = new Route();
+        route.setId(dto.getRouteId());
+        return Schedule.builder()
+                .id(dto.getScheduleId())
+                .train(train)
+                .route(route)
+                .departureTime(dto.getDepartureTime())
+                .arrivalTime(dto.getArrivalTime())
+                .build();
     }
 
     public static List<ScheduleDTO> toDtoList(List<Schedule> schedules) {

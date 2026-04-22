@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.server.service.impl;
 import vn.edu.iuh.fit.server.dto.ScheduleCreateDTO;
 import vn.edu.iuh.fit.server.dto.ScheduleDTO;
 import vn.edu.iuh.fit.server.dto.ScheduleFilterDTO;
+import vn.edu.iuh.fit.server.dto.ScheduleUpdateDTO;
 import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.model.Route;
 import vn.edu.iuh.fit.server.model.Schedule;
@@ -78,6 +79,52 @@ public class ScheduleServiceImpl implements ScheduleService {
             if (tx.isActive()) tx.rollback();
             log.error("Failed to create schedule: trainId={}, routeId={}", scheduleDTO.getTrainId(), scheduleDTO.getRouteId(), e);
             return Response.error(ScheduleMessages.CREATE_FAILED_PREFIX + e.getMessage());
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public Response updateSchedule(ScheduleUpdateDTO scheduleUpdateDTO) {
+        List<String> errors = ValidationUtils.validate(scheduleUpdateDTO);
+        if (!errors.isEmpty()) {
+            return Response.error(String.join(", ", errors));
+        }
+
+        Employee requester = findRequester(scheduleUpdateDTO.getRequestEmployeeId());
+        if (requester == null) {
+            return Response.error(ScheduleMessages.employeeNotFoundById(scheduleUpdateDTO.getRequestEmployeeId()));
+        }
+        if (!Boolean.TRUE.equals(requester.getIsManager())) {
+            return Response.error(ScheduleMessages.UNAUTHORIZED);
+        }
+
+        EntityManager em = JPAUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        try {
+            tx.begin();
+
+            Schedule existingSchedule = repository.findScheduleById(em, scheduleUpdateDTO.getScheduleId());
+            if (existingSchedule == null) {
+                return Response.error(ScheduleMessages.scheduleNotFoundById(scheduleUpdateDTO.getScheduleId()));
+            }
+            if (existingSchedule.getStatus() != StatusSchedule.DRAFT) {
+                return Response.error(ScheduleMessages.DRAFT_UPDATE_ONLY);
+            }
+
+            Schedule scheduleToUpdate = ScheduleMapper.toEntityForUpdate(scheduleUpdateDTO);
+            boolean updated = repository.updateSchedule(em, scheduleToUpdate);
+            if (!updated) {
+                return Response.error(ScheduleMessages.updateFailedById(scheduleUpdateDTO.getScheduleId()));
+            }
+
+            tx.commit();
+            log.info("Schedule updated: id={}", scheduleUpdateDTO.getScheduleId());
+            return Response.success(ScheduleMessages.UPDATE_SUCCESS, scheduleUpdateDTO.getScheduleId());
+        } catch (Exception e) {
+            if (tx.isActive()) tx.rollback();
+            log.error("Failed to update schedule: id={}", scheduleUpdateDTO.getScheduleId(), e);
+            return Response.error(ScheduleMessages.UPDATE_FAILED_PREFIX + e.getMessage());
         } finally {
             em.close();
         }
