@@ -1,11 +1,11 @@
 package vn.edu.iuh.fit.server.repository;
 
-import jakarta.persistence.EntityManager;
-import vn.edu.iuh.fit.server.dto.CustomerDTO;
-import vn.edu.iuh.fit.server.model.Customer;
-
 import java.time.LocalDateTime;
 import java.util.List;
+
+import jakarta.persistence.EntityManager;
+import vn.edu.iuh.fit.common.dto.CustomerDTO;
+import vn.edu.iuh.fit.server.model.Customer;
 
 public interface CustomerRepository {
   List<CustomerDTO> searchActiveCustomers(EntityManager em, String keyword, int page, int size);
@@ -30,4 +30,3 @@ public interface CustomerRepository {
 
   boolean hasUpcomingPaidTicket(EntityManager em, String customerId, LocalDateTime now);
 }
-

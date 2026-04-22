@@ -1,14 +1,14 @@
 package vn.edu.iuh.fit.server.repository.impl;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
-import vn.edu.iuh.fit.server.constant.TicketStatus;
-import vn.edu.iuh.fit.server.dto.CustomerDTO;
-import vn.edu.iuh.fit.server.model.Customer;
-import vn.edu.iuh.fit.server.repository.CustomerRepository;
-
 import java.time.LocalDateTime;
 import java.util.List;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
+import vn.edu.iuh.fit.common.constant.TicketStatus;
+import vn.edu.iuh.fit.common.dto.CustomerDTO;
+import vn.edu.iuh.fit.server.model.Customer;
+import vn.edu.iuh.fit.server.repository.CustomerRepository;
 
 public class CustomerRepositoryImpl implements CustomerRepository {
 
@@ -16,7 +16,7 @@ public class CustomerRepositoryImpl implements CustomerRepository {
   public List<CustomerDTO> searchActiveCustomers(EntityManager em, String keyword, int page, int size) {
     boolean hasKeyword = keyword != null && !keyword.isBlank();
     StringBuilder jpql = new StringBuilder()
-        .append("SELECT new vn.edu.iuh.fit.server.dto.CustomerDTO(")
+        .append("SELECT new vn.edu.iuh.fit.common.dto.CustomerDTO(")
         .append("c.id, c.name, c.idCard, c.phoneNumber, c.email, c.isActive")
         .append(") ")
         .append("FROM Customer c ")
@@ -177,4 +177,3 @@ public class CustomerRepositoryImpl implements CustomerRepository {
     return count != null && count > 0;
   }
 }
-

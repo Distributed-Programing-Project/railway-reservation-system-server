@@ -1,9 +1,9 @@
 package vn.edu.iuh.fit.server.service;
 
+import vn.edu.iuh.fit.common.dto.CustomerDTO;
+import vn.edu.iuh.fit.common.dto.CustomerDeleteRequestDTO;
+import vn.edu.iuh.fit.common.dto.CustomerSearchDTO;
 import vn.edu.iuh.fit.common.response.Response;
-import vn.edu.iuh.fit.server.dto.CustomerDTO;
-import vn.edu.iuh.fit.server.dto.CustomerDeleteRequestDTO;
-import vn.edu.iuh.fit.server.dto.CustomerSearchDTO;
 
 public interface CustomerService {
   Response searchCustomers(CustomerSearchDTO searchDTO);
@@ -14,4 +14,3 @@ public interface CustomerService {
 
   Response deleteCustomer(CustomerDeleteRequestDTO requestDTO);
 }
-

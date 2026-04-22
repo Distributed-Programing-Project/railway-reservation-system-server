@@ -48,7 +48,6 @@ public class EmployeeServiceImpl implements EmployeeService {
                 return Response.error(EmployeeMessages.EMAIL_ALREADY_EXISTS);
             }
 
-
             String employeeCode = repository.generateEmployeeCode(em, employeeDTO.getIsManager());
 
             Employee employee = Employee.builder()
@@ -67,16 +66,19 @@ public class EmployeeServiceImpl implements EmployeeService {
 
             Employee savedEmployee = repository.saveEmployee(em, employee);
             tx.commit();
-            log.info("Employee created: employeeCode={}, id={}", savedEmployee.getEmployeeCode(), savedEmployee.getEmployeeId());
+            log.info("Employee created: employeeCode={}, id={}", savedEmployee.getEmployeeCode(),
+                    savedEmployee.getEmployeeId());
             return Response.success(EmployeeMessages.CREATE_SUCCESS, EmployeeMapper.toDto(savedEmployee));
 
         } catch (Exception e) {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive())
+                tx.rollback();
             log.error("Failed to create employee: nationalId={}", employeeDTO.getNationalId(), e);
             return Response.error(EmployeeMessages.SYSTEM_ERROR_PREFIX + e.getMessage());
 
         } finally {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive())
+                tx.rollback();
             em.close();
         }
     }
@@ -86,7 +88,6 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (employeeId == null || employeeId.isBlank()) {
             return Response.error(EmployeeMessages.EMPLOYEE_ID_REQUIRED);
         }
-
 
         EntityManager em = JPAUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
@@ -100,22 +101,24 @@ public class EmployeeServiceImpl implements EmployeeService {
                 return Response.error(EmployeeMessages.ACCOUNT_ALREADY_EXISTS);
             }
 
-
             String rawPassword = generateRawPassword();
             String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
 
-            String username = repository.createAndLinkAccount(em, employeeId, employee.getEmployeeCode(), hashedPassword);
+            String username = repository.createAndLinkAccount(em, employeeId, employee.getEmployeeCode(),
+                    hashedPassword);
             tx.commit();
             log.info("Account created for employee: employeeId={}, username={}", employeeId, username);
             return buildAccountCreatedResponse(EmployeeMessages.ACCOUNT_CREATE_SUCCESS, username, rawPassword);
 
         } catch (Exception e) {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive())
+                tx.rollback();
             log.error("Failed to create account for employee: employeeId={}", employeeId, e);
             return Response.error(EmployeeMessages.SYSTEM_ERROR_PREFIX + e.getMessage());
 
         } finally {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive())
+                tx.rollback();
             em.close();
         }
     }
@@ -125,7 +128,6 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (employeeId == null || employeeId.isBlank()) {
             return Response.error(EmployeeMessages.EMPLOYEE_ID_REQUIRED);
         }
-
 
         EntityManager em = JPAUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
@@ -139,19 +141,20 @@ public class EmployeeServiceImpl implements EmployeeService {
                 return Response.error(EmployeeMessages.ALREADY_INACTIVE);
             }
 
-
             Employee updatedEmployee = repository.softDeleteEmployee(em, employeeId);
             tx.commit();
             log.info("Employee soft-deleted: employeeId={}", employeeId);
             return Response.success(EmployeeMessages.SOFT_DELETE_SUCCESS, EmployeeMapper.toDto(updatedEmployee));
 
         } catch (Exception e) {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive())
+                tx.rollback();
             log.error("Failed to soft-delete employee: employeeId={}", employeeId, e);
             return Response.error(EmployeeMessages.SYSTEM_ERROR_PREFIX + e.getMessage());
 
         } finally {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive())
+                tx.rollback();
             em.close();
         }
     }
@@ -161,7 +164,6 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (employeeId == null || employeeId.isBlank()) {
             return Response.error(EmployeeMessages.EMPLOYEE_ID_REQUIRED);
         }
-
 
         EntityManager em = JPAUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
@@ -175,7 +177,6 @@ public class EmployeeServiceImpl implements EmployeeService {
                 return Response.error(EmployeeMessages.ACCOUNT_NOT_EXISTS);
             }
 
-
             String rawPassword = generateRawPassword();
             String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
 
@@ -185,12 +186,14 @@ public class EmployeeServiceImpl implements EmployeeService {
             return buildAccountCreatedResponse(EmployeeMessages.PASSWORD_RESET_SUCCESS, username, rawPassword);
 
         } catch (Exception e) {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive())
+                tx.rollback();
             log.error("Failed to reset password for employee: employeeId={}", employeeId, e);
             return Response.error(EmployeeMessages.SYSTEM_ERROR_PREFIX + e.getMessage());
 
         } finally {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive())
+                tx.rollback();
             em.close();
         }
     }
@@ -236,4 +239,3 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .build());
     }
 }
-
