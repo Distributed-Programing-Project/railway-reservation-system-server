@@ -266,4 +266,19 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
         }
     }
 
+    @Override
+    public long countFutureActiveSchedulesByTrainId(String trainId) {
+        return doWithEntityManager(em ->
+                em.createQuery(
+                        "SELECT COUNT(s) FROM Schedule s WHERE s.train.id = :trainId" +
+                        " AND s.departureTime > :now" +
+                        " AND s.status NOT IN :terminalStatuses",
+                        Long.class)
+                        .setParameter("trainId", trainId)
+                        .setParameter("now", LocalDateTime.now())
+                        .setParameter("terminalStatuses", List.of(StatusSchedule.COMPLETED, StatusSchedule.CANCELLED))
+                        .getSingleResult()
+        );
+    }
+
 }

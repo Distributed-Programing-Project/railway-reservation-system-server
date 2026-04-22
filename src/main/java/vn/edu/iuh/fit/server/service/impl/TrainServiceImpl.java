@@ -23,6 +23,7 @@ import vn.edu.iuh.fit.server.repository.TrainRepository;
 import vn.edu.iuh.fit.server.repository.impl.CarriageRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.ScheduleRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.TrainRepositoryImpl;
+import vn.edu.iuh.fit.server.messages.TrainMessages;
 import vn.edu.iuh.fit.server.service.TrainService;
 import vn.edu.iuh.fit.server.util.JPAUtils;
 import vn.edu.iuh.fit.server.util.ValidationUtils;
@@ -45,26 +46,26 @@ public class TrainServiceImpl implements TrainService {
         }
         List<Train> trains = trainRepository.findAllTrains(filter.getStatusFilter());
         List<TrainDTO> trainDTOList = TrainMapper.toDtoList(trains);
-        return Response.success("Lấy danh sách tàu thành công", trainDTOList);
+        return Response.success(TrainMessages.FIND_ALL_SUCCESS, trainDTOList);
     }
 
     @Override
     public Response findTrainsByCode(String keyword) {
         if (keyword == null || keyword.isBlank()) {
-            return Response.error("Mác tàu tìm kiếm không được để trống");
+            return Response.error(TrainMessages.FIND_BY_CODE_BLANK);
         }
         List<Train> trains = trainRepository.findTrainsByCodeLike(keyword);
         List<TrainDTO> trainDTOList = trains.stream()
                 .map(TrainMapper::toDtoWithCarriages)
                 .toList();
-        return Response.success("Tìm kiếm tàu thành công", trainDTOList);
+        return Response.success(TrainMessages.FIND_BY_CODE_SUCCESS, trainDTOList);
     }
 
     @Override
     public Response findUnassignedCarriages() {
         List<Carriage> carriages = carriageRepository.findUnassignedCarriages();
         List<CarriageDTO> carriageDTOList = CarriageMapper.toDtoList(carriages);
-        return Response.success("Lấy danh sách toa rỗng thành công", carriageDTOList);
+        return Response.success(TrainMessages.FIND_UNASSIGNED_SUCCESS, carriageDTOList);
     }
 
     @Override
@@ -74,7 +75,7 @@ public class TrainServiceImpl implements TrainService {
             return Response.error(String.join(", ", errors));
         }
         if (trainRepository.existsByTrainCodeIgnoreCase(dto.getTrainCode())) {
-            return Response.error("Mác tàu " + dto.getTrainCode() + " đã tồn tại, vui lòng chọn mác khác");
+            return Response.error(String.format(TrainMessages.TRAIN_CODE_DUPLICATE, dto.getTrainCode()));
         }
 
         EntityManager em = JPAUtils.getEntityManager();
@@ -84,14 +85,14 @@ public class TrainServiceImpl implements TrainService {
             Train train = trainRepository.createTrain(em, dto.getTrainCode(), dto.getCarriageIds());
             tx.commit();
             log.info("Train created: trainCode={}, id={}", train.getTrainCode(), train.getId());
-            return Response.success("Tàu " + dto.getTrainCode() + " được tạo thành công", train.getId());
+            return Response.success(String.format(TrainMessages.CREATE_TRAIN_SUCCESS, dto.getTrainCode()), train.getId());
         } catch (IllegalStateException e) {
             if (tx.isActive()) tx.rollback();
             return Response.error(e.getMessage());
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
             log.error("Failed to create train: trainCode={}", dto.getTrainCode(), e);
-            return Response.error("Lỗi hệ thống, vui lòng thử lại");
+            return Response.error(TrainMessages.SYSTEM_ERROR);
         } finally {
             em.close();
         }
@@ -111,11 +112,11 @@ public class TrainServiceImpl implements TrainService {
             Carriage carriage = carriageRepository.saveCarriageWithSeats(em, dto.getCarriageType());
             tx.commit();
             log.info("Carriage registered: type={}, id={}", dto.getCarriageType(), carriage.getId());
-            return Response.success("Toa mới đã được đăng ký vào hệ thống", CarriageMapper.toDto(carriage));
+            return Response.success(TrainMessages.CREATE_CARRIAGE_SUCCESS, CarriageMapper.toDto(carriage));
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
             log.error("Failed to register carriage: type={}", dto.getCarriageType(), e);
-            return Response.error("Lỗi hệ thống, vui lòng thử lại");
+            return Response.error(TrainMessages.SYSTEM_ERROR);
         } finally {
             em.close();
         }
@@ -130,7 +131,7 @@ public class TrainServiceImpl implements TrainService {
 
         long futureScheduleCount = scheduleRepository.countFutureActiveSchedulesByTrainId(dto.getTrainId());
         if (futureScheduleCount > 0) {
-            return Response.error("Không thể cấu hình tàu đang có lịch trình trong tương lai. Vui lòng huỷ các lịch trình liên quan trước");
+            return Response.error(TrainMessages.HAS_FUTURE_SCHEDULES);
         }
 
         EntityManager em = JPAUtils.getEntityManager();
@@ -140,14 +141,14 @@ public class TrainServiceImpl implements TrainService {
             trainRepository.updateTrainCarriages(em, dto.getTrainId(), dto.getCarriageIds());
             tx.commit();
             log.info("Train carriages updated: trainId={}", dto.getTrainId());
-            return Response.success("Cấu hình tàu đã được cập nhật", null);
+            return Response.success(TrainMessages.UPDATE_CARRIAGES_SUCCESS, null);
         } catch (IllegalArgumentException | IllegalStateException e) {
             if (tx.isActive()) tx.rollback();
             return Response.error(e.getMessage());
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
             log.error("Failed to update train carriages: trainId={}", dto.getTrainId(), e);
-            return Response.error("Lỗi hệ thống, vui lòng thử lại");
+            return Response.error(TrainMessages.SYSTEM_ERROR);
         } finally {
             em.close();
         }
@@ -163,7 +164,7 @@ public class TrainServiceImpl implements TrainService {
         if (dto.getStatus() == TrainStatus.INACTIVE || dto.getStatus() == TrainStatus.MAINTENANCE) {
             long futureScheduleCount = scheduleRepository.countFutureActiveSchedulesByTrainId(dto.getTrainId());
             if (futureScheduleCount > 0) {
-                return Response.error("Không thể thay đổi trạng thái tàu đang có lịch trình trong tương lai. Vui lòng huỷ các lịch trình liên quan trước");
+                return Response.error(TrainMessages.HAS_FUTURE_SCHEDULES);
             }
         }
 
@@ -174,14 +175,14 @@ public class TrainServiceImpl implements TrainService {
             trainRepository.updateTrainStatus(em, dto.getTrainId(), dto.getStatus());
             tx.commit();
             log.info("Train status updated: trainId={}, status={}", dto.getTrainId(), dto.getStatus());
-            return Response.success("Trạng thái tàu đã được cập nhật", null);
+            return Response.success(TrainMessages.UPDATE_STATUS_SUCCESS, null);
         } catch (IllegalArgumentException e) {
             if (tx.isActive()) tx.rollback();
             return Response.error(e.getMessage());
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
             log.error("Failed to update train status: trainId={}, status={}", dto.getTrainId(), dto.getStatus(), e);
-            return Response.error("Lỗi hệ thống, vui lòng thử lại");
+            return Response.error(TrainMessages.SYSTEM_ERROR);
         } finally {
             em.close();
         }
