@@ -6,6 +6,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
+            fx:controller="vn.edu.iuh.fit.client.controller.DashboardController"
             stylesheets="@../css/dashboard-style.css"
             prefWidth="1200" prefHeight="700">
 
@@ -33,7 +34,7 @@
 
             <VBox spacing="0" VBox.vgrow="ALWAYS" styleClass="sidebar-menu">
                 <Button fx:id="btnHome" text="Trang Chủ"
-                        styleClass="menu-item,menu-item-active" maxWidth="Infinity"/>
+                        styleClass="menu-item menu-item-active" maxWidth="Infinity"/>
 
                 <Button fx:id="btnInvoice" text="Quản Lý Hóa Đơn"
                         styleClass="menu-item" maxWidth="Infinity"/>

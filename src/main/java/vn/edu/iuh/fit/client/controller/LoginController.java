@@ -96,17 +96,17 @@ public class LoginController {
 
     private void openDashboard(Object responseData) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/ui/views/dashboard_statistics.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/ui/views/dashboard.fxml"));
             Parent root = loader.load();
 
-            DashboardStatisticsController controller = loader.getController();
+            DashboardController controller = loader.getController();
             if (responseData instanceof AccountDTO accountDTO) {
                 controller.setLoggedInUsername(accountDTO.getUsername());
             }
 
             Stage stage = (Stage) usernameField.getScene().getWindow();
             stage.setScene(new Scene(root, 1200, 700));
-            stage.setTitle("Train Station - Dashboard Statistics");
+            stage.setTitle("Train Station - Dashboard");
             stage.show();
         } catch (IOException e) {
             showError("Đăng nhập", "Không thể mở dashboard: " + e.getMessage());

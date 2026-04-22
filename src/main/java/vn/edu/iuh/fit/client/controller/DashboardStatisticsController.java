@@ -19,6 +19,8 @@ public class DashboardStatisticsController {
     @FXML
     private Label welcomeSubtitle;
 
+    private Runnable onOpenSchedule;
+
     @FXML
     public void initialize() {
         updateSubtitle("Dữ liệu cập nhật lúc " + DATE_TIME_FORMATTER.format(LocalDateTime.now()));
@@ -38,6 +40,10 @@ public class DashboardStatisticsController {
 
     @FXML
     public void handleOpenSchedule() {
+        if (onOpenSchedule != null) {
+            onOpenSchedule.run();
+            return;
+        }
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/ui/views/schedule-management.fxml"));
             Parent root = loader.load();
@@ -49,6 +55,10 @@ public class DashboardStatisticsController {
         } catch (IOException e) {
             showError("Chuyển màn hình", "Không thể mở giao diện lịch trình: " + e.getMessage());
         }
+    }
+
+    public void setOnOpenSchedule(Runnable onOpenSchedule) {
+        this.onOpenSchedule = onOpenSchedule;
     }
 
     private void updateSubtitle(String text) {
