@@ -9,6 +9,7 @@ import vn.edu.iuh.fit.common.dto.CustomerDTO;
 import vn.edu.iuh.fit.common.dto.CustomerDeleteRequestDTO;
 import vn.edu.iuh.fit.common.dto.CustomerPageDTO;
 import vn.edu.iuh.fit.common.dto.CustomerSearchDTO;
+import vn.edu.iuh.fit.server.mapper.CustomerMapper;
 import vn.edu.iuh.fit.server.model.Customer;
 import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.repository.CustomerRepository;
@@ -87,18 +88,13 @@ public class CustomerServiceImpl implements CustomerService {
       }
 
       tx.begin();
-      Customer customer = Customer.builder()
-          .name(customerDTO.getFullName())
-          .idCard(customerDTO.getIdCard())
-          .phoneNumber(normalizeBlankToNull(customerDTO.getPhone()))
-          .email(normalizeBlankToNull(customerDTO.getEmail()))
-          .isActive(true)
-          .build();
+      Customer customer = CustomerMapper.INSTANCE.toEntity(customerDTO);
+      customer.setActive(true); // Ensure new customers are active by default
 
       customerRepository.createCustomer(em, customer);
       tx.commit();
 
-      return Response.success("Thêm khách hàng thành công", toDto(customer));
+      return Response.success("Thêm khách hàng thành công", CustomerMapper.INSTANCE.toDto(customer));
     } catch (Exception e) {
       rollbackQuietly(tx);
       log.error("Failed to create customer: idCard={}", customerDTO.getIdCard(), e);
@@ -148,7 +144,7 @@ public class CustomerServiceImpl implements CustomerService {
       customerRepository.updateCustomer(em, existing);
       tx.commit();
 
-      return Response.success("Cập nhật khách hàng thành công", toDto(existing));
+      return Response.success("Cập nhật khách hàng thành công", CustomerMapper.INSTANCE.toDto(existing));
     } catch (Exception e) {
       rollbackQuietly(tx);
       log.error("Failed to update customer: customerId={}", customerDTO.getCustomerId(), e);
@@ -195,7 +191,7 @@ public class CustomerServiceImpl implements CustomerService {
         customer.setActive(false);
         customerRepository.updateCustomer(em, customer);
         tx.commit();
-        return Response.success("Xóa khách hàng thành công", toDto(customer));
+        return Response.success("Xóa khách hàng thành công", CustomerMapper.INSTANCE.toDto(customer));
       }
 
       customerRepository.deleteCustomer(em, customer);
@@ -212,19 +208,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
   }
 
-  private CustomerDTO toDto(Customer customer) {
-    if (customer == null) {
-      return null;
-    }
-    return CustomerDTO.builder()
-        .customerId(customer.getId())
-        .fullName(customer.getName())
-        .idCard(customer.getIdCard())
-        .phone(customer.getPhoneNumber())
-        .email(customer.getEmail())
-        .isActive(customer.isActive())
-        .build();
-  }
+
 
   private String normalizeBlankToNull(String value) {
     if (value == null) {

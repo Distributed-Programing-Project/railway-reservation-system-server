@@ -30,6 +30,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private static final Logger log = LoggerFactory.getLogger(EmployeeServiceImpl.class);
     private final EmployeeRepository repository = new EmployeeRepositoryImpl();
 
+
     @Override
     public Response createEmployee(EmployeeDTO employeeDTO) {
         List<String> errors = ValidationUtils.validate(employeeDTO);
@@ -68,7 +69,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             tx.commit();
             log.info("Employee created: employeeCode={}, id={}", savedEmployee.getEmployeeCode(),
                     savedEmployee.getEmployeeId());
-            return Response.success(EmployeeMessages.CREATE_SUCCESS, EmployeeMapper.toDto(savedEmployee));
+            return Response.success(EmployeeMessages.CREATE_SUCCESS, EmployeeMapper.INSTANCE.toDto(savedEmployee));
 
         } catch (Exception e) {
             if (tx.isActive())
@@ -144,7 +145,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             Employee updatedEmployee = repository.softDeleteEmployee(em, employeeId);
             tx.commit();
             log.info("Employee soft-deleted: employeeId={}", employeeId);
-            return Response.success(EmployeeMessages.SOFT_DELETE_SUCCESS, EmployeeMapper.toDto(updatedEmployee));
+            return Response.success(EmployeeMessages.SOFT_DELETE_SUCCESS, EmployeeMapper.INSTANCE.toDto(updatedEmployee));
 
         } catch (Exception e) {
             if (tx.isActive())
@@ -212,7 +213,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             int totalPages = (int) Math.ceil((double) totalElements / size);
 
             EmployeePageDTO pageDTO = EmployeePageDTO.builder()
-                    .content(EmployeeMapper.toDtoList(employees))
+                    .content(EmployeeMapper.INSTANCE.toDtoList(employees))
                     .totalElements(totalElements)
                     .totalPages(totalPages)
                     .currentPage(page)

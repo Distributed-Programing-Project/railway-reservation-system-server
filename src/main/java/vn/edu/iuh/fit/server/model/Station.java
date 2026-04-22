@@ -5,32 +5,32 @@ import lombok.*;
 
 import java.util.List;
 
-@Table(name = "stations")
-@Entity
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter
 @Getter
+@ToString(exclude = {"routeFrom", "routeTo", "routeStops"})
 @Builder
+@Entity
+@Table(name = "stations")
 public class Station {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private String id ;
+    @Column(name = "station_id", length = 36)
+    private String id;
 
-    private String name ;
+    @Column(name = "station_name", columnDefinition = "NVARCHAR(255)")
+    private String name;
 
     @Column(name = "destination_km")
-    private Float destinationKm ;
+    private Float destinationKm;
 
-    @ToString.Exclude
     @OneToMany(mappedBy = "departureStation")
-    private List<Route> routeFrom ;
+    private List<Route> routeFrom;
 
-    @ToString.Exclude
     @OneToMany(mappedBy = "destinationStation")
-    private List<Route> routeTo ;
+    private List<Route> routeTo;
 
-    @ToString.Exclude
     @OneToMany(mappedBy = "stationStop")
-    private List<RouteStop> routeStops ;
+    private List<RouteStop> routeStops;
 }

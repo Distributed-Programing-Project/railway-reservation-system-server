@@ -42,6 +42,7 @@ import vn.edu.iuh.fit.server.repository.impl.InvoiceDetailRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.InvoiceRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.ScheduleDetailRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.TicketRepositoryImpl;
+import vn.edu.iuh.fit.server.mapper.TicketMapper;
 import vn.edu.iuh.fit.server.service.TicketService;
 import vn.edu.iuh.fit.server.util.JPAUtils;
 import vn.edu.iuh.fit.server.util.ValidationUtils;
@@ -209,9 +210,7 @@ public class TicketServiceImpl implements TicketService {
     try {
       List<Ticket> tickets = ticketRepository.findTicketsByCustomerIdCardWithStatus(em, searchDTO.getIdCard(),
           TicketStatus.PAID);
-      List<ReturnTicketTicketDTO> result = tickets.stream()
-          .map(this::toReturnTicketTicketDTO)
-          .toList();
+      List<ReturnTicketTicketDTO> result = TicketMapper.INSTANCE.toReturnTicketDtoList(tickets);
       return Response.success(TicketMessages.FIND_SUCCESS, result);
     } catch (Exception e) {
       log.error("Failed to search tickets for return: idCard={}", searchDTO.getIdCard(), e);
@@ -334,25 +333,7 @@ public class TicketServiceImpl implements TicketService {
     }
   }
 
-  private ReturnTicketTicketDTO toReturnTicketTicketDTO(Ticket ticket) {
-    if (ticket == null) return null;
-    
-    return ReturnTicketTicketDTO.builder()
-        .id(ticket.getId())
-        .customerId(ticket.getCustomer() != null ? ticket.getCustomer().getId() : null)
-        .scheduleDetailId(ticket.getScheduleDetail() != null ? ticket.getScheduleDetail().getId() : null)
-        .scheduleId(ticket.getScheduleDetail() != null && ticket.getScheduleDetail().getSchedule() != null
-            ? ticket.getScheduleDetail().getSchedule().getId() : null)
-        .departureTime(ticket.getScheduleDetail() != null && ticket.getScheduleDetail().getSchedule() != null
-            ? ticket.getScheduleDetail().getSchedule().getDepartureTime() : null)
-        .ticketPrice(ticket.getScheduleDetail() != null && ticket.getScheduleDetail().getPriceSeat() != null
-            ? ticket.getScheduleDetail().getPriceSeat().doubleValue() : 0.0)
-        .type(ticket.getType())
-        .roundTrip(ticket.isRoundTrip())
-        .status(ticket.getStatus())
-        .originalTicketId(ticket.getOriginalTicketId())
-        .build();
-  }
+
 
   private ReturnComputation computeReturn(EntityManager em, List<String> ticketIds) {
     if (ticketIds == null || ticketIds.isEmpty()) {
