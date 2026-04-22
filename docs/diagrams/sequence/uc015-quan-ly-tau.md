@@ -4,49 +4,50 @@
 
 ```mermaid
 graph TB
-    subgraph CLIENT ["🖥 Client — JavaFX"]
+    subgraph CLIENT["Client (JavaFX)"]
         UI["TrainManagementController"]
-        SC["SocketClient.sendRequest()"]
+        SC["SocketClient"]
     end
 
-    subgraph TRANSPORT ["🔌 TCP Socket — ObjectStream"]
-        REQ["Request { action: FIND_ALL_TRAINS | CREATE_TRAIN\n           | CREATE_CARRIAGE | UPDATE_TRAIN_CARRIAGES\n           | UPDATE_TRAIN_STATUS | FIND_TRAIN_BY_CODE\n           | FIND_UNASSIGNED_CARRIAGES\n data: TrainFilterDTO | CreateTrainDTO | ... }"]
-        RES["Response { success, message\n data: List&lt;TrainDTO&gt; | TrainDTO | List&lt;CarriageDTO&gt; }"]
+    subgraph COMMON["Common (Shared)"]
+        REQ["Request\n{ ActionType, Object data }"]
+        RES["Response\n{ boolean, String, Object }"]
+        AT["ActionType\nFIND_ALL_TRAINS\nFIND_TRAIN_BY_CODE\nFIND_UNASSIGNED_CARRIAGES\nCREATE_TRAIN\nCREATE_CARRIAGE\nUPDATE_TRAIN_CARRIAGES\nUPDATE_TRAIN_STATUS"]
     end
 
-    subgraph SERVER ["⚙️ Server — Java 21"]
-        SV["Server.handleClient()\n ObjectInputStream / ObjectOutputStream"]
-        RR["RequestRouter.route()\n case FIND_ALL_TRAINS / CREATE_TRAIN / ..."]
-        TS["TrainService\n .findAllTrains() / .createTrain()\n .createCarriage() / .updateTrainCarriages()\n .updateTrainStatus() / .findTrainByCode()\n .findUnassignedCarriages()"]
-        TR["TrainRepository\n .findAllTrains() / .findByCode()\n .existsByTrainCode() / .save()"]
-        CR["CarriageRepository\n .findUnassigned() / .findByIds()\n .saveCarriage() / .updateCarriage()"]
-        SR["ScheduleRepository\n .countFutureActiveByTrainId()"]
+    subgraph SERVER["Server"]
+        RR["RequestRouter"]
+        TS["TrainServiceImpl"]
+        SR["ScheduleRepositoryImpl"]
+        TR["TrainRepositoryImpl"]
+        CR["CarriageRepositoryImpl"]
+        TM["TrainMapper"]
+        CM["CarriageMapper"]
     end
 
-    subgraph DB ["🗄 MariaDB — localhost:3307"]
-        TRAINS["trains"]
-        CARRIAGES["carriages"]
-        SEATS["seats"]
-        SCHEDULES["schedules"]
+    subgraph DB["MariaDB (localhost:3307)"]
+        T[("trains")]
+        C[("carriages")]
+        S[("seats")]
+        SCH[("schedules")]
     end
 
-    UI -->|"1. build DTO + Request"| SC
-    SC -->|"ObjectOutputStream.writeObject()"| REQ
-    REQ -->|"TCP"| SV
-    SV -->|"route(request)"| RR
-    RR -->|"castData → DTO"| TS
+    UI -- "new Request(ActionType, DTO)" --> SC
+    SC -- "ObjectOutputStream.writeObject(request)" --> RR
+    RR -- "Response" --> SC
+    SC -- "ObjectInputStream.readObject()" --> UI
+
+    RR -- "route(request)" --> TS
+    TS --> SR
     TS --> TR
     TS --> CR
-    TS --> SR
-    TR -->|"JPQL"| TRAINS
-    CR -->|"JPQL"| CARRIAGES
-    CR -->|"persist Seat"| SEATS
-    SR -->|"COUNT query"| SCHEDULES
-    TS -->|"TrainMapper.toDto()"| RR
-    RR -->|"Response.success(dto)"| SV
-    SV -->|"ObjectOutputStream.writeObject()\nout.reset()"| RES
-    RES -->|"TCP"| SC
-    SC -->|"2. update UI"| UI
+    TS --> TM
+    TS --> CM
+    TR -- "JPA/JPQL" --> T
+    TR -- "JPA/JPQL" --> C
+    CR -- "JPA/JPQL" --> C
+    CR -- "JPA/JPQL" --> S
+    SR -- "JPA/JPQL" --> SCH
 ```
 
 ---
@@ -55,10 +56,9 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor Manager as 👤 Quản lý
+    actor Manager as Nhân viên Quản lý
     participant UI as TrainManagementController
     participant SC as SocketClient
-    participant SV as Server.handleClient()
     participant RR as RequestRouter
     participant TS as TrainServiceImpl
     participant TR as TrainRepositoryImpl
@@ -66,120 +66,100 @@ sequenceDiagram
     participant SR as ScheduleRepositoryImpl
     participant DB as MariaDB
 
-    Manager->>UI: Vào màn hình Quản lý tàu
-
-    UI->>SC: sendRequest(FIND_ALL_TRAINS, TrainFilterDTO)
-    SC->>SV: ObjectOutputStream.writeObject(request)
-    SV->>RR: route(request)
-    RR->>TS: findAllTrains(TrainFilterDTO)
-    TS->>TR: findAllTrains(statusFilter)
-    TR->>DB: SELECT t FROM Train t [WHERE t.status = :status] JOIN FETCH t.carriages
+    Note over Manager,DB: Luồng A — Tra cứu tàu
+    Manager->>UI: Nhập mác tàu, nhấn Tìm kiếm
+    UI->>SC: sendRequest(FIND_TRAIN_BY_CODE, keyword)
+    SC->>RR: route(request)
+    RR->>TS: findTrainsByCode(keyword)
+    TS->>TR: findTrainsByCodeLike(keyword)
+    TR->>DB: SELECT DISTINCT t FROM Train t LEFT JOIN FETCH t.carriages\nWHERE LOWER(t.trainCode) LIKE LOWER(:keyword)
     DB-->>TR: List<Train>
     TR-->>TS: List<Train>
-    TS->>TS: TrainMapper.toDtoList(trains) — totalCarriages, totalSeats computed
-    TS-->>RR: Response.success(List<TrainDTO>)
-    SV-->>SC: writeObject(response) + reset()
-    SC-->>UI: List<TrainDTO>
-    UI-->>Manager: Hiển thị danh sách tàu
+    TS->>TS: TrainMapper.toDtoWithCarriages(train) for each
+    TS-->>RR: Response.success(List<TrainDTO> with carriages)
+    RR-->>SC: Response
+    SC-->>UI: Response
+    UI-->>Manager: Hiển thị danh sách tàu + toa
 
-    alt Luồng A — Tra cứu tàu
-        Manager->>UI: Nhập trainCode + "Tìm kiếm"
-        UI->>SC: sendRequest(FIND_TRAIN_BY_CODE, "SE")
-        SC->>SV: writeObject(request)
-        SV->>RR: route(request)
-        RR->>TS: findTrainByCode(String trainCode)
-        TS->>TR: findByCode(trainCode) — LIKE %code% case-insensitive
-        TR->>DB: SELECT t FROM Train t JOIN FETCH t.carriages WHERE LOWER(t.trainCode) LIKE :pattern
-        DB-->>TR: List<Train>
-        TR-->>TS: List<Train>
-        TS-->>RR: Response.success(List<TrainDTO> with carriages)
-        SV-->>SC: writeObject(response) + reset()
-        SC-->>UI: List<TrainDTO>
-        UI-->>Manager: Hiển thị kết quả tìm kiếm
-    end
+    Note over Manager,DB: Luồng B — Lập tàu mới
+    Manager->>UI: Nhập trainCode, chọn toa từ pool, nhấn Xác nhận
+    UI->>SC: sendRequest(FIND_UNASSIGNED_CARRIAGES, null)
+    SC->>RR: route(request)
+    RR->>TS: findUnassignedCarriages()
+    TS->>CR: findUnassignedCarriages()
+    CR->>DB: SELECT c FROM Carriage c WHERE c.train IS NULL
+    DB-->>CR: List<Carriage>
+    CR-->>TS: List<Carriage>
+    TS-->>UI: Response.success(List<CarriageDTO>)
 
-    alt Luồng B — Lập tàu mới
-        Manager->>UI: Nhập trainCode + chọn toa + "Xác nhận"
-        UI->>SC: sendRequest(CREATE_TRAIN, CreateTrainDTO)
-        SC->>SV: writeObject(request)
-        SV->>RR: route(request)
-        RR->>TS: createTrain(CreateTrainDTO)
-        TS->>TS: ValidationUtils.validate(dto)
-        TS->>TR: existsByTrainCode(trainCode) — case-insensitive check
-        TR->>DB: SELECT COUNT(t) WHERE LOWER(trainCode) = :code
-        DB-->>TR: count
-        alt trainCode trùng
-            TS-->>RR: Response.error("Mác tàu đã tồn tại")
-        end
-        TS->>CR: findCarriagesByIds(carriageIds)
-        CR->>DB: SELECT c FROM Carriage c WHERE c.id IN :ids AND c.train IS NULL
-        DB-->>CR: List<Carriage>
-        alt toa đã bị gán
-            TS-->>RR: Response.error("Một hoặc nhiều toa đã được gán cho tàu khác")
-        end
-        TS->>TS: Validate số toa [3, 16]
-        TS->>TR: saveTrain(Train) — doInTransaction
-        TR->>DB: INSERT INTO trains
-        TS->>CR: assignCarriagesToTrain(carriages, train) — set number, train
-        CR->>DB: UPDATE carriages SET train_id, sequence_number
-        TS-->>RR: Response.success("Tàu được tạo thành công", TrainDTO)
-        SV-->>SC: writeObject(response) + reset()
-        SC-->>UI: TrainDTO
-        UI-->>Manager: "Tàu [SE5] được tạo thành công"
-    end
+    Manager->>UI: Nhấn Xác nhận lập tàu
+    UI->>SC: sendRequest(CREATE_TRAIN, CreateTrainDTO)
+    SC->>RR: route(request)
+    RR->>TS: createTrain(CreateTrainDTO)
+    TS->>TS: ValidationUtils.validate(dto)
+    TS->>TR: existsByTrainCodeIgnoreCase(trainCode)
+    TR->>DB: SELECT COUNT(t) WHERE LOWER(trainCode) = LOWER(:code)
+    DB-->>TR: 0
+    TR-->>TS: false
+    TS->>DB: BEGIN TRANSACTION
+    TS->>TR: createTrain(em, trainCode, carriageIds)
+    TR->>DB: persist(Train)
+    TR->>DB: UPDATE Carriage SET train_id=?, number=? for each carriageId
+    TR-->>TS: Train
+    TS->>DB: COMMIT
+    TS-->>RR: Response.success("Tàu SE5 được tạo thành công", trainId)
+    RR-->>SC: Response
+    SC-->>UI: Response
+    UI-->>Manager: Hiển thị thông báo thành công
 
-    alt Luồng D — Đăng ký toa mới
-        Manager->>UI: Chọn CarriageType + "Lưu"
-        UI->>SC: sendRequest(CREATE_CARRIAGE, CarriageType)
-        SC->>SV: writeObject(request)
-        SV->>RR: route(request)
-        RR->>TS: createCarriage(CarriageType)
-        TS->>CR: saveCarriageWithSeats(Carriage, List<Seat>) — doInTransaction
-        CR->>DB: INSERT INTO carriages (train_id=null, number=0)
-        CR->>DB: INSERT INTO seats (seat 1..N theo CarriageType)
-        TS-->>RR: Response.success("Toa đã được đăng ký", CarriageDTO)
-        SV-->>SC: writeObject(response) + reset()
-        SC-->>UI: CarriageDTO
-        UI-->>Manager: "Toa mới đã được đăng ký vào hệ thống"
-    end
+    Note over Manager,DB: Luồng D — Đăng ký toa mới
+    Manager->>UI: Chọn CarriageType, nhấn Lưu
+    UI->>SC: sendRequest(CREATE_CARRIAGE, CreateCarriageDTO)
+    SC->>RR: route(request)
+    RR->>TS: createCarriage(CreateCarriageDTO)
+    TS->>TS: ValidationUtils.validate(dto)
+    TS->>DB: BEGIN TRANSACTION
+    TS->>CR: saveCarriageWithSeats(em, carriageType)
+    CR->>DB: persist(Carriage{trainId=null, number=0})
+    CR->>DB: persist(Seat) × N (N = số ghế theo loại toa)
+    CR-->>TS: Carriage
+    TS->>DB: COMMIT
+    TS-->>UI: Response.success("Toa mới đã được đăng ký", CarriageDTO)
 
-    alt Luồng E — Cấu hình lại tàu
-        Manager->>UI: Chọn tàu + "Cấu hình tàu"
-        UI->>SC: sendRequest(UPDATE_TRAIN_CARRIAGES, UpdateTrainCarriagesDTO)
-        SC->>SV: writeObject(request)
-        SV->>RR: route(request)
-        RR->>TS: updateTrainCarriages(UpdateTrainCarriagesDTO)
+    Note over Manager,DB: Luồng E — Cấu hình lại tàu
+    Manager->>UI: Chọn tàu, nhấn Cấu hình
+    UI->>SC: sendRequest(UPDATE_TRAIN_CARRIAGES, UpdateTrainCarriagesDTO)
+    SC->>RR: route(request)
+    RR->>TS: updateTrainCarriages(UpdateTrainCarriagesDTO)
+    TS->>TS: ValidationUtils.validate(dto)
+    TS->>SR: countFutureActiveSchedulesByTrainId(trainId)
+    SR->>DB: SELECT COUNT(s) WHERE train.id=:id\nAND departureTime > NOW()\nAND status NOT IN (COMPLETED, CANCELLED)
+    DB-->>SR: 0
+    SR-->>TS: 0
+    TS->>DB: BEGIN TRANSACTION
+    TS->>TR: updateTrainCarriages(em, trainId, carriageIds)
+    TR->>DB: SELECT old carriages → SET train=null, number=0
+    TR->>DB: em.flush()
+    TR->>DB: UPDATE new carriages: train=?, number=i+1
+    TS->>DB: COMMIT
+    TS-->>UI: Response.success("Cấu hình tàu đã được cập nhật", null)
+
+    Note over Manager,DB: Luồng F — Đổi trạng thái tàu
+    Manager->>UI: Chọn tàu, chọn trạng thái mới, Xác nhận
+    UI->>SC: sendRequest(UPDATE_TRAIN_STATUS, UpdateTrainStatusDTO)
+    SC->>RR: route(request)
+    RR->>TS: updateTrainStatus(UpdateTrainStatusDTO)
+    TS->>TS: ValidationUtils.validate(dto)
+    alt status == INACTIVE hoặc MAINTENANCE
         TS->>SR: countFutureActiveSchedulesByTrainId(trainId)
-        SR->>DB: SELECT COUNT(s) FROM Schedule s WHERE s.train.id = :id AND s.departureTime > now AND s.status != CANCELLED
-        DB-->>SR: count
-        alt count > 0
-            TS-->>RR: Response.error("Không thể cấu hình tàu đang có lịch trình tương lai")
-        end
-        TS->>TS: Validate carriageIds.size() trong [3, 16]
-        TS->>CR: reassignCarriages(trainId, carriageIds) — doInTransaction
-        CR->>DB: UPDATE old carriages SET train_id=null, number=0
-        CR->>DB: UPDATE new carriages SET train_id, number=position
-        TS-->>RR: Response.success("Cấu hình tàu đã được cập nhật", TrainDTO)
-        SV-->>SC: writeObject(response) + reset()
-        UI-->>Manager: "Cấu hình tàu đã được cập nhật"
+        SR->>DB: SELECT COUNT(s)...
+        DB-->>SR: 0
     end
-
-    alt Luồng F — Đổi trạng thái tàu
-        Manager->>UI: Chọn tàu + trạng thái mới + "Xác nhận"
-        UI->>SC: sendRequest(UPDATE_TRAIN_STATUS, UpdateTrainStatusDTO)
-        SC->>SV: writeObject(request)
-        SV->>RR: route(request)
-        RR->>TS: updateTrainStatus(UpdateTrainStatusDTO)
-        TS->>SR: countFutureActiveSchedulesByTrainId(trainId) — nếu status != ACTIVE
-        alt count > 0
-            TS-->>RR: Response.error("Không thể thay đổi tàu đang có lịch trình tương lai")
-        end
-        TS->>TR: updateTrainStatus(trainId, status) — doInTransaction
-        TR->>DB: UPDATE trains SET status = :status WHERE train_id = :id
-        TS-->>RR: Response.success("Trạng thái tàu đã được cập nhật", TrainDTO)
-        SV-->>SC: writeObject(response) + reset()
-        UI-->>Manager: "Trạng thái tàu đã được cập nhật"
-    end
+    TS->>DB: BEGIN TRANSACTION
+    TS->>TR: updateTrainStatus(em, trainId, status)
+    TR->>DB: UPDATE trains SET status=? WHERE id=?
+    TS->>DB: COMMIT
+    TS-->>UI: Response.success("Trạng thái tàu đã được cập nhật", null)
 ```
 
 ---
@@ -188,6 +168,8 @@ sequenceDiagram
 
 ```mermaid
 classDiagram
+    direction TB
+
     class Train {
         <<entity>>
         +String id
@@ -221,6 +203,52 @@ classDiagram
         +Train train
     }
 
+    class TrainDTO {
+        <<DTO>>
+        +String id
+        +String trainCode
+        +TrainStatus status
+        +int totalCarriages
+        +int totalSeats
+        +List~CarriageDTO~ carriages
+    }
+
+    class CarriageDTO {
+        <<DTO>>
+        +String id
+        +int number
+        +CarriageType type
+        +String trainId
+    }
+
+    class TrainFilterDTO {
+        <<DTO>>
+        +TrainStatus statusFilter
+    }
+
+    class CreateTrainDTO {
+        <<DTO>>
+        +String trainCode
+        +List~String~ carriageIds
+    }
+
+    class CreateCarriageDTO {
+        <<DTO>>
+        +CarriageType carriageType
+    }
+
+    class UpdateTrainCarriagesDTO {
+        <<DTO>>
+        +String trainId
+        +List~String~ carriageIds
+    }
+
+    class UpdateTrainStatusDTO {
+        <<DTO>>
+        +String trainId
+        +TrainStatus status
+    }
+
     class TrainStatus {
         <<enum>>
         ACTIVE
@@ -237,71 +265,23 @@ classDiagram
         BERTH_4
     }
 
-    class SeatType {
+    class StatusSchedule {
         <<enum>>
-        HARD_SEAT
-        SOFT_SEAT
-        VIP_SEAT
-        BERTH_6
-        BERTH_4
+        DRAFT
+        NOT_STARTED
+        IN_PROGRESS
+        PAUSED
+        READY
+        COMPLETED
+        CANCELLED
     }
 
-    class TrainDTO {
-        <<DTO>>
-        +String id
-        +String trainCode
-        +TrainStatus status
-        +int totalCarriages
-        +int totalSeats
-        +List~CarriageDTO~ carriages
-        +long serialVersionUID = 1L
-    }
-
-    class CarriageDTO {
-        <<DTO>>
-        +String id
-        +int number
-        +CarriageType type
-        +String trainId
-        +long serialVersionUID = 1L
-    }
-
-    class TrainFilterDTO {
-        <<DTO>>
-        +TrainStatus statusFilter
-        +long serialVersionUID = 1L
-    }
-
-    class CreateTrainDTO {
-        <<DTO>>
-        +String trainCode
-        +List~String~ carriageIds
-        +long serialVersionUID = 1L
-    }
-
-    class UpdateTrainCarriagesDTO {
-        <<DTO>>
-        +String trainId
-        +List~String~ carriageIds
-        +long serialVersionUID = 1L
-    }
-
-    class UpdateTrainStatusDTO {
-        <<DTO>>
-        +String trainId
-        +TrainStatus status
-        +long serialVersionUID = 1L
-    }
-
-    Train "1" --> "many" Carriage : carriages
-    Carriage "1" --> "many" Seat : seats
-    Schedule --> Train : train
-    Train --> TrainStatus : status
-    Carriage --> CarriageType : type
-    Seat --> SeatType : type
-
-    TrainDTO --> TrainStatus : status
-    TrainDTO "1" --> "many" CarriageDTO : carriages
-    TrainFilterDTO --> TrainStatus : statusFilter
-    UpdateTrainStatusDTO --> TrainStatus : status
+    Train "1" --> "many" Carriage : has
+    Carriage "1" --> "many" Seat : has
+    Schedule "many" --> "1" Train : assigned to
+    Train ..> TrainDTO : mapped by TrainMapper
+    Carriage ..> CarriageDTO : mapped by CarriageMapper
+    Train --> TrainStatus
+    Carriage --> CarriageType
+    Schedule --> StatusSchedule
 ```
