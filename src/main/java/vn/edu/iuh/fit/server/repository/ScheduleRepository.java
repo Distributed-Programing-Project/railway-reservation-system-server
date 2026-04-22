@@ -2,7 +2,7 @@ package vn.edu.iuh.fit.server.repository;
 
 import jakarta.persistence.EntityManager;
 import vn.edu.iuh.fit.server.model.Schedule;
-import vn.edu.iuh.fit.server.dto.ScheduleFilterDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleFilterDTO;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -1,10 +1,10 @@
 package vn.edu.iuh.fit.server.service;
 
 import vn.edu.iuh.fit.common.response.Response;
-import vn.edu.iuh.fit.server.dto.ExchangeTicketRequestDTO;
-import vn.edu.iuh.fit.server.dto.ReturnTicketConfirmDTO;
-import vn.edu.iuh.fit.server.dto.ReturnTicketPreviewRequestDTO;
-import vn.edu.iuh.fit.server.dto.ReturnTicketSearchDTO;
+import vn.edu.iuh.fit.common.dto.ExchangeTicketRequestDTO;
+import vn.edu.iuh.fit.common.dto.ReturnTicketConfirmDTO;
+import vn.edu.iuh.fit.common.dto.ReturnTicketPreviewRequestDTO;
+import vn.edu.iuh.fit.common.dto.ReturnTicketSearchDTO;
 
 public interface TicketService {
   Response exchangeTickets(ExchangeTicketRequestDTO requestDTO);

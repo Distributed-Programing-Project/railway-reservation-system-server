@@ -1,6 +1,6 @@
 package vn.edu.iuh.fit.server.mapper;
 
-import vn.edu.iuh.fit.server.dto.EmployeeDTO;
+import vn.edu.iuh.fit.common.dto.EmployeeDTO;
 import vn.edu.iuh.fit.server.model.Employee;
 
 import java.util.List;

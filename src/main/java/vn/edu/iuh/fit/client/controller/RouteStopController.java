@@ -1,6 +1,6 @@
 package vn.edu.iuh.fit.client.controller;
 
-import vn.edu.iuh.fit.server.dto.RouteStopDTO;
+import vn.edu.iuh.fit.common.dto.RouteStopDTO;
 
 import java.util.List;
 

@@ -1,7 +1,7 @@
 package vn.edu.iuh.fit.server.repository.impl;
 
 import jakarta.persistence.TypedQuery;
-import vn.edu.iuh.fit.server.constant.InvoiceType;
+import vn.edu.iuh.fit.common.constant.InvoiceType;
 import vn.edu.iuh.fit.server.model.InvoiceDetail;
 import vn.edu.iuh.fit.server.repository.StatisticsRepository;
 

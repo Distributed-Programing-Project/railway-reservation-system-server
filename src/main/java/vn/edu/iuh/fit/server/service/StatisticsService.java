@@ -1,7 +1,7 @@
 package vn.edu.iuh.fit.server.service;
 
 import vn.edu.iuh.fit.common.response.Response;
-import vn.edu.iuh.fit.server.dto.StatisticsRequestDTO;
+import vn.edu.iuh.fit.common.dto.StatisticsRequestDTO;
 
 public interface StatisticsService {
 

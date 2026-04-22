@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 import jakarta.persistence.EntityManager;
-import vn.edu.iuh.fit.server.constant.TicketStatus;
+import vn.edu.iuh.fit.common.constant.TicketStatus;
 import vn.edu.iuh.fit.server.model.ScheduleDetail;
 import vn.edu.iuh.fit.server.repository.ScheduleDetailRepository;
 

@@ -1,8 +1,8 @@
 package vn.edu.iuh.fit.server.repository.impl;
 
 import jakarta.persistence.EntityManager;
-import vn.edu.iuh.fit.server.constant.CarriageType;
-import vn.edu.iuh.fit.server.constant.SeatType;
+import vn.edu.iuh.fit.common.constant.CarriageType;
+import vn.edu.iuh.fit.common.constant.SeatType;
 import vn.edu.iuh.fit.server.model.Carriage;
 import vn.edu.iuh.fit.server.model.Seat;
 import vn.edu.iuh.fit.server.repository.CarriageRepository;

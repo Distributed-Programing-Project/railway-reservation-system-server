@@ -1,7 +1,7 @@
 package vn.edu.iuh.fit.server.repository;
 
 import jakarta.persistence.EntityManager;
-import vn.edu.iuh.fit.server.constant.TrainStatus;
+import vn.edu.iuh.fit.common.constant.TrainStatus;
 import vn.edu.iuh.fit.server.model.Train;
 
 import java.util.List;

@@ -1,9 +1,9 @@
 package vn.edu.iuh.fit.server.service;
 
-import vn.edu.iuh.fit.server.dto.ScheduleCreateDTO;
-import vn.edu.iuh.fit.server.dto.ScheduleDTO;
-import vn.edu.iuh.fit.server.dto.ScheduleFilterDTO;
-import vn.edu.iuh.fit.server.dto.ScheduleUpdateDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleCreateDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleFilterDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleUpdateDTO;
 import vn.edu.iuh.fit.common.response.Response;
 
 import java.time.LocalDateTime;

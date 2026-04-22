@@ -1,7 +1,7 @@
 package vn.edu.iuh.fit.server.repository;
 
 import jakarta.persistence.EntityManager;
-import vn.edu.iuh.fit.server.constant.CarriageType;
+import vn.edu.iuh.fit.common.constant.CarriageType;
 import vn.edu.iuh.fit.server.model.Carriage;
 
 import java.util.List;
