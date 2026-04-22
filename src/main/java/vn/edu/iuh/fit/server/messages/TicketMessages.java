@@ -6,6 +6,9 @@ public final class TicketMessages {
     }
 
     public static final String TICKET_ID_REQUIRED = "Mã vé không được để trống";
+    public static final String OLD_TICKET_IDS_REQUIRED = "Danh sách vé cũ không được để trống";
+    public static final String NEW_SCHEDULE_DETAIL_IDS_REQUIRED = "Danh sách ghế mới không được để trống";
+    public static final String CASH_RECEIVED_NOT_NEGATIVE = "Số tiền thực nhận không được âm";
     public static final String SEAT_NOT_AVAILABLE = "Ghế số %s của chuyến %s đã có người đặt.";
     public static final String TICKET_ALREADY_EXCHANGED = "Vé %s đã từng được đổi trước đó.";
     public static final String TICKET_NOT_PAID = "Vé %s không ở trạng thái hợp lệ để đổi.";

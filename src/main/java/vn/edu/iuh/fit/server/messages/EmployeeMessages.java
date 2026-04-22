@@ -6,6 +6,17 @@ public final class EmployeeMessages {
     }
 
     public static final String EMPLOYEE_ID_REQUIRED = "ID nhân viên không được để trống";
+    public static final String NAME_REQUIRED = "Họ tên không được để trống";
+    public static final String NATIONAL_ID_REQUIRED = "CCCD không được để trống";
+    public static final String NATIONAL_ID_FORMAT = "CCCD phải gồm 9 hoặc 12 chữ số";
+    public static final String DATE_OF_BIRTH_REQUIRED = "Ngày sinh không được để trống";
+    public static final String PHONE_REQUIRED = "Số điện thoại không được để trống";
+    public static final String PHONE_FORMAT = "Số điện thoại phải gồm đúng 10 chữ số";
+    public static final String EMAIL_REQUIRED = "Email không được để trống";
+    public static final String EMAIL_FORMAT = "Email không đúng định dạng";
+    public static final String IS_MANAGER_REQUIRED = "Loại nhân viên không được để trống";
+    public static final String PAGE_NOT_NEGATIVE = "Page không được âm";
+    public static final String PAGE_SIZE_MIN = "Page size phải lớn hơn 0";
     public static final String NOT_FOUND_BY_ID = "Không tìm thấy nhân viên: id=%s";
     public static final String NOT_FOUND_BY_PHONE = "Không tìm thấy nhân viên với số điện thoại: %s";
     public static final String ACCESS_DENIED = "Bạn không có quyền thực hiện thao tác này";

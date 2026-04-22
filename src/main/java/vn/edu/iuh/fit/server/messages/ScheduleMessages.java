@@ -8,6 +8,8 @@ public final class ScheduleMessages {
     public static final String SCHEDULE_ID_REQUIRED = "Mã lịch trình không được để trống";
     public static final String TRAIN_ID_REQUIRED = "Mã tàu không được để trống";
     public static final String ROUTE_ID_REQUIRED = "Mã tuyến không được để trống";
+    public static final String EMPLOYEE_ID_REQUIRED = "ID nhân viên không được để trống";
+    public static final String ARRIVAL_TIME_REQUIRED = "Ngày giờ đến dự kiến không được để trống";
     public static final String DEPARTURE_TIME_REQUIRED = "Thời gian khởi hành không được để trống";
     public static final String DEPARTURE_TIME_MIN_ONE_DAY = "Ngày khởi hành phải cách ít nhất 1 ngày so với hôm nay";
     public static final String ARRIVAL_TIME_INVALID = "Ngày giờ đến dự kiến không được nhỏ hơn giờ khởi hành";
@@ -18,6 +20,10 @@ public final class ScheduleMessages {
     public static final String DESTINATION_STATION_REQUIRED = "Ga đến không được để trống";
     public static final String DRAFT_UPDATE_ONLY = "Chỉ được phép sửa lịch trình khi đang ở trạng thái Nháp";
     public static final String DRAFT_DELETE_ONLY = "Chỉ được phép xoá lịch trình khi đang ở trạng thái Nháp";
+    public static final String UNAUTHORIZED = "Bạn không có quyền thực hiện thao tác này";
+    public static final String DEPARTURE_TIME_IN_PAST = "Ngày hoặc giờ khởi hành ở quá khứ không hợp lệ";
+    public static final String ARRIVAL_TIME_NOT_AFTER_DEPARTURE = "Ngày giờ đến dự kiến phải sau giờ khởi hành";
+    public static final String EMPLOYEE_NOT_FOUND_BY_ID = "Không tìm thấy nhân viên: id=%s";
 
     public static final String CREATE_SUCCESS = "Tạo lịch trình thành công";
     public static final String FILTER_SUCCESS = "Lọc lịch trình thành công";
@@ -51,5 +57,9 @@ public final class ScheduleMessages {
 
     public static String deleteFailedById(String scheduleId) {
         return String.format(DELETE_FAILED_BY_ID, scheduleId);
+    }
+
+    public static String employeeNotFoundById(String employeeId) {
+        return String.format(EMPLOYEE_NOT_FOUND_BY_ID, employeeId);
     }
 }

@@ -1,16 +1,16 @@
 package vn.edu.iuh.fit.server.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.validation.constraints.AssertTrue;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.AssertTrue;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.server.messages.ScheduleMessages;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -18,14 +18,18 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ScheduleCreateDTO implements Serializable {
+public class ScheduleUpdateDTO implements Serializable {
+
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @NotBlank(message = ScheduleMessages.EMPLOYEE_ID_REQUIRED)
     private String requestEmployeeId;
 
-    @NotBlank(message = ScheduleMessages.TRAIN_ID_REQUIRED)
+    @NotBlank(message = ScheduleMessages.SCHEDULE_ID_REQUIRED)
+    private String scheduleId;
 
+    @NotBlank(message = ScheduleMessages.TRAIN_ID_REQUIRED)
     private String trainId;
 
     @NotBlank(message = ScheduleMessages.ROUTE_ID_REQUIRED)
@@ -33,20 +37,19 @@ public class ScheduleCreateDTO implements Serializable {
 
     @NotNull(message = ScheduleMessages.DEPARTURE_TIME_REQUIRED)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-
     private LocalDateTime departureTime;
 
     @NotNull(message = ScheduleMessages.ARRIVAL_TIME_REQUIRED)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime arrivalTime;
 
-    @AssertTrue(message = ScheduleMessages.DEPARTURE_TIME_MIN_ONE_DAY)
-    public boolean isDepartureTimeAtLeastOneDayFromNow() {
-        return departureTime == null || !departureTime.isBefore(LocalDateTime.now().plusDays(1));
+    @AssertTrue(message = ScheduleMessages.DEPARTURE_TIME_IN_PAST)
+    public boolean isDepartureTimeInFuture() {
+        return departureTime == null || departureTime.isAfter(LocalDateTime.now());
     }
 
-    @AssertTrue(message = ScheduleMessages.ARRIVAL_TIME_INVALID)
-    public boolean isArrivalTimeValid() {
-        return departureTime == null || arrivalTime == null || !arrivalTime.isBefore(departureTime);
+    @AssertTrue(message = ScheduleMessages.ARRIVAL_TIME_NOT_AFTER_DEPARTURE)
+    public boolean isArrivalTimeAfterDepartureTime() {
+        return departureTime == null || arrivalTime == null || arrivalTime.isAfter(departureTime);
     }
 }
