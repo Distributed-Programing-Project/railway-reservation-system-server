@@ -26,7 +26,7 @@ import vn.edu.iuh.fit.common.constant.CarriageType;
 @AllArgsConstructor
 @Setter
 @Getter
-@ToString
+@ToString(exclude = {"train", "seats"})
 @Builder
 @Entity
 @Table(name = "carriages")
@@ -47,11 +47,9 @@ public class Carriage {
   @JsonIgnore
   @ManyToOne
   @JoinColumn(name = "train_id")
-  @ToString.Exclude
   private Train train;
 
   @JsonIgnore
   @OneToMany(mappedBy = "carriage")
-  @ToString.Exclude
   private List<Seat> seats;
 }

@@ -25,7 +25,7 @@ import vn.edu.iuh.fit.common.constant.SeatType;
 @AllArgsConstructor
 @Setter
 @Getter
-@ToString
+@ToString(exclude = {"carriage", "scheduleDetails"})
 @Builder
 @Entity
 @Table(name = "seats")
@@ -45,10 +45,8 @@ public class Seat {
 
   @ManyToOne
   @JoinColumn(name = "carriage_id")
-  @ToString.Exclude
   private Carriage carriage;
 
   @OneToMany(mappedBy = "seat")
-  @ToString.Exclude
   private List<ScheduleDetail> scheduleDetails;
 }

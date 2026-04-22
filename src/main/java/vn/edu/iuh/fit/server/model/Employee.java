@@ -12,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @Setter
 @Getter
-@ToString
+@ToString(exclude = {"account", "invoiceList"})
 @Builder
 @Entity
 @Table(name = "employees")
@@ -63,11 +63,9 @@ public class Employee {
     @JsonIgnore
     @OneToOne
     @JoinColumn(name = "account_id")
-    @ToString.Exclude
     private Account account;
 
     @JsonIgnore
     @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
-    @ToString.Exclude
     private List<Invoice> invoiceList;
 }

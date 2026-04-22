@@ -38,6 +38,8 @@ public class TrainServiceImpl implements TrainService {
     private final CarriageRepository carriageRepository = new CarriageRepositoryImpl();
     private final ScheduleRepository scheduleRepository = new ScheduleRepositoryImpl();
 
+
+
     @Override
     public Response findAllTrains(TrainFilterDTO filter) {
         List<String> errors = ValidationUtils.validate(filter);
@@ -45,7 +47,7 @@ public class TrainServiceImpl implements TrainService {
             return Response.error(String.join(", ", errors));
         }
         List<Train> trains = trainRepository.findAllTrains(filter.getStatusFilter());
-        List<TrainDTO> trainDTOList = TrainMapper.toDtoList(trains);
+        List<TrainDTO> trainDTOList = TrainMapper.INSTANCE.toDtoList(trains);
         return Response.success(TrainMessages.FIND_ALL_SUCCESS, trainDTOList);
     }
 
@@ -56,7 +58,11 @@ public class TrainServiceImpl implements TrainService {
         }
         List<Train> trains = trainRepository.findTrainsByCodeLike(keyword);
         List<TrainDTO> trainDTOList = trains.stream()
-                .map(TrainMapper::toDtoWithCarriages)
+                .map(train -> {
+                    TrainDTO dto = TrainMapper.INSTANCE.toDto(train);
+                    dto.setCarriages(CarriageMapper.INSTANCE.toDtoList(train.getCarriages()));
+                    return dto;
+                })
                 .toList();
         return Response.success(TrainMessages.FIND_BY_CODE_SUCCESS, trainDTOList);
     }
@@ -64,7 +70,7 @@ public class TrainServiceImpl implements TrainService {
     @Override
     public Response findUnassignedCarriages() {
         List<Carriage> carriages = carriageRepository.findUnassignedCarriages();
-        List<CarriageDTO> carriageDTOList = CarriageMapper.toDtoList(carriages);
+        List<CarriageDTO> carriageDTOList = CarriageMapper.INSTANCE.toDtoList(carriages);
         return Response.success(TrainMessages.FIND_UNASSIGNED_SUCCESS, carriageDTOList);
     }
 
@@ -113,7 +119,7 @@ public class TrainServiceImpl implements TrainService {
             Carriage carriage = carriageRepository.saveCarriageWithSeats(em, dto.getCarriageType());
             tx.commit();
             log.info("Carriage registered: type={}, id={}", dto.getCarriageType(), carriage.getId());
-            return Response.success(TrainMessages.CREATE_CARRIAGE_SUCCESS, CarriageMapper.toDto(carriage));
+            return Response.success(TrainMessages.CREATE_CARRIAGE_SUCCESS, CarriageMapper.INSTANCE.toDto(carriage));
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
             log.error("Failed to register carriage: type={}", dto.getCarriageType(), e);

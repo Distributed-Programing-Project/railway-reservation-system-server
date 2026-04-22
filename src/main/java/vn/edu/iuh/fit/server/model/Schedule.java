@@ -8,14 +8,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 
-@Table(name = "schedules")
-@Entity
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter
 @Getter
-@ToString
+@ToString(exclude = {"train", "route", "scheduleDetails"})
 @Builder
+@Entity
+@Table(name = "schedules")
 public class Schedule {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -33,14 +33,11 @@ public class Schedule {
 
     @ManyToOne
     @JoinColumn(name = "train_id")
-    @ToString.Exclude
     private Train train;
 
     @ManyToOne
-    @ToString.Exclude
     private Route route;
 
     @OneToMany(mappedBy = "schedule", cascade = CascadeType.REMOVE)
-    @ToString.Exclude
     private List<ScheduleDetail> scheduleDetails;
 }
