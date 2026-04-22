@@ -8,26 +8,9 @@ import vn.edu.iuh.fit.server.model.Seat;
 import vn.edu.iuh.fit.server.repository.CarriageRepository;
 
 import java.util.List;
-import java.util.Map;
 
 public class CarriageRepositoryImpl extends AbstractGenericRepositoryImpl<Carriage, String>
         implements CarriageRepository {
-
-    private static final Map<CarriageType, Integer> SEAT_COUNT_BY_TYPE = Map.of(
-            CarriageType.HARD_SEAT, 64,
-            CarriageType.SOFT_SEAT, 56,
-            CarriageType.SOFT_SEAT_AC, 56,
-            CarriageType.BERTH_6, 42,
-            CarriageType.BERTH_4, 36
-    );
-
-    private static final Map<CarriageType, SeatType> SEAT_TYPE_BY_CARRIAGE = Map.of(
-            CarriageType.HARD_SEAT, SeatType.HARD_SEAT,
-            CarriageType.SOFT_SEAT, SeatType.SOFT_SEAT,
-            CarriageType.SOFT_SEAT_AC, SeatType.VIP_SEAT,
-            CarriageType.BERTH_6, SeatType.BERTH_6,
-            CarriageType.BERTH_4, SeatType.BERTH_4
-    );
 
     public CarriageRepositoryImpl() {
         super(Carriage.class);
@@ -74,8 +57,8 @@ public class CarriageRepositoryImpl extends AbstractGenericRepositoryImpl<Carria
                 .build();
         em.persist(carriage);
 
-        SeatType seatType = SEAT_TYPE_BY_CARRIAGE.get(type);
-        int seatCount = SEAT_COUNT_BY_TYPE.get(type);
+        SeatType seatType = type.getSeatType();
+        int seatCount = type.getSeatCount();
 
         for (int i = 1; i <= seatCount; i++) {
             em.persist(Seat.builder()
