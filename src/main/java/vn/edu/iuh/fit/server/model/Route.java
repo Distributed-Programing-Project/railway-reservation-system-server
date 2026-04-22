@@ -2,7 +2,7 @@ package vn.edu.iuh.fit.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import vn.edu.iuh.fit.server.constant.RouteStatus;
+import vn.edu.iuh.fit.common.constant.RouteStatus;
 
 import java.util.List;
 

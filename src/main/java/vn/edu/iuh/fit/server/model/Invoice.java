@@ -21,7 +21,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import vn.edu.iuh.fit.server.constant.InvoiceType;
+import vn.edu.iuh.fit.common.constant.InvoiceType;
 
 @NoArgsConstructor
 @AllArgsConstructor

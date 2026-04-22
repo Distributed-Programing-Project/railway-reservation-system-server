@@ -1,14 +1,14 @@
 package vn.edu.iuh.fit.server.repository.impl;
 
 import jakarta.persistence.EntityManager;
-import vn.edu.iuh.fit.server.constant.StatusSchedule;
+import vn.edu.iuh.fit.common.constant.StatusSchedule;
 import vn.edu.iuh.fit.server.model.Route;
 import vn.edu.iuh.fit.server.model.Schedule;
 import vn.edu.iuh.fit.server.model.ScheduleDetail;
 import vn.edu.iuh.fit.server.model.Seat;
 import vn.edu.iuh.fit.server.model.Train;
 import vn.edu.iuh.fit.server.repository.ScheduleRepository;
-import vn.edu.iuh.fit.server.dto.ScheduleFilterDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleFilterDTO;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -264,6 +264,21 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
                 em.clear();
             }
         }
+    }
+
+    @Override
+    public long countFutureActiveSchedulesByTrainId(String trainId) {
+        return doWithEntityManager(em ->
+                em.createQuery(
+                        "SELECT COUNT(s) FROM Schedule s WHERE s.train.id = :trainId" +
+                        " AND s.departureTime > :now" +
+                        " AND s.status NOT IN :terminalStatuses",
+                        Long.class)
+                        .setParameter("trainId", trainId)
+                        .setParameter("now", LocalDateTime.now())
+                        .setParameter("terminalStatuses", List.of(StatusSchedule.COMPLETED, StatusSchedule.CANCELLED))
+                        .getSingleResult()
+        );
     }
 
 }

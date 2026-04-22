@@ -1,7 +1,7 @@
 package vn.edu.iuh.fit.server.repository.impl;
 
 import jakarta.persistence.EntityManager;
-import vn.edu.iuh.fit.server.constant.EmployeeStatus;
+import vn.edu.iuh.fit.common.constant.EmployeeStatus;
 import vn.edu.iuh.fit.server.model.Account;
 import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.repository.EmployeeRepository;

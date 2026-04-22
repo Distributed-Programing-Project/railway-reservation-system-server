@@ -19,13 +19,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import vn.edu.iuh.fit.server.constant.SeatType;
+import vn.edu.iuh.fit.common.constant.SeatType;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter
 @Getter
-@ToString(exclude = {"carriage", "scheduleDetails"})
+@ToString
 @Builder
 @Entity
 @Table(name = "seats")
@@ -45,8 +45,10 @@ public class Seat {
 
   @ManyToOne
   @JoinColumn(name = "carriage_id")
+  @ToString.Exclude
   private Carriage carriage;
 
   @OneToMany(mappedBy = "seat")
+  @ToString.Exclude
   private List<ScheduleDetail> scheduleDetails;
 }

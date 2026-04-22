@@ -3,7 +3,7 @@ package vn.edu.iuh.fit.server.repository;
 import java.util.List;
 
 import jakarta.persistence.EntityManager;
-import vn.edu.iuh.fit.server.constant.TicketStatus;
+import vn.edu.iuh.fit.common.constant.TicketStatus;
 import vn.edu.iuh.fit.server.model.Ticket;
 
 public interface TicketRepository {

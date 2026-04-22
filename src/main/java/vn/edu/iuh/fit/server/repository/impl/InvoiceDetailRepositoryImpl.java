@@ -3,7 +3,7 @@ package vn.edu.iuh.fit.server.repository.impl;
 import java.util.List;
 
 import jakarta.persistence.EntityManager;
-import vn.edu.iuh.fit.server.constant.InvoiceType;
+import vn.edu.iuh.fit.common.constant.InvoiceType;
 import vn.edu.iuh.fit.server.model.InvoiceDetail;
 import vn.edu.iuh.fit.server.repository.InvoiceDetailRepository;
 
