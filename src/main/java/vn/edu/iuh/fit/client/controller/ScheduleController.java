@@ -15,7 +15,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import vn.edu.iuh.fit.server.dto.ScheduleDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleDTO;
 
 import java.io.IOException;
 import java.time.LocalDateTime;

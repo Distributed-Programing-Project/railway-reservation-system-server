@@ -4,15 +4,15 @@ package vn.edu.iuh.fit.server.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-import vn.edu.iuh.fit.server.constant.TrainStatus;
+import vn.edu.iuh.fit.common.constant.TrainStatus;
 
 import java.util.List;
 
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Setter
 @Getter
-@ToString(exclude = "carriages")
+@ToString
 @Builder
 @Entity
 @Table(name = "trains")

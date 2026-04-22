@@ -4,10 +4,10 @@ import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vn.edu.iuh.fit.common.response.Response;
-import vn.edu.iuh.fit.server.constant.StatisticsPeriod;
-import vn.edu.iuh.fit.server.dto.DailyRevenueDTO;
-import vn.edu.iuh.fit.server.dto.StatisticsRequestDTO;
-import vn.edu.iuh.fit.server.dto.StatisticsResultDTO;
+import vn.edu.iuh.fit.common.constant.StatisticsPeriod;
+import vn.edu.iuh.fit.common.dto.DailyRevenueDTO;
+import vn.edu.iuh.fit.common.dto.StatisticsRequestDTO;
+import vn.edu.iuh.fit.common.dto.StatisticsResultDTO;
 import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.repository.EmployeeRepository;
 import vn.edu.iuh.fit.server.repository.StatisticsRepository;
@@ -16,7 +16,7 @@ import vn.edu.iuh.fit.server.repository.impl.StatisticsRepositoryImpl;
 import vn.edu.iuh.fit.server.service.StatisticsService;
 import vn.edu.iuh.fit.server.util.JPAUtils;
 import vn.edu.iuh.fit.server.util.ValidationUtils;
-import vn.edu.iuh.fit.server.messages.StatisticsMessages;
+import vn.edu.iuh.fit.common.message.StatisticsMessages;
 
 
 import java.math.BigDecimal;

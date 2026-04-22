@@ -1,21 +1,21 @@
 package vn.edu.iuh.fit.server.service.impl;
 
-import vn.edu.iuh.fit.server.dto.ScheduleCreateDTO;
-import vn.edu.iuh.fit.server.dto.ScheduleDTO;
-import vn.edu.iuh.fit.server.dto.ScheduleFilterDTO;
-import vn.edu.iuh.fit.server.dto.ScheduleUpdateDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleCreateDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleFilterDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleUpdateDTO;
 import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.model.Route;
 import vn.edu.iuh.fit.server.model.Schedule;
 import vn.edu.iuh.fit.server.model.Train;
-import vn.edu.iuh.fit.server.constant.StatusSchedule;
+import vn.edu.iuh.fit.common.constant.StatusSchedule;
 import vn.edu.iuh.fit.server.service.ScheduleService;
 import vn.edu.iuh.fit.server.repository.EmployeeRepository;
 import vn.edu.iuh.fit.server.repository.ScheduleRepository;
 import vn.edu.iuh.fit.server.repository.impl.EmployeeRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.ScheduleRepositoryImpl;
 import vn.edu.iuh.fit.server.mapper.ScheduleMapper;
-import vn.edu.iuh.fit.server.messages.ScheduleMessages;
+import vn.edu.iuh.fit.common.message.ScheduleMessages;
 import vn.edu.iuh.fit.server.util.ValidationUtils;
 import vn.edu.iuh.fit.server.util.JPAUtils;
 import vn.edu.iuh.fit.common.response.Response;

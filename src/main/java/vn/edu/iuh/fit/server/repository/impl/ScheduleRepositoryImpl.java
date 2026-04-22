@@ -1,14 +1,14 @@
 package vn.edu.iuh.fit.server.repository.impl;
 
 import jakarta.persistence.EntityManager;
-import vn.edu.iuh.fit.server.constant.StatusSchedule;
+import vn.edu.iuh.fit.common.constant.StatusSchedule;
 import vn.edu.iuh.fit.server.model.Route;
 import vn.edu.iuh.fit.server.model.Schedule;
 import vn.edu.iuh.fit.server.model.ScheduleDetail;
 import vn.edu.iuh.fit.server.model.Seat;
 import vn.edu.iuh.fit.server.model.Train;
 import vn.edu.iuh.fit.server.repository.ScheduleRepository;
-import vn.edu.iuh.fit.server.dto.ScheduleFilterDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleFilterDTO;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

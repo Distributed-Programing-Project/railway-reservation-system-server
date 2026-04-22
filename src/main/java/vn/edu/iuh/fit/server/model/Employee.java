@@ -3,7 +3,7 @@ package vn.edu.iuh.fit.server.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-import vn.edu.iuh.fit.server.constant.EmployeeStatus;
+import vn.edu.iuh.fit.common.constant.EmployeeStatus;
 
 import java.time.LocalDate;
 import java.util.List;

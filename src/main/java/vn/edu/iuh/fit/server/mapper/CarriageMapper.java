@@ -1,6 +1,6 @@
 package vn.edu.iuh.fit.server.mapper;
 
-import vn.edu.iuh.fit.server.dto.CarriageDTO;
+import vn.edu.iuh.fit.common.dto.CarriageDTO;
 import vn.edu.iuh.fit.server.model.Carriage;
 
 import java.util.List;

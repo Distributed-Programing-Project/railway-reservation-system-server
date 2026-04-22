@@ -1,7 +1,7 @@
 package vn.edu.iuh.fit.server.mapper;
 
-import vn.edu.iuh.fit.server.dto.ScheduleDTO;
-import vn.edu.iuh.fit.server.dto.ScheduleUpdateDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleUpdateDTO;
 import vn.edu.iuh.fit.server.model.Route;
 import vn.edu.iuh.fit.server.model.Schedule;
 import vn.edu.iuh.fit.server.model.Train;

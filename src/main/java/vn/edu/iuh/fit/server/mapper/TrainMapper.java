@@ -1,7 +1,7 @@
 package vn.edu.iuh.fit.server.mapper;
 
-import vn.edu.iuh.fit.server.dto.CarriageDTO;
-import vn.edu.iuh.fit.server.dto.TrainDTO;
+import vn.edu.iuh.fit.common.dto.CarriageDTO;
+import vn.edu.iuh.fit.common.dto.TrainDTO;
 import vn.edu.iuh.fit.server.model.Carriage;
 import vn.edu.iuh.fit.server.model.Train;
 
