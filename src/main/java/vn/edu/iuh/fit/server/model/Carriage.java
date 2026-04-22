@@ -26,7 +26,7 @@ import vn.edu.iuh.fit.server.constant.CarriageType;
 @AllArgsConstructor
 @Setter
 @Getter
-@ToString(exclude = {"train", "seats"})
+@ToString
 @Builder
 @Entity
 @Table(name = "carriages")

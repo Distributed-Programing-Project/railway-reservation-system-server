@@ -12,7 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @Setter
 @Getter
-@ToString(exclude = "carriages")
+@ToString
 @Builder
 @Entity
 @Table(name = "trains")
