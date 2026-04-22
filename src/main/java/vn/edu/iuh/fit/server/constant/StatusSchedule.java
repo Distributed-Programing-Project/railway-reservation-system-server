@@ -6,5 +6,6 @@ public enum StatusSchedule {
     IN_PROGRESS,
     PAUSED,
     READY,
-    COMPLETED
+    COMPLETED,
+    CANCELLED
 }
