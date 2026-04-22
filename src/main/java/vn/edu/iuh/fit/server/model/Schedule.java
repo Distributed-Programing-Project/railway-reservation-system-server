@@ -2,7 +2,7 @@ package vn.edu.iuh.fit.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import vn.edu.iuh.fit.server.constant.StatusSchedule;
+import vn.edu.iuh.fit.common.constant.StatusSchedule;
 
 import java.time.LocalDateTime;
 import java.util.List;

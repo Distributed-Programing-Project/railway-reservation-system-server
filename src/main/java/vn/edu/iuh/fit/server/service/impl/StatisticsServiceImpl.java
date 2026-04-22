@@ -4,10 +4,10 @@ import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vn.edu.iuh.fit.common.response.Response;
-import vn.edu.iuh.fit.server.constant.StatisticsPeriod;
-import vn.edu.iuh.fit.server.dto.DailyRevenueDTO;
-import vn.edu.iuh.fit.server.dto.StatisticsRequestDTO;
-import vn.edu.iuh.fit.server.dto.StatisticsResultDTO;
+import vn.edu.iuh.fit.common.constant.StatisticsPeriod;
+import vn.edu.iuh.fit.common.dto.DailyRevenueDTO;
+import vn.edu.iuh.fit.common.dto.StatisticsRequestDTO;
+import vn.edu.iuh.fit.common.dto.StatisticsResultDTO;
 import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.repository.EmployeeRepository;
 import vn.edu.iuh.fit.server.repository.StatisticsRepository;
@@ -16,6 +16,8 @@ import vn.edu.iuh.fit.server.repository.impl.StatisticsRepositoryImpl;
 import vn.edu.iuh.fit.server.service.StatisticsService;
 import vn.edu.iuh.fit.server.util.JPAUtils;
 import vn.edu.iuh.fit.server.util.ValidationUtils;
+import vn.edu.iuh.fit.common.message.StatisticsMessages;
+
 
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -46,8 +48,9 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         Employee requester = findRequester(requestDTO.getRequestEmployeeId());
         if (requester == null) {
-            return Response.error("Nhân viên yêu cầu không tồn tại: " + requestDTO.getRequestEmployeeId());
+            return Response.error(String.format(StatisticsMessages.REQUEST_EMPLOYEE_NOT_FOUND, requestDTO.getRequestEmployeeId()));
         }
+
 
         String effectiveEmployeeId = resolveEffectiveEmployeeId(requester, requestDTO.getEmployeeId());
         LocalDate[] dateRange = computeDateRange(requestDTO.getPeriodType(), requestDTO.getTargetDate());
@@ -60,12 +63,13 @@ public class StatisticsServiceImpl implements StatisticsService {
             StatisticsResultDTO result = buildResult(
                     requestDTO.getPeriodType(), startDate, endDate, start, end, effectiveEmployeeId);
             log.debug("getStatistics success: periodType={}, start={}, end={}", requestDTO.getPeriodType(), startDate, endDate);
-            return Response.success("Thống kê thành công", result);
+            return Response.success(StatisticsMessages.GET_SUCCESS, result);
         } catch (Exception e) {
             log.error("Failed to get statistics: periodType={}, targetDate={}",
                     requestDTO.getPeriodType(), requestDTO.getTargetDate(), e);
-            return Response.error("Lỗi hệ thống khi truy vấn thống kê");
+            return Response.error(StatisticsMessages.SYSTEM_ERROR);
         }
+
     }
 
     private Employee findRequester(String requestEmployeeId) {

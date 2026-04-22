@@ -35,6 +35,7 @@ build/
 ### Claude Code ###
 CLAUDE.md
 .claude/
+.agents
 
 ### Codex ###
 CODEX.md
@@ -45,7 +46,11 @@ CODEX.md
 
 ### Mac OS ###
 .DS_Store
+.dao
+.controller
 
 # JPA config (local only)
 src/main/resources/META-INF/persistence.xml
 
+
+.m2/

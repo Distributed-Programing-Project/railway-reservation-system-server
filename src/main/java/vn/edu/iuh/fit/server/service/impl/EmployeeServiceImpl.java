@@ -4,11 +4,11 @@ import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vn.edu.iuh.fit.common.response.Response;
-import vn.edu.iuh.fit.server.constant.EmployeeStatus;
-import vn.edu.iuh.fit.server.dto.AccountCreatedDTO;
-import vn.edu.iuh.fit.server.dto.EmployeeDTO;
-import vn.edu.iuh.fit.server.dto.EmployeeFilterDTO;
-import vn.edu.iuh.fit.server.dto.EmployeePageDTO;
+import vn.edu.iuh.fit.common.constant.EmployeeStatus;
+import vn.edu.iuh.fit.common.dto.AccountCreatedDTO;
+import vn.edu.iuh.fit.common.dto.EmployeeDTO;
+import vn.edu.iuh.fit.common.dto.EmployeeFilterDTO;
+import vn.edu.iuh.fit.common.dto.EmployeePageDTO;
 import vn.edu.iuh.fit.server.mapper.EmployeeMapper;
 import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.repository.EmployeeRepository;
@@ -16,6 +16,8 @@ import vn.edu.iuh.fit.server.repository.impl.EmployeeRepositoryImpl;
 import vn.edu.iuh.fit.server.service.EmployeeService;
 import vn.edu.iuh.fit.server.util.JPAUtils;
 import vn.edu.iuh.fit.server.util.ValidationUtils;
+import vn.edu.iuh.fit.common.message.EmployeeMessages;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 
@@ -40,11 +42,12 @@ public class EmployeeServiceImpl implements EmployeeService {
         try {
             tx.begin();
             if (repository.existsByNationalId(em, employeeDTO.getNationalId())) {
-                return Response.error("CCCD đã được đăng ký cho nhân viên khác");
+                return Response.error(EmployeeMessages.NATIONAL_ID_ALREADY_EXISTS);
             }
             if (repository.existsByEmail(em, employeeDTO.getEmail())) {
-                return Response.error("Email đã được sử dụng bởi tài khoản khác");
+                return Response.error(EmployeeMessages.EMAIL_ALREADY_EXISTS);
             }
+
 
             String employeeCode = repository.generateEmployeeCode(em, employeeDTO.getIsManager());
 
@@ -65,11 +68,13 @@ public class EmployeeServiceImpl implements EmployeeService {
             Employee savedEmployee = repository.saveEmployee(em, employee);
             tx.commit();
             log.info("Employee created: employeeCode={}, id={}", savedEmployee.getEmployeeCode(), savedEmployee.getEmployeeId());
-            return Response.success("Tạo nhân viên thành công", EmployeeMapper.toDto(savedEmployee));
+            return Response.success(EmployeeMessages.CREATE_SUCCESS, EmployeeMapper.toDto(savedEmployee));
+
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
             log.error("Failed to create employee: nationalId={}", employeeDTO.getNationalId(), e);
-            return Response.error("Lỗi hệ thống, vui lòng thử lại: " + e.getMessage());
+            return Response.error(EmployeeMessages.SYSTEM_ERROR_PREFIX + e.getMessage());
+
         } finally {
             if (tx.isActive()) tx.rollback();
             em.close();
@@ -79,8 +84,9 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public Response createEmployeeAccount(String employeeId) {
         if (employeeId == null || employeeId.isBlank()) {
-            return Response.error("ID nhân viên không được để trống");
+            return Response.error(EmployeeMessages.EMPLOYEE_ID_REQUIRED);
         }
+
 
         EntityManager em = JPAUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
@@ -88,11 +94,12 @@ public class EmployeeServiceImpl implements EmployeeService {
             tx.begin();
             Employee employee = repository.findEmployeeById(em, employeeId);
             if (employee == null) {
-                return Response.error("Không tìm thấy nhân viên: id=" + employeeId);
+                return Response.error(EmployeeMessages.notFoundById(employeeId));
             }
             if (employee.getAccount() != null) {
-                return Response.error("Nhân viên đã được cấp tài khoản");
+                return Response.error(EmployeeMessages.ACCOUNT_ALREADY_EXISTS);
             }
+
 
             String rawPassword = generateRawPassword();
             String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
@@ -100,11 +107,13 @@ public class EmployeeServiceImpl implements EmployeeService {
             String username = repository.createAndLinkAccount(em, employeeId, employee.getEmployeeCode(), hashedPassword);
             tx.commit();
             log.info("Account created for employee: employeeId={}, username={}", employeeId, username);
-            return buildAccountCreatedResponse("Cấp tài khoản thành công", username, rawPassword);
+            return buildAccountCreatedResponse(EmployeeMessages.ACCOUNT_CREATE_SUCCESS, username, rawPassword);
+
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
             log.error("Failed to create account for employee: employeeId={}", employeeId, e);
-            return Response.error("Lỗi hệ thống, vui lòng thử lại: " + e.getMessage());
+            return Response.error(EmployeeMessages.SYSTEM_ERROR_PREFIX + e.getMessage());
+
         } finally {
             if (tx.isActive()) tx.rollback();
             em.close();
@@ -114,8 +123,9 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public Response softDeleteEmployee(String employeeId) {
         if (employeeId == null || employeeId.isBlank()) {
-            return Response.error("ID nhân viên không được để trống");
+            return Response.error(EmployeeMessages.EMPLOYEE_ID_REQUIRED);
         }
+
 
         EntityManager em = JPAUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
@@ -123,20 +133,23 @@ public class EmployeeServiceImpl implements EmployeeService {
             tx.begin();
             Employee employee = repository.findEmployeeById(em, employeeId);
             if (employee == null) {
-                return Response.error("Không tìm thấy nhân viên: id=" + employeeId);
+                return Response.error(EmployeeMessages.notFoundById(employeeId));
             }
             if (employee.getEmployeeStatus() == EmployeeStatus.INACTIVE) {
-                return Response.error("Nhân viên này đã bị xoá khỏi hệ thống");
+                return Response.error(EmployeeMessages.ALREADY_INACTIVE);
             }
+
 
             Employee updatedEmployee = repository.softDeleteEmployee(em, employeeId);
             tx.commit();
             log.info("Employee soft-deleted: employeeId={}", employeeId);
-            return Response.success("Xoá mềm nhân viên thành công", EmployeeMapper.toDto(updatedEmployee));
+            return Response.success(EmployeeMessages.SOFT_DELETE_SUCCESS, EmployeeMapper.toDto(updatedEmployee));
+
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
             log.error("Failed to soft-delete employee: employeeId={}", employeeId, e);
-            return Response.error("Lỗi hệ thống, vui lòng thử lại: " + e.getMessage());
+            return Response.error(EmployeeMessages.SYSTEM_ERROR_PREFIX + e.getMessage());
+
         } finally {
             if (tx.isActive()) tx.rollback();
             em.close();
@@ -146,8 +159,9 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public Response resetEmployeePassword(String employeeId) {
         if (employeeId == null || employeeId.isBlank()) {
-            return Response.error("ID nhân viên không được để trống");
+            return Response.error(EmployeeMessages.EMPLOYEE_ID_REQUIRED);
         }
+
 
         EntityManager em = JPAUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
@@ -155,11 +169,12 @@ public class EmployeeServiceImpl implements EmployeeService {
             tx.begin();
             Employee employee = repository.findEmployeeById(em, employeeId);
             if (employee == null) {
-                return Response.error("Không tìm thấy nhân viên: id=" + employeeId);
+                return Response.error(EmployeeMessages.notFoundById(employeeId));
             }
             if (employee.getAccount() == null) {
-                return Response.error("Nhân viên chưa được cấp tài khoản");
+                return Response.error(EmployeeMessages.ACCOUNT_NOT_EXISTS);
             }
+
 
             String rawPassword = generateRawPassword();
             String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
@@ -167,11 +182,13 @@ public class EmployeeServiceImpl implements EmployeeService {
             String username = repository.resetAccountPassword(em, employeeId, hashedPassword);
             tx.commit();
             log.info("Password reset for employee: employeeId={}", employeeId);
-            return buildAccountCreatedResponse("Reset mật khẩu thành công", username, rawPassword);
+            return buildAccountCreatedResponse(EmployeeMessages.PASSWORD_RESET_SUCCESS, username, rawPassword);
+
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
             log.error("Failed to reset password for employee: employeeId={}", employeeId, e);
-            return Response.error("Lỗi hệ thống, vui lòng thử lại: " + e.getMessage());
+            return Response.error(EmployeeMessages.SYSTEM_ERROR_PREFIX + e.getMessage());
+
         } finally {
             if (tx.isActive()) tx.rollback();
             em.close();
@@ -197,10 +214,12 @@ public class EmployeeServiceImpl implements EmployeeService {
                     .totalPages(totalPages)
                     .currentPage(page)
                     .build();
-            return Response.success("Lấy danh sách nhân viên thành công", pageDTO);
+            return Response.success(EmployeeMessages.FIND_ALL_SUCCESS, pageDTO);
+
         } catch (Exception e) {
             log.error("Failed to find all employees", e);
-            return Response.error("Lỗi hệ thống, vui lòng thử lại: " + e.getMessage());
+            return Response.error(EmployeeMessages.SYSTEM_ERROR_PREFIX + e.getMessage());
+
         } finally {
             em.close();
         }

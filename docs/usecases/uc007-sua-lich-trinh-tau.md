@@ -30,27 +30,32 @@ Chức năng cho phép nhân viên quản lý cập nhật lại các thông tin
 - **[Hủy thao tác]:** Tại bước 4 hoặc 5, nếu nhân viên quản lý không muốn tiếp tục và nhấn "Hủy" (hoặc chọn tắt giao diện/popup), hệ thống lập tức đóng form, không lưu bất kỳ thay đổi nào.
 
 ## Luồng lỗi
+- **[Không có quyền]:** Nếu `requestEmployeeId` không tồn tại hoặc nhân viên không có cờ `isManager = true`, Server từ chối và trả về lỗi: *"Bạn không có quyền thực hiện thao tác này"*.
 - **[Sai trạng thái]:** Ở màn hình danh sách, nếu lịch trình không phải là bản nháp (`NOT_STARTED`, `READY`, v.v.), hệ thống sẽ làm mờ (disable) hoặc ẩn nút "Sửa" để ngăn chặn truy cập vào form sửa.
 - **[Cố tình gọi API sai trạng thái]:** Nếu ai đó cố tình gọi API sửa cho một lịch trình đã mở bán (`status != DRAFT`), Server sẽ từ chối và báo lỗi *"Chỉ được phép sửa lịch trình khi đang ở trạng thái Nháp"*.
 - **[Thời gian ở quá khứ]:** Tại bước 6, nếu nhân viên nhập "Ngày hoặc giờ khởi hành" ở quá khứ và nhấn xác nhận, hệ thống từ chối lưu và hiển thị thông báo: *"Nhập ngày hoặc giờ khởi hành ở quá khứ không hợp lệ"*. Nhân viên nhấn OK trên thông báo để quay lại form sửa.
+- **[Giờ đến không hợp lệ]:** Nếu `arrivalTime` nhỏ hơn hoặc bằng `departureTime`, hệ thống từ chối và thông báo: *"Ngày giờ đến dự kiến phải sau giờ khởi hành"*.
 - **[Thiếu thông tin]:** Nhân viên xóa trắng một trường bắt buộc rồi bấm Lưu, hệ thống sẽ chặn tại UI và yêu cầu điền đầy đủ.
 
 ## Dữ liệu vào (Client → Server)
 | Field | Kiểu | Bắt buộc | Mô tả |
 |---|---|---|---|
+| `requestEmployeeId` | `String` | ✓ | ID nhân viên thực hiện thao tác (dùng để xác minh `isManager = true`) |
 | `scheduleId` | `String` | ✓ | ID của lịch trình cần sửa |
 | `trainId` | `String` | ✓ | ID của Tàu (có thể đổi sang tàu khác) |
 | `routeId` | `String` | ✓ | ID của Tuyến đường |
-| `departureTime` | `LocalDateTime` | ✓ | Giờ khởi hành mới |
-| `arrivalTime` | `LocalDateTime` | ✓ | Giờ đến dự kiến mới (Được kế thừa từ BA Review của UC-006) |
+| `departureTime` | `LocalDateTime` | ✓ | Giờ khởi hành mới (phải ở tương lai) |
+| `arrivalTime` | `LocalDateTime` | ✓ | Giờ đến dự kiến mới (phải sau giờ khởi hành) |
 
 ## Dữ liệu ra (Server → Client)
 - Trả về mã thành công (HTTP 200/204) và chuỗi thông báo kết quả.
 
 ## Business Rules
-- **Chặn sửa khi đã bán vé:** Luật bất thành văn của hệ thống — chỉ được phép sửa `Schedule` khi nó là `DRAFT`. Nếu lịch trình đã chuyển sang trạng thái `READY` (mở bán) hoặc `IN_PROGRESS` (đang chạy), việc sửa Tàu hay Tuyến đường sẽ làm sai lệch toàn bộ vé mà khách hàng đã mua. Cấm tuyệt đối!
-- **Đồng bộ hóa Kho ghế:** Nếu nhân viên đổi `trainId` (Ví dụ: Đổi từ Tàu SE1 sang Tàu SE3), số lượng toa và ghế của 2 tàu này là khác nhau. Hệ thống bắt buộc phải **xóa toàn bộ** các `ScheduleDetail` (ghế) cũ của lịch trình này, và **tạo mới lại toàn bộ** `ScheduleDetail` dựa trên cấu hình của con Tàu mới.
-- **Ràng buộc thời gian:** `departureTime` luôn phải ở tương lai.
+- **Phân quyền:** Chỉ tài khoản có cờ `isManager = true` mới được gọi API này. Server bắt buộc kiểm tra qua `requestEmployeeId`.
+- **Chặn sửa khi đã bán vé:** Chỉ được phép sửa `Schedule` khi nó là `DRAFT`. Nếu lịch trình đã chuyển sang trạng thái `NOT_STARTED`, `READY` hoặc `IN_PROGRESS`, việc sửa Tàu hay Tuyến đường sẽ làm sai lệch toàn bộ vé mà khách hàng đã mua. Cấm tuyệt đối!
+- **Đồng bộ hóa Kho ghế:** Nếu nhân viên đổi `trainId` hoặc `routeId`, hệ thống bắt buộc phải **xóa toàn bộ** `ScheduleDetail` cũ và **tạo mới lại toàn bộ** `ScheduleDetail` theo cấu hình mới. (Khác với UC-006, lý do là cả ghế lẫn ga dừng đều thay đổi.)
+- **Ràng buộc thời gian khởi hành:** `departureTime` phải ở tương lai (> thời điểm hiện tại). Không áp dụng quy tắc "cách 1 ngày" như UC-006 — lịch trình DRAFT đang sửa có thể khởi hành sớm hơn.
+- **Ràng buộc giờ đến:** `arrivalTime` phải lớn hơn `departureTime` (không được bằng nhau).
 
 ---
 
@@ -90,3 +95,9 @@ graph LR
 
 2. **Validation API (Chặn cứng trạng thái ở Server):**
    - **Lý do (Vấn đề thực tế):** Mặc dù UI đã làm mờ nút "Sửa" nếu lịch trình không phải là DRAFT, nhưng Developer bắt buộc phải check lại điều kiện `status == DRAFT` ở tầng Service. Đề phòng có người cố tình dùng tool (Postman) gọi thẳng vào API sửa khi tàu đang chạy. Nếu Server lọt lỗi này, toàn bộ vé khách đã mua (đang dính với ScheduleDetail cũ) sẽ bị sai lệch giờ chạy hoặc mất ghế, dẫn đến sự cố truyền thông và đền bù cực lớn.
+
+3. **Validation API (Phân quyền Manager ở Server):**
+   - **Lý do (Vấn đề thực tế):** UI có thể ẩn chức năng "Sửa lịch trình" với tài khoản thường, nhưng Developer bắt buộc phải kiểm tra `isManager == true` ở tầng Service thông qua `requestEmployeeId`. Nếu bỏ qua, bất kỳ nhân viên bán vé nào cũng có thể sửa lịch trình từ tool ngoài, gây hỗn loạn nghiệp vụ.
+
+4. **Input DTO riêng biệt (ScheduleUpdateDTO):**
+   - **Lý do (Vấn đề thực tế):** Phải tạo `ScheduleUpdateDTO` riêng thay vì tái dụng `ScheduleDTO`. `ScheduleDTO` hiện có annotation `@AssertTrue isDepartureTimeAtLeastOneDayFromNow()` kế thừa từ UC-006 (cách ít nhất 1 ngày). Nếu tái dụng, một Schedule DRAFT khởi hành ngày mai sẽ không thể được sửa dù hoàn toàn hợp lệ. `ScheduleUpdateDTO` phải dùng rule nhẹ hơn: chỉ cần ở tương lai (> `LocalDateTime.now()`).

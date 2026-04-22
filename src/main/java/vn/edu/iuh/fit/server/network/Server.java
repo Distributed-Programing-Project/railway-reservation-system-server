@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vn.edu.iuh.fit.common.request.Request;
 import vn.edu.iuh.fit.common.response.Response;
+import vn.edu.iuh.fit.server.util.JPAUtils;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -79,6 +80,7 @@ public class Server {
     }
 
     public static void main(String[] args) {
+        JPAUtils.getFactory();
         new Server().start();
     }
 }
