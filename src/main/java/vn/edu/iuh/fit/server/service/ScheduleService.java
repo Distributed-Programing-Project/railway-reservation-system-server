@@ -11,8 +11,6 @@ import java.time.LocalDateTime;
 public interface ScheduleService {
     Response createSchedule(ScheduleCreateDTO scheduleDTO);
 
-    Response updateSchedule(ScheduleDTO scheduleDTO);
-
     Response updateSchedule(ScheduleUpdateDTO scheduleUpdateDTO);
 
     Response deleteSchedule(String scheduleId);

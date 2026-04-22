@@ -45,6 +45,10 @@ public class Customer {
   @Column(name = "email", length = 100)
   private String email;
 
+  @Builder.Default
+  @Column(name = "is_active", nullable = false)
+  private boolean isActive = true;
+
   @OneToMany(mappedBy = "customer")
   private List<Ticket> tickets;
 }

@@ -1,24 +1,19 @@
 package vn.edu.iuh.fit.server.mapper;
 
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.factory.Mappers;
 import vn.edu.iuh.fit.common.dto.CarriageDTO;
 import vn.edu.iuh.fit.server.model.Carriage;
 
 import java.util.List;
 
-public class CarriageMapper {
+@Mapper
+public interface CarriageMapper {
+    CarriageMapper INSTANCE = Mappers.getMapper(CarriageMapper.class);
 
-    public static CarriageDTO toDto(Carriage carriage) {
-        if (carriage == null) return null;
-        return CarriageDTO.builder()
-                .id(carriage.getId())
-                .number(carriage.getNumber())
-                .type(carriage.getType())
-                .trainId(carriage.getTrain() != null ? carriage.getTrain().getId() : null)
-                .build();
-    }
+    @Mapping(source = "train.id", target = "trainId")
+    CarriageDTO toDto(Carriage carriage);
 
-    public static List<CarriageDTO> toDtoList(List<Carriage> carriages) {
-        if (carriages == null) return List.of();
-        return carriages.stream().map(CarriageMapper::toDto).toList();
-    }
+    List<CarriageDTO> toDtoList(List<Carriage> carriages);
 }

@@ -36,6 +36,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final ScheduleRepository repository = new ScheduleRepositoryImpl();
     private final EmployeeRepository employeeRepository = new EmployeeRepositoryImpl();
 
+
     @Override
     public Response createSchedule(ScheduleCreateDTO scheduleDTO) {
         List<String> errors = ValidationUtils.validate(scheduleDTO);
@@ -115,7 +116,7 @@ public class ScheduleServiceImpl implements ScheduleService {
                 return Response.error(ScheduleMessages.DRAFT_UPDATE_ONLY);
             }
 
-            Schedule scheduleToUpdate = ScheduleMapper.toEntityForUpdate(scheduleUpdateDTO);
+            Schedule scheduleToUpdate = ScheduleMapper.INSTANCE.toEntityForUpdate(scheduleUpdateDTO);
             boolean updated = repository.updateSchedule(em, scheduleToUpdate);
             if (!updated) {
                 return Response.error(ScheduleMessages.updateFailedById(scheduleUpdateDTO.getScheduleId()));
@@ -154,7 +155,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         EntityManager em = JPAUtils.getEntityManager();
         try {
             List<Schedule> schedules = repository.filterSchedules(em, filter);
-            List<ScheduleDTO> scheduleDTOList = ScheduleMapper.toDtoList(schedules);
+            List<ScheduleDTO> scheduleDTOList = ScheduleMapper.INSTANCE.toDtoList(schedules);
             return Response.success(ScheduleMessages.FILTER_SUCCESS, scheduleDTOList);
         } catch (Exception e) {
             log.error("Failed to filter schedules", e);
@@ -165,47 +166,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Override
-    public Response updateSchedule(ScheduleDTO scheduleDTO) {
-        List<String> errors = ValidationUtils.validate(scheduleDTO);
-        if (!errors.isEmpty()) {
-            return Response.error(String.join(", ", errors));
-        }
 
-        EntityManager em = JPAUtils.getEntityManager();
-        EntityTransaction tx = em.getTransaction();
-        try {
-            tx.begin();
-            Schedule existingSchedule = repository.findScheduleById(em, scheduleDTO.getId());
-            if (existingSchedule == null) {
-                return Response.error(ScheduleMessages.scheduleNotFoundById(scheduleDTO.getId()));
-            }
-            if (existingSchedule.getStatus() != StatusSchedule.DRAFT) {
-                return Response.error(ScheduleMessages.DRAFT_UPDATE_ONLY);
-            }
-
-            Schedule scheduleToUpdate = ScheduleMapper.toEntity(scheduleDTO);
-            scheduleToUpdate.setId(existingSchedule.getId());
-            scheduleToUpdate.setStatus(existingSchedule.getStatus());
-
-            boolean updated = repository.updateSchedule(em, scheduleToUpdate);
-            if (!updated) {
-                return Response.error(ScheduleMessages.updateFailedById(scheduleDTO.getId()));
-            }
-
-            tx.commit();
-            log.info("Schedule updated: id={}", scheduleDTO.getId());
-            return Response.success(ScheduleMessages.UPDATE_SUCCESS, scheduleDTO);
-        } catch (Exception e) {
-            if (tx.isActive())
-                tx.rollback();
-            log.error("Failed to update schedule: id={}", scheduleDTO.getId(), e);
-            return Response.error(ScheduleMessages.UPDATE_FAILED_PREFIX + e.getMessage());
-        } finally {
-            em.close();
-        }
-    }
-
-    @Override
     public Response deleteSchedule(String scheduleId) {
         if (scheduleId == null || scheduleId.isBlank()) {
             return Response.error(ScheduleMessages.SCHEDULE_ID_REQUIRED);
@@ -254,7 +215,7 @@ public class ScheduleServiceImpl implements ScheduleService {
                 return Response.error(ScheduleMessages.scheduleNotFoundById(scheduleId));
             }
 
-            ScheduleDTO scheduleDTO = ScheduleMapper.toDto(schedule);
+            ScheduleDTO scheduleDTO = ScheduleMapper.INSTANCE.toDto(schedule);
             return Response.success(ScheduleMessages.FIND_BY_ID_SUCCESS, scheduleDTO);
         } catch (Exception e) {
             log.error("Failed to find schedule by id: id={}", scheduleId, e);
@@ -269,7 +230,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         EntityManager em = JPAUtils.getEntityManager();
         try {
             List<Schedule> schedules = repository.findAllSchedules(em);
-            List<ScheduleDTO> scheduleDTOList = ScheduleMapper.toDtoList(schedules);
+            List<ScheduleDTO> scheduleDTOList = ScheduleMapper.INSTANCE.toDtoList(schedules);
             return Response.success(ScheduleMessages.FIND_ALL_SUCCESS, scheduleDTOList);
         } catch (Exception e) {
             log.error("Failed to find all schedules", e);
@@ -301,9 +262,8 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         EntityManager em = JPAUtils.getEntityManager();
         try {
-            List<Schedule> schedules = repository.searchSchedules(em, routeId, trainId, fromDateTime, toDateTime,
-                    normalizedStatus);
-            List<ScheduleDTO> scheduleDTOList = ScheduleMapper.toDtoList(schedules);
+            List<Schedule> schedules = repository.searchSchedules(em, routeId, trainId, fromDateTime, toDateTime, normalizedStatus);
+            List<ScheduleDTO> scheduleDTOList = ScheduleMapper.INSTANCE.toDtoList(schedules);
             return Response.success(ScheduleMessages.SEARCH_SUCCESS, scheduleDTOList);
         } catch (Exception e) {
             log.error("Failed to search schedules: routeId={}, trainId={}", routeId, trainId, e);
@@ -324,9 +284,8 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         EntityManager em = JPAUtils.getEntityManager();
         try {
-            List<Schedule> schedules = repository.findSchedulesByStationIds(em, departureStationId,
-                    destinationStationId);
-            List<ScheduleDTO> scheduleDTOList = ScheduleMapper.toDtoList(schedules);
+            List<Schedule> schedules = repository.findSchedulesByStationIds(em, departureStationId, destinationStationId);
+            List<ScheduleDTO> scheduleDTOList = ScheduleMapper.INSTANCE.toDtoList(schedules);
             return Response.success(ScheduleMessages.FIND_BY_STATION_SUCCESS, scheduleDTOList);
         } catch (Exception e) {
             log.error("Failed to find schedules by station ids: departureStationId={}, destinationStationId={}",
