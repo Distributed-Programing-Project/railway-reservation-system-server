@@ -4,39 +4,41 @@ import vn.edu.iuh.fit.common.request.Request;
 import vn.edu.iuh.fit.common.response.Response;
 import vn.edu.iuh.fit.server.dto.EmployeeDTO;
 import vn.edu.iuh.fit.server.dto.EmployeeFilterDTO;
+import vn.edu.iuh.fit.server.dto.ReturnTicketConfirmDTO;
+import vn.edu.iuh.fit.server.dto.ReturnTicketPreviewRequestDTO;
+import vn.edu.iuh.fit.server.dto.ReturnTicketSearchDTO;
 import vn.edu.iuh.fit.server.dto.ScheduleCreateDTO;
 import vn.edu.iuh.fit.server.dto.ScheduleFilterDTO;
-import vn.edu.iuh.fit.server.dto.CreateCarriageDTO;
-import vn.edu.iuh.fit.server.dto.CreateTrainDTO;
+import vn.edu.iuh.fit.server.dto.ScheduleUpdateDTO;
 import vn.edu.iuh.fit.server.dto.StatisticsRequestDTO;
-import vn.edu.iuh.fit.server.dto.TrainFilterDTO;
-import vn.edu.iuh.fit.server.dto.UpdateTrainCarriagesDTO;
-import vn.edu.iuh.fit.server.dto.UpdateTrainStatusDTO;
 import vn.edu.iuh.fit.server.service.EmployeeService;
 import vn.edu.iuh.fit.server.service.ScheduleService;
 import vn.edu.iuh.fit.server.service.StatisticsService;
-import vn.edu.iuh.fit.server.service.TrainService;
+import vn.edu.iuh.fit.server.service.TicketService;
 import vn.edu.iuh.fit.server.service.impl.EmployeeServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.ScheduleServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.StatisticsServiceImpl;
-import vn.edu.iuh.fit.server.service.impl.TrainServiceImpl;
+import vn.edu.iuh.fit.server.service.impl.TicketServiceImpl;
+import vn.edu.iuh.fit.server.messages.CommonMessages;
 
 public class RequestRouter {
 
     private final ScheduleService scheduleService = new ScheduleServiceImpl();
     private final EmployeeService employeeService = new EmployeeServiceImpl();
     private final StatisticsService statisticsService = new StatisticsServiceImpl();
-    private final TrainService trainService = new TrainServiceImpl();
+    private final TicketService ticketService = new TicketServiceImpl();
 
     public Response route(Request request) {
         if (request == null || request.getAction() == null) {
-            return Response.error("Invalid request");
+            return Response.error(CommonMessages.INVALID_REQUEST);
         }
+
         return switch (request.getAction()) {
-            case LOGIN                   -> Response.error("Not implemented yet");
+            case LOGIN                   -> Response.error(CommonMessages.NOT_IMPLEMENTED);
 
             case FILTER_SCHEDULE         -> scheduleService.filterSchedules(castData(request, ScheduleFilterDTO.class));
             case CREATE_SCHEDULE         -> scheduleService.createSchedule(castData(request, ScheduleCreateDTO.class));
+            case UPDATE_SCHEDULE         -> scheduleService.updateSchedule(castData(request, ScheduleUpdateDTO.class));
 
             case CREATE_EMPLOYEE         -> employeeService.createEmployee(castData(request, EmployeeDTO.class));
             case CREATE_EMPLOYEE_ACCOUNT -> employeeService.createEmployeeAccount(castData(request, String.class));
@@ -46,15 +48,11 @@ public class RequestRouter {
 
             case GET_STATISTICS          -> statisticsService.getStatistics(castData(request, StatisticsRequestDTO.class));
 
-            case FIND_ALL_TRAINS         -> trainService.findAllTrains(castData(request, TrainFilterDTO.class));
-            case FIND_TRAIN_BY_CODE      -> trainService.findTrainsByCode(castData(request, String.class));
-            case FIND_UNASSIGNED_CARRIAGES -> trainService.findUnassignedCarriages();
-            case CREATE_TRAIN            -> trainService.createTrain(castData(request, CreateTrainDTO.class));
-            case CREATE_CARRIAGE         -> trainService.createCarriage(castData(request, CreateCarriageDTO.class));
-            case UPDATE_TRAIN_CARRIAGES  -> trainService.updateTrainCarriages(castData(request, UpdateTrainCarriagesDTO.class));
-            case UPDATE_TRAIN_STATUS     -> trainService.updateTrainStatus(castData(request, UpdateTrainStatusDTO.class));
+            case SEARCH_TICKETS_FOR_RETURN -> ticketService.searchTicketsForReturn(castData(request, ReturnTicketSearchDTO.class));
+            case PREVIEW_RETURN_TICKETS    -> ticketService.previewReturnTickets(castData(request, ReturnTicketPreviewRequestDTO.class));
+            case CONFIRM_RETURN_TICKETS    -> ticketService.confirmReturnTickets(castData(request, ReturnTicketConfirmDTO.class));
 
-            default                      -> Response.error("Unknown action: " + request.getAction());
+            default                      -> Response.error(String.format(CommonMessages.UNKNOWN_ACTION, request.getAction()));
         };
     }
 
@@ -62,8 +60,7 @@ public class RequestRouter {
         try {
             return type.cast(request.getData());
         } catch (ClassCastException e) {
-            throw new IllegalArgumentException(
-                    "Expected " + type.getSimpleName() + " for action " + request.getAction());
+            throw new IllegalArgumentException(String.format(CommonMessages.CAST_DATA_ERROR, type.getSimpleName()));
         }
     }
 }

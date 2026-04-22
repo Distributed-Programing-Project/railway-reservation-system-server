@@ -1,7 +1,5 @@
 package vn.edu.iuh.fit.server.repository;
 
-import vn.edu.iuh.fit.server.model.InvoiceDetail;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -13,5 +11,5 @@ public interface StatisticsRepository {
 
     long countExchangeInvoices(LocalDateTime start, LocalDateTime end, String employeeId);
 
-    List<InvoiceDetail> findInvoiceDetailsInPeriod(LocalDateTime start, LocalDateTime end, String employeeId);
+    List<Object[]> aggregateDailyBreakdown(LocalDateTime start, LocalDateTime end, String employeeId);
 }

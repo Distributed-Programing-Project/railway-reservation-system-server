@@ -4,13 +4,11 @@ import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vn.edu.iuh.fit.common.response.Response;
-import vn.edu.iuh.fit.server.constant.InvoiceType;
 import vn.edu.iuh.fit.server.constant.StatisticsPeriod;
 import vn.edu.iuh.fit.server.dto.DailyRevenueDTO;
 import vn.edu.iuh.fit.server.dto.StatisticsRequestDTO;
 import vn.edu.iuh.fit.server.dto.StatisticsResultDTO;
 import vn.edu.iuh.fit.server.model.Employee;
-import vn.edu.iuh.fit.server.model.InvoiceDetail;
 import vn.edu.iuh.fit.server.repository.EmployeeRepository;
 import vn.edu.iuh.fit.server.repository.StatisticsRepository;
 import vn.edu.iuh.fit.server.repository.impl.EmployeeRepositoryImpl;
@@ -18,6 +16,8 @@ import vn.edu.iuh.fit.server.repository.impl.StatisticsRepositoryImpl;
 import vn.edu.iuh.fit.server.service.StatisticsService;
 import vn.edu.iuh.fit.server.util.JPAUtils;
 import vn.edu.iuh.fit.server.util.ValidationUtils;
+import vn.edu.iuh.fit.server.messages.StatisticsMessages;
+
 
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -48,8 +48,9 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         Employee requester = findRequester(requestDTO.getRequestEmployeeId());
         if (requester == null) {
-            return Response.error("Nhân viên yêu cầu không tồn tại: " + requestDTO.getRequestEmployeeId());
+            return Response.error(String.format(StatisticsMessages.REQUEST_EMPLOYEE_NOT_FOUND, requestDTO.getRequestEmployeeId()));
         }
+
 
         String effectiveEmployeeId = resolveEffectiveEmployeeId(requester, requestDTO.getEmployeeId());
         LocalDate[] dateRange = computeDateRange(requestDTO.getPeriodType(), requestDTO.getTargetDate());
@@ -62,12 +63,13 @@ public class StatisticsServiceImpl implements StatisticsService {
             StatisticsResultDTO result = buildResult(
                     requestDTO.getPeriodType(), startDate, endDate, start, end, effectiveEmployeeId);
             log.debug("getStatistics success: periodType={}, start={}, end={}", requestDTO.getPeriodType(), startDate, endDate);
-            return Response.success("Thống kê thành công", result);
+            return Response.success(StatisticsMessages.GET_SUCCESS, result);
         } catch (Exception e) {
             log.error("Failed to get statistics: periodType={}, targetDate={}",
                     requestDTO.getPeriodType(), requestDTO.getTargetDate(), e);
-            return Response.error("Lỗi hệ thống khi truy vấn thống kê");
+            return Response.error(StatisticsMessages.SYSTEM_ERROR);
         }
+
     }
 
     private Employee findRequester(String requestEmployeeId) {
@@ -151,39 +153,32 @@ public class StatisticsServiceImpl implements StatisticsService {
     private List<DailyRevenueDTO> buildDailyBreakdown(LocalDateTime start, LocalDateTime end,
                                                         LocalDate startDate, LocalDate endDate,
                                                         String employeeId) {
-        List<InvoiceDetail> invoiceDetails = statisticsRepository.findInvoiceDetailsInPeriod(start, end, employeeId);
-
-        Map<LocalDate, List<InvoiceDetail>> detailsByDate = invoiceDetails.stream()
-                .collect(Collectors.groupingBy(detail -> detail.getInvoice().getIssueDate().toLocalDate()));
+        List<Object[]> rows = statisticsRepository.aggregateDailyBreakdown(start, end, employeeId);
+        Map<LocalDate, Object[]> rowsByDate = rows.stream()
+                .collect(Collectors.toMap(row -> (LocalDate) row[0], row -> row));
 
         List<DailyRevenueDTO> breakdown = new ArrayList<>();
         LocalDate current = startDate;
         while (!current.isAfter(endDate)) {
-            List<InvoiceDetail> dayDetails = detailsByDate.getOrDefault(current, List.of());
-            breakdown.add(aggregateDailyRevenue(current, dayDetails));
+            Object[] row = rowsByDate.get(current);
+            breakdown.add(row == null ? emptyDayRevenue(current) : mapRowToDailyRevenue(current, row));
             current = current.plusDays(1);
         }
         return breakdown;
     }
 
-    private DailyRevenueDTO aggregateDailyRevenue(LocalDate day, List<InvoiceDetail> dayDetails) {
-        int sold = 0;
-        int refunded = 0;
-        BigDecimal revenue = BigDecimal.ZERO;
+    private DailyRevenueDTO emptyDayRevenue(LocalDate day) {
+        return DailyRevenueDTO.builder().day(day).revenue(BigDecimal.ZERO).ticketsSold(0).ticketsRefunded(0).build();
+    }
 
-        for (InvoiceDetail detail : dayDetails) {
-            if (detail.isReturned()) {
-                refunded++;
-                revenue = revenue.subtract(BigDecimal.valueOf(detail.getRefundAmount()));
-            } else if (detail.getInvoice().getType() == InvoiceType.SALE) {
-                sold++;
-                revenue = revenue.add(BigDecimal.valueOf(detail.getSubTotal()));
-            }
-        }
-
+    private DailyRevenueDTO mapRowToDailyRevenue(LocalDate day, Object[] row) {
+        BigDecimal saleRevenue = toBigDecimal(row[1]);
+        int sold = toInt(row[2]);
+        BigDecimal refundAmount = toBigDecimal(row[3]);
+        int refunded = toInt(row[4]);
         return DailyRevenueDTO.builder()
                 .day(day)
-                .revenue(revenue)
+                .revenue(saleRevenue.subtract(refundAmount))
                 .ticketsSold(sold)
                 .ticketsRefunded(refunded)
                 .build();

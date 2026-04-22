@@ -14,32 +14,33 @@ Chức năng cho phép nhân viên quản lý tạo mới một lịch trình t�
 ## Hậu điều kiện
 - Một bản ghi `Schedule` mới được tạo trong database với trạng thái là `DRAFT`.
 - Hệ thống ghi nhận tàu (`Train`) và tuyến đường (`Route`) tương ứng cho lịch trình này.
+- Hệ thống tự động sinh toàn bộ bản ghi `ScheduleDetail` (kho ghế) tương ứng với tất cả ghế của đoàn tàu được chọn, với `priceSeat = 0` và `routeStop = null`.
 
 ## Luồng chính
 1. Nhân viên quản lý đang ở giao diện Quản lý lịch trình, nhấn chọn nút **"Tạo lịch trình"**.
-2. Hệ thống hiển thị form tạo lịch trình mới với các trường: Chọn Tàu, Chọn Tuyến đường, Chọn Ngày khởi hành, Chọn Giờ khởi hành.
+2. Hệ thống hiển thị form tạo lịch trình mới với các trường: Chọn Tàu, Chọn Tuyến đường, Chọn Ngày/Giờ khởi hành, Chọn Ngày/Giờ đến dự kiến.
 3. Nhân viên quản lý nhập/chọn đầy đủ các thông tin bắt buộc trên form.
 4. Nhân viên quản lý nhấn nút **"Xác nhận"** (hoặc "Lưu").
 5. Hệ thống kiểm tra tính hợp lệ của dữ liệu đầu vào (không bỏ trống, ngày giờ hợp lệ).
-6. Hệ thống tạo mới bản ghi `Schedule` với trạng thái `DRAFT` và lưu vào cơ sở dữ liệu.
+6. Hệ thống tạo mới bản ghi `Schedule` với trạng thái `DRAFT`, đồng thời tự động sinh toàn bộ `ScheduleDetail` (kho ghế) cho tất cả ghế của đoàn tàu được chọn.
 7. Hệ thống đóng form, hiển thị thông báo "Tạo lịch trình thành công" và làm mới lại danh sách lịch trình.
 
 ## Luồng thay thế
 - **[Hủy thao tác]:** Tại bước 3, nếu quản lý không muốn tạo nữa và nhấn nút **"Hủy"** (hoặc tắt popup), hệ thống đóng giao diện nhập liệu, không lưu bất kỳ dữ liệu nào.
 
 ## Luồng lỗi
-- **[Thời gian ở quá khứ]:** Tại bước 5, nếu "Ngày hoặc giờ khởi hành" do quản lý nhập nằm ở quá khứ (so với thời điểm hiện tại), hệ thống từ chối lưu và hiển thị thông báo lỗi: *"Ngày hoặc giờ khởi hành không được ở quá khứ"*. Nhân viên nhấn xác nhận trên thông báo để quay lại form nhập liệu.
-- **[Thời gian quá gần]:** Tại bước 5, nếu "Ngày khởi hành" nhỏ hơn 1 ngày so với hôm nay (tức là muốn tạo chuyến tàu chạy ngay trong ngày hôm nay), hệ thống từ chối lưu và hiển thị thông báo lỗi: *"Ngày khởi hành phải cách ít nhất 1 ngày so với hôm nay"*. Nhân viên nhấn xác nhận trên thông báo để quay lại form sửa ngày.
-- **[Bỏ trống dữ liệu]:** Nếu quản lý nhấn Xác nhận nhưng chưa chọn Tàu hoặc Tuyến, hệ thống bôi đỏ các trường còn thiếu và yêu cầu điền đầy đủ.
+- **[Không có quyền]:** Nếu tài khoản gọi API không có cờ `isManager = true`, Server từ chối và trả về lỗi: *"Bạn không có quyền thực hiện thao tác này"*.
+- **[Thời gian không hợp lệ]:** Tại bước 5, nếu `departureTime` nhỏ hơn thời điểm hiện tại cộng 1 ngày (`now() + 1 day`), hệ thống từ chối lưu và hiển thị thông báo lỗi: *"Ngày khởi hành phải cách ít nhất 1 ngày so với hôm nay"*.
+- **[Giờ đến trước giờ đi]:** Tại bước 5, nếu `arrivalTime` nhỏ hơn hoặc bằng `departureTime`, hệ thống từ chối và thông báo: *"Ngày giờ đến dự kiến không được nhỏ hơn giờ khởi hành"*.
+- **[Bỏ trống dữ liệu]:** Nếu quản lý nhấn Xác nhận nhưng chưa chọn Tàu, Tuyến hoặc chưa nhập đủ thời gian, hệ thống bôi đỏ các trường còn thiếu và yêu cầu điền đầy đủ.
 
 ## Dữ liệu vào (Client → Server)
 | Field | Kiểu | Bắt buộc | Mô tả |
 |---|---|---|---|
 | `trainId` | `String` | ✓ | ID của Tàu chạy |
 | `routeId` | `String` | ✓ | ID của Tuyến đường |
-| `departureDate` | `LocalDate` | ✓ | Ngày khởi hành |
-| `departureTime` | `LocalTime` | ✓ | Giờ khởi hành |
-*(Lưu ý: Server có thể gộp `departureDate` và `departureTime` thành một trường `LocalDateTime departureTime` duy nhất tùy thiết kế DTO)*
+| `departureTime` | `LocalDateTime` | ✓ | Ngày giờ khởi hành |
+| `arrivalTime` | `LocalDateTime` | ✓ | Ngày giờ đến dự kiến (bắt buộc từ BA Review) |
 
 ## Dữ liệu ra (Server → Client)
 | Field | Kiểu | Mô tả |
@@ -51,6 +52,7 @@ Chức năng cho phép nhân viên quản lý tạo mới một lịch trình t�
 - **Phân quyền:** Chỉ tài khoản có cờ `isManager = true` mới được thao tác gọi API này.
 - **Trạng thái khởi tạo:** Lịch trình mới tạo luôn luôn có trạng thái bắt buộc là `DRAFT`.
 - **Ràng buộc thời gian:** Thời gian khởi hành (`departureTime`) phải lớn hơn hoặc bằng thời điểm hiện tại cộng thêm ít nhất 24 giờ (`now() + 1 day`). Không cho phép tạo lịch trình tàu chạy sát giờ hoặc trong quá khứ.
+- **Ràng buộc giờ đến:** `arrivalTime` phải lớn hơn `departureTime`.
 
 ---
 
@@ -65,16 +67,18 @@ graph LR
         
         UC_MAIN(["Tạo mới lịch trình (DRAFT)"])
         
-        SUB_VALIDATE_PAST(["Kiểm tra thời gian quá khứ"])
-        SUB_VALIDATE_1DAY(["Kiểm tra thời gian >= 1 ngày"])
-        SUB_SAVE(["Lưu database"])
+        SUB_AUTH(["Kiểm tra quyền isManager"])
+        SUB_VALIDATE_TIME(["Kiểm tra thời gian hợp lệ (>= now+1day)"])
+        SUB_SAVE(["Lưu Schedule vào database"])
+        SUB_GEN_DETAILS(["Sinh ScheduleDetail (kho ghế)"])
     end
 
     QL --> UC_MAIN
     
-    UC_MAIN -. "«include»" .-> SUB_VALIDATE_PAST
-    UC_MAIN -. "«include»" .-> SUB_VALIDATE_1DAY
+    UC_MAIN -. "«include»" .-> SUB_AUTH
+    UC_MAIN -. "«include»" .-> SUB_VALIDATE_TIME
     UC_MAIN -. "«include»" .-> SUB_SAVE
+    SUB_SAVE -. "«include»" .-> SUB_GEN_DETAILS
 ```
 
 ---

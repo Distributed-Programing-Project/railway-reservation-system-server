@@ -56,4 +56,10 @@ public class Ticket {
 
   @Column(name = "qr_code", columnDefinition = "TEXT")
   private String qrCode;
+
+  @Column(name = "original_ticket_id", length = 36)
+  private String originalTicketId;
+
+  @Column(name = "is_exchanged")
+  private boolean exchanged;
 }

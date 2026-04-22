@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.server.constant.StatisticsPeriod;
+import vn.edu.iuh.fit.server.messages.StatisticsMessages;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -21,13 +22,13 @@ public class StatisticsRequestDTO implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @NotNull(message = "Loại kỳ thống kê là bắt buộc")
+    @NotNull(message = StatisticsMessages.PERIOD_TYPE_REQUIRED)
     private StatisticsPeriod periodType;
 
-    @NotNull(message = "Ngày đại diện kỳ là bắt buộc")
+    @NotNull(message = StatisticsMessages.TARGET_DATE_REQUIRED)
     private LocalDate targetDate;
 
-    @NotBlank(message = "ID nhân viên yêu cầu là bắt buộc")
+    @NotBlank(message = StatisticsMessages.EMPLOYEE_ID_REQUIRED)
     private String requestEmployeeId;
 
     private String employeeId;

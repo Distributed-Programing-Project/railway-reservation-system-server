@@ -26,6 +26,8 @@ public class InvoiceDTO implements Serializable {
   private InvoiceType type;
   private String customerId;
   private String employeeId;
+  private String taxCode;
+  private String companyName;
 
   private List<InvoiceDetailDTO> details;
 }

@@ -5,6 +5,7 @@ import lombok.*;
 import vn.edu.iuh.fit.server.constant.StatusSchedule;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 
 @Table(name = "schedules")
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Setter
 @Getter
-@ToString(exclude = {"train", "route"})
+@ToString
 @Builder
 public class Schedule {
     @Id
@@ -32,8 +33,14 @@ public class Schedule {
 
     @ManyToOne
     @JoinColumn(name = "train_id")
+    @ToString.Exclude
     private Train train;
 
     @ManyToOne
+    @ToString.Exclude
     private Route route;
+
+    @OneToMany(mappedBy = "schedule", cascade = CascadeType.REMOVE)
+    @ToString.Exclude
+    private List<ScheduleDetail> scheduleDetails;
 }

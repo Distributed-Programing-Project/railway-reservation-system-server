@@ -91,8 +91,4 @@ public class RouteRepositoryImpl extends AbstractGenericRepositoryImpl<Route, St
         return query.getResultList();
     }
 
-    @Override
-    public List<Route> getAllRoutes(EntityManager em) {
-        return findAllRoutes(em);
-    }
 }
