@@ -6,19 +6,27 @@ import vn.edu.iuh.fit.server.dto.EmployeeDTO;
 import vn.edu.iuh.fit.server.dto.EmployeeFilterDTO;
 import vn.edu.iuh.fit.server.dto.ScheduleCreateDTO;
 import vn.edu.iuh.fit.server.dto.ScheduleFilterDTO;
+import vn.edu.iuh.fit.server.dto.CreateCarriageDTO;
+import vn.edu.iuh.fit.server.dto.CreateTrainDTO;
 import vn.edu.iuh.fit.server.dto.StatisticsRequestDTO;
+import vn.edu.iuh.fit.server.dto.TrainFilterDTO;
+import vn.edu.iuh.fit.server.dto.UpdateTrainCarriagesDTO;
+import vn.edu.iuh.fit.server.dto.UpdateTrainStatusDTO;
 import vn.edu.iuh.fit.server.service.EmployeeService;
 import vn.edu.iuh.fit.server.service.ScheduleService;
 import vn.edu.iuh.fit.server.service.StatisticsService;
+import vn.edu.iuh.fit.server.service.TrainService;
 import vn.edu.iuh.fit.server.service.impl.EmployeeServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.ScheduleServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.StatisticsServiceImpl;
+import vn.edu.iuh.fit.server.service.impl.TrainServiceImpl;
 
 public class RequestRouter {
 
     private final ScheduleService scheduleService = new ScheduleServiceImpl();
     private final EmployeeService employeeService = new EmployeeServiceImpl();
     private final StatisticsService statisticsService = new StatisticsServiceImpl();
+    private final TrainService trainService = new TrainServiceImpl();
 
     public Response route(Request request) {
         if (request == null || request.getAction() == null) {
@@ -37,6 +45,14 @@ public class RequestRouter {
             case RESET_EMPLOYEE_PASSWORD -> employeeService.resetEmployeePassword(castData(request, String.class));
 
             case GET_STATISTICS          -> statisticsService.getStatistics(castData(request, StatisticsRequestDTO.class));
+
+            case FIND_ALL_TRAINS         -> trainService.findAllTrains(castData(request, TrainFilterDTO.class));
+            case FIND_TRAIN_BY_CODE      -> trainService.findTrainsByCode(castData(request, String.class));
+            case FIND_UNASSIGNED_CARRIAGES -> trainService.findUnassignedCarriages();
+            case CREATE_TRAIN            -> trainService.createTrain(castData(request, CreateTrainDTO.class));
+            case CREATE_CARRIAGE         -> trainService.createCarriage(castData(request, CreateCarriageDTO.class));
+            case UPDATE_TRAIN_CARRIAGES  -> trainService.updateTrainCarriages(castData(request, UpdateTrainCarriagesDTO.class));
+            case UPDATE_TRAIN_STATUS     -> trainService.updateTrainStatus(castData(request, UpdateTrainStatusDTO.class));
 
             default                      -> Response.error("Unknown action: " + request.getAction());
         };

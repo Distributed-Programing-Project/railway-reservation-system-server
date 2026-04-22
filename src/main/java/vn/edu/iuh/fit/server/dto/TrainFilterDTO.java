@@ -8,21 +8,15 @@ import vn.edu.iuh.fit.server.constant.TrainStatus;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TrainDTO implements Serializable {
+public class TrainFilterDTO implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private String id;
-    private String trainCode;
-    private TrainStatus status;
-    private int totalCarriages;
-    private int totalSeats;
-    private List<CarriageDTO> carriages;
+    private TrainStatus statusFilter;
 }

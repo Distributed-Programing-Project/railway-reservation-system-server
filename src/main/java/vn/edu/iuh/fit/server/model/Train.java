@@ -1,6 +1,7 @@
 package vn.edu.iuh.fit.server.model;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import vn.edu.iuh.fit.server.constant.TrainStatus;
@@ -29,6 +30,8 @@ public class Train {
   @Column(name = "status", length = 50)
   private TrainStatus status;
 
+  @JsonIgnore
   @OneToMany(mappedBy = "train")
+  @ToString.Exclude
   private List<Carriage> carriages;
 }

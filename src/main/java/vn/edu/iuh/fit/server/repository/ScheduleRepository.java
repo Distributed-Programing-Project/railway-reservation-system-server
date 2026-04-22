@@ -23,5 +23,7 @@ public interface ScheduleRepository {
     List<Schedule> findSchedulesByStationIds(EntityManager em, String departureStationId, String destinationStationId);
 
     List<Schedule> filterSchedules(EntityManager em, ScheduleFilterDTO filter);
+
+    long countFutureActiveSchedulesByTrainId(String trainId);
 }
 

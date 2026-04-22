@@ -9,6 +9,8 @@ import vn.edu.iuh.fit.server.model.Train;
 import vn.edu.iuh.fit.server.repository.ScheduleRepository;
 import vn.edu.iuh.fit.server.dto.ScheduleFilterDTO;
 
+import vn.edu.iuh.fit.server.constant.StatusSchedule;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -129,5 +131,18 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
         query.setMaxResults(filter.getSize());
 
         return query.getResultList();
+    }
+
+    @Override
+    public long countFutureActiveSchedulesByTrainId(String trainId) {
+        return doWithEntityManager(em ->
+                em.createQuery(
+                        "SELECT COUNT(s) FROM Schedule s WHERE s.train.id = :trainId AND s.departureTime > :now AND s.status != :completed",
+                        Long.class)
+                        .setParameter("trainId", trainId)
+                        .setParameter("now", LocalDateTime.now())
+                        .setParameter("completed", StatusSchedule.COMPLETED)
+                        .getSingleResult()
+        );
     }
 }

@@ -2,6 +2,7 @@ package vn.edu.iuh.fit.server.model;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -43,10 +44,14 @@ public class Carriage {
   @Column(name = "carriage_type")
   private CarriageType type;
 
+  @JsonIgnore
   @ManyToOne
   @JoinColumn(name = "train_id")
+  @ToString.Exclude
   private Train train;
 
+  @JsonIgnore
   @OneToMany(mappedBy = "carriage")
+  @ToString.Exclude
   private List<Seat> seats;
 }
