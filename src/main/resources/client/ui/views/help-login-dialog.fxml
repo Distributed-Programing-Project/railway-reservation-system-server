@@ -7,6 +7,7 @@
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
+      fx:controller="vn.edu.iuh.fit.client.controller.HelpLoginDialogController"
       styleClass="help-dialog"
       stylesheets="@../css/help-login-dialog.css"
       spacing="20"
@@ -133,7 +134,7 @@
         <padding>
             <Insets top="15" right="30" bottom="25" left="30"/>
         </padding>
-        <Button text="Đã hiểu" styleClass="close-button" prefWidth="150" prefHeight="40"/>
+        <Button text="Đã hiểu" styleClass="close-button" prefWidth="150" prefHeight="40" onAction="#handleClose"/>
     </HBox>
     
 </VBox>

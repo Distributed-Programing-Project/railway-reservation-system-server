@@ -7,6 +7,7 @@
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
+      fx:controller="vn.edu.iuh.fit.client.controller.DashboardStatisticsController"
       stylesheets="@../css/dashboard-statistics.css"
       spacing="25"
       styleClass="main-content">
@@ -21,7 +22,8 @@
             <Label text="Báo Cáo Hệ Thống" styleClass="welcome-title"/>
             <Label fx:id="welcomeSubtitle" text="Dữ liệu cập nhật..." styleClass="welcome-subtitle"/>
         </VBox>
-        <Button text="Làm mới dữ liệu" styleClass="refresh-button"/>
+        <Button text="Làm mới dữ liệu" styleClass="refresh-button" onAction="#handleRefreshData"/>
+        <Button text="Quản lý lịch trình" styleClass="refresh-button" onAction="#handleOpenSchedule"/>
     </HBox>
     <GridPane hgap="20" vgap="20">
         <columnConstraints>

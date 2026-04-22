@@ -6,6 +6,7 @@
 
 <StackPane xmlns="http://javafx.com/javafx"
            xmlns:fx="http://javafx.com/fxml"
+           fx:controller="vn.edu.iuh.fit.client.controller.LoginController"
            stylesheets="@../css/styles.css"
            styleClass="root"
            prefWidth="1040" prefHeight="585">
@@ -44,6 +45,7 @@
             <PasswordField fx:id="passwordField" 
                            promptText="Nhập mật khẩu"
                            styleClass="password-field"
+                           onAction="#handleLogin"
                            prefHeight="45"/>
         </VBox>
 
@@ -52,19 +54,23 @@
                        styleClass="hyperlink"/>
         </HBox>
 
-        <Button text="Đăng Nhập"
+        <Button fx:id="loginButton"
+                text="Đăng Nhập"
                 maxWidth="Infinity"
                 prefHeight="50"
-                styleClass="login-button">
+                styleClass="login-button"
+                onAction="#handleLogin">
             <VBox.margin>
                 <Insets top="10"/>
             </VBox.margin>
         </Button>
 
-        <Button text="Trợ giúp"
+        <Button fx:id="helpButton"
+                text="Trợ giúp"
                 maxWidth="Infinity"
                 prefHeight="40"
-                style="-fx-background-color: #f8f9fa; -fx-text-fill: #495057; -fx-border-color: #dee2e6; -fx-border-width: 1.5px; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-font-size: 14px; -fx-font-weight: 500; -fx-cursor: hand;">
+                style="-fx-background-color: #f8f9fa; -fx-text-fill: #495057; -fx-border-color: #dee2e6; -fx-border-width: 1.5px; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-font-size: 14px; -fx-font-weight: 500; -fx-cursor: hand;"
+                onAction="#handleHelp">
             <VBox.margin>
                 <Insets top="5"/>
             </VBox.margin>
