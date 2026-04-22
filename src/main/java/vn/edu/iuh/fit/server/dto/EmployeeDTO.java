@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
+import vn.edu.iuh.fit.server.messages.EmployeeMessages;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -22,28 +23,28 @@ public class EmployeeDTO implements Serializable {
     private String employeeId;
     private String employeeCode;
 
-    @NotBlank(message = "Họ tên không được để trống")
+    @NotBlank(message = EmployeeMessages.NAME_REQUIRED)
     private String employeeName;
 
-    @NotBlank(message = "CCCD không được để trống")
-    @Pattern(regexp = "\\d{9}|\\d{12}", message = "CCCD phải gồm 9 hoặc 12 chữ số")
+    @NotBlank(message = EmployeeMessages.NATIONAL_ID_REQUIRED)
+    @Pattern(regexp = "\\d{9}|\\d{12}", message = EmployeeMessages.NATIONAL_ID_FORMAT)
     private String nationalId;
 
-    @NotNull(message = "Ngày sinh không được để trống")
+    @NotNull(message = EmployeeMessages.DATE_OF_BIRTH_REQUIRED)
     private LocalDate dateOfBirth;
 
     private Boolean gender;
     private String address;
 
-    @NotBlank(message = "Số điện thoại không được để trống")
-    @Pattern(regexp = "\\d{10}", message = "Số điện thoại phải gồm đúng 10 chữ số")
+    @NotBlank(message = EmployeeMessages.PHONE_REQUIRED)
+    @Pattern(regexp = "\\d{10}", message = EmployeeMessages.PHONE_FORMAT)
     private String phoneNumber;
 
-    @NotBlank(message = "Email không được để trống")
-    @Email(message = "Email không đúng định dạng")
+    @NotBlank(message = EmployeeMessages.EMAIL_REQUIRED)
+    @Email(message = EmployeeMessages.EMAIL_FORMAT)
     private String email;
 
-    @NotNull(message = "Loại nhân viên không được để trống")
+    @NotNull(message = EmployeeMessages.IS_MANAGER_REQUIRED)
     private Boolean isManager;
 
     private String employeeStatus;

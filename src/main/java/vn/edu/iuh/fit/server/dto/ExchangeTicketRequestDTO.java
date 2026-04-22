@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import vn.edu.iuh.fit.server.messages.TicketMessages;
 
 @Data
 @NoArgsConstructor
@@ -17,13 +18,13 @@ import lombok.NoArgsConstructor;
 public class ExchangeTicketRequestDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @NotEmpty(message = "Danh sách vé cũ không được để trống")
+    @NotEmpty(message = TicketMessages.OLD_TICKET_IDS_REQUIRED)
     private List<String> oldTicketIds;
 
-    @NotEmpty(message = "Danh sách ghế mới không được để trống")
+    @NotEmpty(message = TicketMessages.NEW_SCHEDULE_DETAIL_IDS_REQUIRED)
     private List<String> newScheduleDetailIds;
 
-    @Min(value = 0, message = "Số tiền thực nhận không được âm")
+    @Min(value = 0, message = TicketMessages.CASH_RECEIVED_NOT_NEGATIVE)
     private double cashReceived;
 
     // Hỗ trợ xuất VAT

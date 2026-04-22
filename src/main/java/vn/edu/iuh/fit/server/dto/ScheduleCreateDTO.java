@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 public class ScheduleCreateDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @NotBlank(message = "ID nhân viên không được để trống")
+    @NotBlank(message = ScheduleMessages.EMPLOYEE_ID_REQUIRED)
     private String requestEmployeeId;
 
     @NotBlank(message = ScheduleMessages.TRAIN_ID_REQUIRED)
@@ -36,7 +36,7 @@ public class ScheduleCreateDTO implements Serializable {
 
     private LocalDateTime departureTime;
 
-    @NotNull(message = "Ngày giờ đến dự kiến không được để trống")
+    @NotNull(message = ScheduleMessages.ARRIVAL_TIME_REQUIRED)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime arrivalTime;
 
