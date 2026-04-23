@@ -1,8 +1,8 @@
 package vn.edu.iuh.fit.server.service;
 
 import vn.edu.iuh.fit.common.dto.ScheduleCreateDTO;
-import vn.edu.iuh.fit.common.dto.ScheduleDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleFilterDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleLifecycleDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleUpdateDTO;
 import vn.edu.iuh.fit.common.response.Response;
 
@@ -25,4 +25,8 @@ public interface ScheduleService {
     Response findSchedulesByStationIds(String departureStationId, String destinationStationId);
 
     Response filterSchedules(ScheduleFilterDTO filter);
+
+    Response publishSchedule(ScheduleLifecycleDTO dto);
+
+    Response disableSchedule(ScheduleLifecycleDTO dto);
 }

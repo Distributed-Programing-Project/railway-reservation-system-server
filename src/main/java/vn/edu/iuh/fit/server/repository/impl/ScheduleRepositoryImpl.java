@@ -2,6 +2,7 @@ package vn.edu.iuh.fit.server.repository.impl;
 
 import jakarta.persistence.EntityManager;
 import vn.edu.iuh.fit.common.constant.StatusSchedule;
+import vn.edu.iuh.fit.common.constant.TicketStatus;
 import vn.edu.iuh.fit.server.model.Route;
 import vn.edu.iuh.fit.server.model.Schedule;
 import vn.edu.iuh.fit.server.model.ScheduleDetail;
@@ -279,6 +280,32 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
                         .setParameter("terminalStatuses", List.of(StatusSchedule.COMPLETED, StatusSchedule.CANCELLED))
                         .getSingleResult()
         );
+    }
+
+    @Override
+    public boolean updateScheduleStatus(EntityManager em, String scheduleId, StatusSchedule status) {
+        int updated = em.createQuery(
+                        "UPDATE Schedule s SET s.status = :status WHERE s.id = :scheduleId")
+                .setParameter("status", status)
+                .setParameter("scheduleId", scheduleId)
+                .executeUpdate();
+        return updated > 0;
+    }
+
+    @Override
+    public long countSoldSeatsByScheduleId(EntityManager em, String scheduleId) {
+        Long count = em.createQuery(
+                        "SELECT COUNT(t) FROM Ticket t " +
+                        "JOIN t.scheduleDetail sd " +
+                        "WHERE sd.schedule.id = :scheduleId " +
+                        "AND t.status NOT IN (:cancelled, :exchanged, :returned)",
+                        Long.class)
+                .setParameter("scheduleId", scheduleId)
+                .setParameter("cancelled", TicketStatus.CANCELLED)
+                .setParameter("exchanged", TicketStatus.EXCHANGED)
+                .setParameter("returned", TicketStatus.RETURNED)
+                .getSingleResult();
+        return count != null ? count : 0L;
     }
 
 }

@@ -1,8 +1,9 @@
 package vn.edu.iuh.fit.server.repository;
 
 import jakarta.persistence.EntityManager;
-import vn.edu.iuh.fit.server.model.Schedule;
 import vn.edu.iuh.fit.common.dto.ScheduleFilterDTO;
+import vn.edu.iuh.fit.common.constant.StatusSchedule;
+import vn.edu.iuh.fit.server.model.Schedule;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,7 +13,11 @@ public interface ScheduleRepository {
 
     boolean updateSchedule(EntityManager em, Schedule schedule);
 
+    boolean updateScheduleStatus(EntityManager em, String scheduleId, StatusSchedule status);
+
     boolean deleteSchedule(EntityManager em, String scheduleId);
+
+    long countSoldSeatsByScheduleId(EntityManager em, String scheduleId);
 
     Schedule findScheduleById(EntityManager em, String scheduleId);
 
