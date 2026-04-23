@@ -2,7 +2,6 @@ package vn.edu.iuh.fit.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.ToString;
 
 import java.math.BigDecimal;
 
@@ -10,11 +9,10 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Setter
 @Getter
-@ToString
+@ToString(exclude = {"seat", "schedule", "routeStop"})
 @Builder
-
 @Entity
-@Table(name =  "schedule_details")
+@Table(name = "schedule_details")
 public class ScheduleDetail {
 
     @Id
@@ -25,15 +23,12 @@ public class ScheduleDetail {
     @Column(name = "price_seat")
     private BigDecimal priceSeat;
 
-    @ToString.Exclude
     @ManyToOne
     private Seat seat;
 
-    @ToString.Exclude
     @ManyToOne
     private Schedule schedule;
 
-    @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "route_stop_id")
     private RouteStop routeStop;

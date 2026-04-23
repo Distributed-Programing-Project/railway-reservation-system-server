@@ -12,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @Setter
 @Getter
-@ToString
+@ToString(exclude = {"carriages"})
 @Builder
 @Entity
 @Table(name = "trains")
@@ -32,6 +32,5 @@ public class Train {
 
   @JsonIgnore
   @OneToMany(mappedBy = "train")
-  @ToString.Exclude
   private List<Carriage> carriages;
 }

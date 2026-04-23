@@ -30,6 +30,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private static final Logger log = LoggerFactory.getLogger(EmployeeServiceImpl.class);
     private final EmployeeRepository repository = new EmployeeRepositoryImpl();
 
+
     @Override
     public Response createEmployee(EmployeeDTO employeeDTO) {
         List<String> errors = ValidationUtils.validate(employeeDTO);
@@ -47,7 +48,6 @@ public class EmployeeServiceImpl implements EmployeeService {
             if (repository.existsByEmail(em, employeeDTO.getEmail())) {
                 return Response.error(EmployeeMessages.EMAIL_ALREADY_EXISTS);
             }
-
 
             String employeeCode = repository.generateEmployeeCode(em, employeeDTO.getIsManager());
 
@@ -67,16 +67,19 @@ public class EmployeeServiceImpl implements EmployeeService {
 
             Employee savedEmployee = repository.saveEmployee(em, employee);
             tx.commit();
-            log.info("Employee created: employeeCode={}, id={}", savedEmployee.getEmployeeCode(), savedEmployee.getEmployeeId());
-            return Response.success(EmployeeMessages.CREATE_SUCCESS, EmployeeMapper.toDto(savedEmployee));
+            log.info("Employee created: employeeCode={}, id={}", savedEmployee.getEmployeeCode(),
+                    savedEmployee.getEmployeeId());
+            return Response.success(EmployeeMessages.CREATE_SUCCESS, EmployeeMapper.INSTANCE.toDto(savedEmployee));
 
         } catch (Exception e) {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive())
+                tx.rollback();
             log.error("Failed to create employee: nationalId={}", employeeDTO.getNationalId(), e);
             return Response.error(EmployeeMessages.SYSTEM_ERROR_PREFIX + e.getMessage());
 
         } finally {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive())
+                tx.rollback();
             em.close();
         }
     }
@@ -86,7 +89,6 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (employeeId == null || employeeId.isBlank()) {
             return Response.error(EmployeeMessages.EMPLOYEE_ID_REQUIRED);
         }
-
 
         EntityManager em = JPAUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
@@ -100,22 +102,24 @@ public class EmployeeServiceImpl implements EmployeeService {
                 return Response.error(EmployeeMessages.ACCOUNT_ALREADY_EXISTS);
             }
 
-
             String rawPassword = generateRawPassword();
             String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
 
-            String username = repository.createAndLinkAccount(em, employeeId, employee.getEmployeeCode(), hashedPassword);
+            String username = repository.createAndLinkAccount(em, employeeId, employee.getEmployeeCode(),
+                    hashedPassword);
             tx.commit();
             log.info("Account created for employee: employeeId={}, username={}", employeeId, username);
             return buildAccountCreatedResponse(EmployeeMessages.ACCOUNT_CREATE_SUCCESS, username, rawPassword);
 
         } catch (Exception e) {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive())
+                tx.rollback();
             log.error("Failed to create account for employee: employeeId={}", employeeId, e);
             return Response.error(EmployeeMessages.SYSTEM_ERROR_PREFIX + e.getMessage());
 
         } finally {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive())
+                tx.rollback();
             em.close();
         }
     }
@@ -125,7 +129,6 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (employeeId == null || employeeId.isBlank()) {
             return Response.error(EmployeeMessages.EMPLOYEE_ID_REQUIRED);
         }
-
 
         EntityManager em = JPAUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
@@ -139,19 +142,20 @@ public class EmployeeServiceImpl implements EmployeeService {
                 return Response.error(EmployeeMessages.ALREADY_INACTIVE);
             }
 
-
             Employee updatedEmployee = repository.softDeleteEmployee(em, employeeId);
             tx.commit();
             log.info("Employee soft-deleted: employeeId={}", employeeId);
-            return Response.success(EmployeeMessages.SOFT_DELETE_SUCCESS, EmployeeMapper.toDto(updatedEmployee));
+            return Response.success(EmployeeMessages.SOFT_DELETE_SUCCESS, EmployeeMapper.INSTANCE.toDto(updatedEmployee));
 
         } catch (Exception e) {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive())
+                tx.rollback();
             log.error("Failed to soft-delete employee: employeeId={}", employeeId, e);
             return Response.error(EmployeeMessages.SYSTEM_ERROR_PREFIX + e.getMessage());
 
         } finally {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive())
+                tx.rollback();
             em.close();
         }
     }
@@ -161,7 +165,6 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (employeeId == null || employeeId.isBlank()) {
             return Response.error(EmployeeMessages.EMPLOYEE_ID_REQUIRED);
         }
-
 
         EntityManager em = JPAUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
@@ -175,7 +178,6 @@ public class EmployeeServiceImpl implements EmployeeService {
                 return Response.error(EmployeeMessages.ACCOUNT_NOT_EXISTS);
             }
 
-
             String rawPassword = generateRawPassword();
             String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
 
@@ -185,12 +187,14 @@ public class EmployeeServiceImpl implements EmployeeService {
             return buildAccountCreatedResponse(EmployeeMessages.PASSWORD_RESET_SUCCESS, username, rawPassword);
 
         } catch (Exception e) {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive())
+                tx.rollback();
             log.error("Failed to reset password for employee: employeeId={}", employeeId, e);
             return Response.error(EmployeeMessages.SYSTEM_ERROR_PREFIX + e.getMessage());
 
         } finally {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive())
+                tx.rollback();
             em.close();
         }
     }
@@ -209,7 +213,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             int totalPages = (int) Math.ceil((double) totalElements / size);
 
             EmployeePageDTO pageDTO = EmployeePageDTO.builder()
-                    .content(EmployeeMapper.toDtoList(employees))
+                    .content(EmployeeMapper.INSTANCE.toDtoList(employees))
                     .totalElements(totalElements)
                     .totalPages(totalPages)
                     .currentPage(page)
@@ -236,4 +240,3 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .build());
     }
 }
-
