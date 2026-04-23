@@ -1,157 +1,384 @@
-# Usecase 003: Trả vé (UC003)
+# Diagrams — UC003: Trả vé
 
-Reverse-engineered from `src/main/java/vn/edu/iuh/fit/server/service/impl/TicketServiceImpl.java` (`previewReturnTickets`, `confirmReturnTickets`, `computeReturn`).
+---
+
+## 1. System Architecture
+
+```mermaid
+graph TB
+    subgraph CLIENT ["🖥️ Client (JavaFX)"]
+        UI["TicketReturnView\n(Trả vé UI)"]
+        SC["SocketClient"]
+    end
+
+    subgraph TRANSPORT ["🔌 TCP Socket Transport"]
+        OOS["ObjectOutputStream.writeObject(Request)"]
+        OIS["ObjectInputStream.readObject() → Response"]
+    end
+
+    subgraph SERVER ["⚙️ Server (Java Socket Server)"]
+        SRV["Server.java\nhandleClient(Socket)"]
+        RR["RequestRouter.route(Request)"]
+        SVC1["TicketServiceImpl\n.searchTicketsForReturn(ReturnTicketSearchDTO)"]
+        SVC2["TicketServiceImpl\n.previewReturnTickets(ReturnTicketPreviewRequestDTO)"]
+        SVC3["TicketServiceImpl\n.confirmReturnTickets(ReturnTicketConfirmDTO)"]
+        JPA["JPAUtils.getEntityManager()"]
+        T_REPO["TicketRepositoryImpl\n.findTicketsByCustomerIdCardWithStatus(...)\n.findTicketsByIdsWithSchedule(...)"]
+        E_REPO["EmployeeRepositoryImpl\n.findEmployeeById(...)"]
+        I_REPO["InvoiceRepositoryImpl\n.createInvoice(em, invoice)"]
+        ID_REPO["InvoiceDetailRepositoryImpl\n.createInvoiceDetail(...)\n.findInvoiceDetailsByTicketIdsAndInvoiceType(...)\n.updateInvoiceDetails(...)"]
+    end
+
+    subgraph DB ["🗄️ MariaDB"]
+        T_TICKET["tickets"]
+        T_CUS["customers"]
+        T_SD["schedule_details"]
+        T_SCH["schedules"]
+        T_EMP["employees"]
+        T_INV["invoices"]
+        T_INVD["invoice_details"]
+    end
+
+    UI -- "Request(SEARCH_TICKETS_FOR_RETURN, ReturnTicketSearchDTO)" --> SC
+    UI -- "Request(PREVIEW_RETURN_TICKETS, ReturnTicketPreviewRequestDTO)" --> SC
+    UI -- "Request(CONFIRM_RETURN_TICKETS, ReturnTicketConfirmDTO)" --> SC
+
+    SC --> OOS
+    OOS -- "TCP Socket" --> SRV
+    SRV --> RR
+    RR --> SVC1
+    RR --> SVC2
+    RR --> SVC3
+
+    SVC1 --> JPA
+    SVC2 --> JPA
+    SVC3 --> JPA
+
+    SVC1 --> T_REPO
+    SVC2 --> T_REPO
+    SVC3 --> T_REPO
+    SVC3 --> E_REPO
+    SVC3 --> I_REPO
+    SVC3 --> ID_REPO
+
+    T_REPO -- "JPQL: Ticket JOIN FETCH customer/scheduleDetail/schedule" --> T_TICKET
+    E_REPO -- "em.find(Employee)" --> T_EMP
+    I_REPO -- "INSERT Invoice(type=REFUND)" --> T_INV
+    ID_REPO -- "INSERT InvoiceDetail (refund) x N" --> T_INVD
+    ID_REPO -- "JPQL: InvoiceDetail JOIN FETCH invoice,ticket WHERE invoice.type=SALE" --> T_INVD
+    ID_REPO -- "UPDATE InvoiceDetail.returned/refund_amount" --> T_INVD
+    T_REPO -- "UPDATE Ticket.status=RETURNED, qr_code=INVALID" --> T_TICKET
+
+    T_TICKET --> T_CUS
+    T_TICKET --> T_SD
+    T_SD --> T_SCH
+```
+
+---
+
+## 2. Sequence Diagram
 
 ```mermaid
 sequenceDiagram
-    actor JavaFX_Client
-    participant Socket_Router
-    participant TicketService
-    participant Repository
-    participant Database
+    actor Clerk as 👤 Nhân viên bán vé
+    participant UI as TicketReturnView
+    participant Socket as SocketClient
+    participant Server as Server.java
+    participant Router as RequestRouter
+    participant Service as TicketServiceImpl
+    participant TicketRepo as TicketRepositoryImpl
+    participant EmpRepo as EmployeeRepositoryImpl
+    participant InvRepo as InvoiceRepositoryImpl
+    participant InvDetRepo as InvoiceDetailRepositoryImpl
+    participant DB as MariaDB
 
-    opt (Tuỳ UI) Tìm vé theo CCCD/Hộ chiếu trước khi trả
-        JavaFX_Client->>Socket_Router: Request(SEARCH_TICKETS_FOR_RETURN, ReturnTicketSearchDTO{idCard})
-        Socket_Router->>TicketService: searchTicketsForReturn(searchDTO)
-        TicketService->>TicketService: ValidationUtils.validate(searchDTO)
-        alt dữ liệu không hợp lệ
-            TicketService-->>Socket_Router: Response.error(DATA_INVALID + errors)
-        else hợp lệ
-            TicketService->>Repository: TicketRepository.findTicketsByCustomerIdCardWithStatus(em, idCard, PAID)
-            Repository->>Database: JPQL SELECT Ticket JOIN FETCH customer/scheduleDetail/schedule WHERE idCard/passport AND status=PAID
-            Database-->>Repository: List<Ticket>
-            Repository-->>TicketService: tickets
-            TicketService-->>Socket_Router: Response.success(FIND_SUCCESS, List<ReturnTicketTicketDTO>)
+    opt Tìm vé theo CCCD/Hộ chiếu (SEARCH_TICKETS_FOR_RETURN)
+        Clerk->>UI: Nhập CCCD/Hộ chiếu, bấm "Tìm kiếm"
+        UI->>UI: new ReturnTicketSearchDTO(idCard)
+        UI->>Socket: sendRequest(new Request(SEARCH_TICKETS_FOR_RETURN, searchDTO))
+        Socket->>Server: ObjectOutputStream.writeObject(request)
+        Server->>Router: route(request)
+        Router->>Service: searchTicketsForReturn(searchDTO)
+
+        Service->>Service: ValidationUtils.validate(searchDTO)
+        alt Lỗi validation (@NotEmpty)
+            Service-->>Router: Response.error(DATA_INVALID_PREFIX + errors)
+        else Hợp lệ
+            Service->>Service: JPAUtils.getEntityManager() → em
+            Service->>TicketRepo: findTicketsByCustomerIdCardWithStatus(em, idCard, PAID)
+            TicketRepo->>DB: JPQL SELECT Ticket t JOIN FETCH t.customer c JOIN FETCH t.scheduleDetail sd JOIN FETCH sd.schedule s WHERE (c.idCard=:idCard OR c.passport=:idCard) AND t.status=:status
+            DB-->>TicketRepo: List<Ticket>
+            TicketRepo-->>Service: tickets
+            Service-->>Router: Response.success(FIND_SUCCESS, List<ReturnTicketTicketDTO>)
         end
-        Socket_Router-->>JavaFX_Client: Response
+
+        Router-->>Server: Response
+        Server-->>Socket: Response + out.reset()
+        Socket-->>UI: Response
     end
 
-    opt (Tuỳ UI) Xem trước phí/tiền hoàn (Preview)
-        JavaFX_Client->>Socket_Router: Request(PREVIEW_RETURN_TICKETS, ReturnTicketPreviewRequestDTO{ticketIds})
-        Socket_Router->>TicketService: previewReturnTickets(previewRequestDTO)
-        TicketService->>TicketService: ValidationUtils.validate(previewRequestDTO)
-        alt dữ liệu không hợp lệ
-            TicketService-->>Socket_Router: Response.error(DATA_INVALID + errors)
-        else hợp lệ
-            TicketService->>TicketService: computeReturn(em, ticketIds)
-            alt ticketIds null/empty
-                TicketService->>TicketService: throw IllegalArgumentException(TICKET_IDS_REQUIRED)
-                TicketService-->>Socket_Router: Response.error(message)
-            else ticketIds bị trùng (distinctIds.size != size)
-                TicketService->>TicketService: throw IllegalArgumentException(TICKET_IDS_DUPLICATE)
-                TicketService-->>Socket_Router: Response.error(message)
-            else load tickets ok
-                TicketService->>Repository: TicketRepository.findTicketsByIdsWithSchedule(em, distinctIds)
-                Repository->>Database: JPQL SELECT Ticket JOIN FETCH customer/scheduleDetail/schedule WHERE id IN :ids
-                Database-->>Repository: List<Ticket> tickets
-                Repository-->>TicketService: tickets
+    opt Xem trước phí/tiền hoàn (PREVIEW_RETURN_TICKETS)
+        Clerk->>UI: Chọn ticketIds, bấm "Xem trước"
+        UI->>UI: new ReturnTicketPreviewRequestDTO(ticketIds)
+        UI->>Socket: sendRequest(new Request(PREVIEW_RETURN_TICKETS, previewDTO))
+        Socket->>Server: ObjectOutputStream.writeObject(request)
+        Server->>Router: route(request)
+        Router->>Service: previewReturnTickets(previewDTO)
 
-                alt tickets.size != distinctIds.size
-                    TicketService->>TicketService: throw IllegalArgumentException(SOME_TICKETS_INVALID)
-                    TicketService-->>Socket_Router: Response.error(message)
-                else duyệt từng ticket để tính hoàn tiền
-                    loop for each ticket
-                        alt ticket.status != PAID
-                            TicketService->>TicketService: throw IllegalArgumentException(TICKET_NOT_RETURNABLE)
-                        else scheduleDetail/schedule/departureTime null
-                            TicketService->>TicketService: throw IllegalArgumentException(SCHEDULE_NOT_FOUND)
-                        else minutesToDeparture < 4h
-                            TicketService->>TicketService: throw IllegalArgumentException(NOT_ELIGIBLE_BY_TIME)
-                        else hợp lệ
-                            TicketService->>TicketService: feeRate = (minutesToDeparture < 24h ? 20% : 10%)
-                            TicketService->>TicketService: fee = max(price*feeRate, 10_000); fee<=price
-                            TicketService->>TicketService: refundAmount = price - fee
-                        end
+        Service->>Service: ValidationUtils.validate(previewDTO)
+        alt Lỗi validation (@NotEmpty)
+            Service-->>Router: Response.error(DATA_INVALID_PREFIX + errors)
+        else Hợp lệ
+            Service->>Service: computeReturn(em, ticketIds)
+            Service->>Service: validate distinctIds + load tickets
+            Service->>TicketRepo: findTicketsByIdsWithSchedule(em, distinctIds)
+            TicketRepo->>DB: JPQL SELECT Ticket t JOIN FETCH t.customer c JOIN FETCH t.scheduleDetail sd JOIN FETCH sd.schedule s WHERE t.id IN :ids
+            DB-->>TicketRepo: List<Ticket> tickets
+            TicketRepo-->>Service: tickets
+
+            loop Mỗi ticket
+                Service->>Service: status == PAID ?
+                Service->>Service: scheduleDetail/schedule/departureTime != null ?
+                Service->>Service: minutesToDeparture >= 4h ?
+                Service->>Service: feeRate = (minutesToDeparture < 24h ? 20% : 10%)
+                Service->>Service: fee = max(price*feeRate, 10_000); fee<=price
+                Service->>Service: refundAmount = price - fee
+            end
+            Service-->>Router: Response.success(PREVIEW_SUCCESS, ReturnTicketPreviewDTO{totalTicketPrice,refundFee,refundAmount})
+        end
+
+        Router-->>Server: Response
+        Server-->>Socket: Response + out.reset()
+        Socket-->>UI: Response
+    end
+
+    Clerk->>UI: Bấm "Xác nhận trả vé" (CONFIRM_RETURN_TICKETS)
+    UI->>UI: new ReturnTicketConfirmDTO(ticketIds, refundAmount, employeeId)
+    UI->>Socket: sendRequest(new Request(CONFIRM_RETURN_TICKETS, confirmDTO))
+    Socket->>Server: ObjectOutputStream.writeObject(request)
+    Server->>Router: route(request)
+    Router->>Service: confirmReturnTickets(confirmDTO)
+
+    Service->>Service: ValidationUtils.validate(confirmDTO)
+    alt Lỗi validation (@NotEmpty/@Min)
+        Service-->>Router: Response.error(DATA_INVALID_PREFIX + errors)
+    else Hợp lệ
+        Service->>Service: JPAUtils.getEntityManager() → em
+        Service->>Service: em.getTransaction().begin()
+
+        Service->>Service: computeReturn(em, ticketIds)
+        alt |confirm.refundAmount - computed.totalRefundAmount| > 1.0
+            note over Service,DB: Early return trong try; transaction vẫn active (code không rollback tường minh).
+            Service-->>Router: Response.error(REFUND_AMOUNT_MISMATCH)
+        else refundAmount khớp
+            Service->>EmpRepo: findEmployeeById(em, employeeId)
+            EmpRepo->>DB: em.find(Employee, employeeId) → SELECT employees
+            DB-->>EmpRepo: Employee? employee
+            EmpRepo-->>Service: employee
+
+            alt employee == null
+                note over Service,DB: Early return; không rollback tường minh.
+                Service-->>Router: Response.error(EmployeeMessages.notFoundById)
+            else employee tồn tại
+                Service->>Service: check tất cả ticket thuộc cùng customer
+                alt Customer mismatch
+                    note over Service,DB: Early return; không rollback tường minh.
+                    Service-->>Router: Response.error(CUSTOMER_MISMATCH)
+                else Cùng customer
+                    Service->>InvRepo: createInvoice(em, Invoice{type=REFUND,totalAmount=totalRefundAmount,employee})
+                    InvRepo->>DB: em.persist(Invoice) → INSERT invoices
+                    DB-->>InvRepo: refundInvoiceId
+                    InvRepo-->>Service: refundInvoice
+
+                    loop Mỗi ticket (refund detail)
+                        Service->>InvDetRepo: createInvoiceDetail(em, InvoiceDetail{isReturned=true, refundAmount, subTotal=ticketPrice})
+                        InvDetRepo->>DB: em.persist(InvoiceDetail) → INSERT invoice_details
+                        DB-->>InvDetRepo: ok
+                        InvDetRepo-->>Service: ok
                     end
-                    TicketService-->>Socket_Router: Response.success(PREVIEW_SUCCESS, ReturnTicketPreviewDTO{totalTicketPrice,refundFee,refundAmount})
+
+                    Service->>InvDetRepo: findInvoiceDetailsByTicketIdsAndInvoiceType(em, ticketIds, SALE)
+                    InvDetRepo->>DB: JPQL SELECT d FROM InvoiceDetail d JOIN FETCH d.invoice i JOIN FETCH d.ticket t WHERE t.id IN :ticketIds AND i.type=:invoiceType
+                    DB-->>InvDetRepo: List<InvoiceDetail> saleDetails
+                    InvDetRepo-->>Service: saleDetails
+
+                    loop Mỗi saleDetail
+                        Service->>Service: saleDetail.returned=true; saleDetail.refundAmount=refundAmountByTicketId[ticketId]
+                    end
+                    Service->>InvDetRepo: updateInvoiceDetails(em, saleDetails)
+                    InvDetRepo->>DB: em.merge(InvoiceDetail) x N → UPDATE invoice_details
+                    DB-->>InvDetRepo: ok
+                    InvDetRepo-->>Service: ok
+
+                    loop Mỗi ticket
+                        Service->>Service: ticket.status=RETURNED; ticket.qrCode="INVALID"
+                    end
+                    Service->>TicketRepo: updateTickets(em, tickets)
+                    TicketRepo->>DB: em.merge(Ticket) x N → UPDATE tickets
+                    DB-->>TicketRepo: ok
+                    TicketRepo-->>Service: ok
+
+                    Service->>Service: em.getTransaction().commit()
+                    Service-->>Router: Response.success(RETURN_SUCCESS, refundInvoiceId)
                 end
             end
         end
-        Socket_Router-->>JavaFX_Client: Response
+
+        Router-->>Server: Response
+        Server-->>Socket: Response + out.reset()
+        Socket-->>UI: Response
     end
 
-    JavaFX_Client->>Socket_Router: Request(CONFIRM_RETURN_TICKETS, ReturnTicketConfirmDTO{ticketIds,refundAmount,employeeId})
-    Socket_Router->>TicketService: confirmReturnTickets(confirmDTO)
-    TicketService->>TicketService: ValidationUtils.validate(confirmDTO)
-    alt dữ liệu không hợp lệ
-        TicketService-->>Socket_Router: Response.error(DATA_INVALID + errors)
-        Socket_Router-->>JavaFX_Client: Response.error
-    else hợp lệ
-        TicketService->>Database: EntityTransaction.begin()
-
-        alt Happy path (không throw Exception)
-            TicketService->>TicketService: computeReturn(em, confirmDTO.ticketIds)
-            alt |confirmDTO.refundAmount - computed.totalRefundAmount| > 1.0
-                note over TicketService,Database: Early return trong try; code KHÔNG rollback transaction một cách tường minh.
-                TicketService-->>Socket_Router: Response.error(REFUND_AMOUNT_MISMATCH)
-            else refundAmount khớp
-                TicketService->>Repository: EmployeeRepository.findEmployeeById(em, employeeId)
-                Repository->>Database: em.find(Employee, employeeId)
-                Database-->>Repository: Employee? employee
-                Repository-->>TicketService: employee
-
-                alt employee == null
-                    note over TicketService,Database: Early return; KHÔNG rollback tường minh.
-                    TicketService-->>Socket_Router: Response.error(EmployeeMessages.notFoundById)
-                else employee tồn tại
-                    TicketService->>TicketService: check all tickets belong to same customer
-                    alt khác customer trong danh sách ticketIds
-                        note over TicketService,Database: Early return; KHÔNG rollback tường minh.
-                        TicketService-->>Socket_Router: Response.error(CUSTOMER_MISMATCH)
-                    else cùng customer
-                        TicketService->>Repository: InvoiceRepository.createInvoice(em, Invoice{type=REFUND,totalAmount=totalRefundAmount,employee})
-                        Repository->>Database: persist Invoice
-                        Database-->>Repository: refundInvoiceId
-                        Repository-->>TicketService: refundInvoice
-
-                        loop for each ticket in computation.tickets
-                            TicketService->>Repository: InvoiceDetailRepository.createInvoiceDetail(em, InvoiceDetail{isReturned=true,refundAmount,subTotal=ticketPrice})
-                            Repository->>Database: persist InvoiceDetail
-                            Database-->>Repository: ok
-                            Repository-->>TicketService: ok
-                        end
-
-                        TicketService->>Repository: InvoiceDetailRepository.findInvoiceDetailsByTicketIdsAndInvoiceType(em, ticketIds, SALE)
-                        Repository->>Database: JPQL SELECT InvoiceDetail JOIN FETCH invoice,ticket WHERE ticketId IN :ids AND invoice.type=SALE
-                        Database-->>Repository: List<InvoiceDetail> saleDetails
-                        Repository-->>TicketService: saleDetails
-
-                        loop for each saleDetail
-                            TicketService->>TicketService: saleDetail.returned=true; setRefundAmount(if ticketId match)
-                        end
-                        TicketService->>Repository: InvoiceDetailRepository.updateInvoiceDetails(em, saleDetails)
-                        Repository->>Database: merge InvoiceDetail (for each)
-                        Database-->>Repository: ok
-                        Repository-->>TicketService: ok
-
-                        loop for each ticket
-                            TicketService->>TicketService: ticket.status=RETURNED; ticket.qrCode="INVALID"
-                        end
-                        TicketService->>Repository: TicketRepository.updateTickets(em, tickets)
-                        Repository->>Database: merge Ticket (for each)
-                        Database-->>Repository: ok
-                        Repository-->>TicketService: ok
-
-                        TicketService->>Database: EntityTransaction.commit()
-                        TicketService-->>Socket_Router: Response.success(RETURN_SUCCESS, refundInvoiceId)
-                    end
-                end
-            end
-
-        else IllegalArgumentException từ computeReturn(...)
-            TicketService->>Database: rollbackQuietly(tx).rollback()
-            TicketService-->>Socket_Router: Response.error(e.message)
-
-        else OptimisticLockException (xung đột dữ liệu)
-            TicketService->>Database: rollbackQuietly(tx).rollback()
-            TicketService-->>Socket_Router: Response.error(DATA_CONFLICT)
-
-        else Exception khác
-            TicketService->>Database: rollbackQuietly(tx).rollback()
-            TicketService-->>Socket_Router: Response.error(RETURN_FAILED_PREFIX + e.message)
-        end
-
-        Socket_Router-->>JavaFX_Client: Response
+    alt IllegalArgumentException (từ computeReturn: ids trống/trùng/không hợp lệ/không đủ điều kiện thời gian)
+        Service->>Service: rollbackQuietly(tx)
+        Service-->>Router: Response.error(e.message)
+    else OptimisticLockException
+        Service->>Service: rollbackQuietly(tx)
+        Service-->>Router: Response.error(DATA_CONFLICT)
+    else Exception khác
+        Service->>Service: rollbackQuietly(tx)
+        Service-->>Router: Response.error(RETURN_FAILED_PREFIX + e.message)
     end
 ```
 
+---
+
+## 3. Class Diagram
+
+```mermaid
+classDiagram
+    class ReturnTicketSearchDTO {
+        <<DTO>>
+        +String idCard
+        +serialVersionUID : long
+    }
+
+    class ReturnTicketPreviewRequestDTO {
+        <<DTO>>
+        +List~String~ ticketIds
+        +serialVersionUID : long
+    }
+
+    class ReturnTicketPreviewDTO {
+        <<DTO>>
+        +double totalTicketPrice
+        +double refundFee
+        +double refundAmount
+        +serialVersionUID : long
+    }
+
+    class ReturnTicketConfirmDTO {
+        <<DTO>>
+        +List~String~ ticketIds
+        +double refundAmount
+        +String employeeId
+        +serialVersionUID : long
+    }
+
+    class ReturnTicketTicketDTO {
+        <<DTO>>
+        +String id
+        +String customerId
+        +String scheduleDetailId
+        +String scheduleId
+        +LocalDateTime departureTime
+        +double ticketPrice
+        +TicketType type
+        +boolean roundTrip
+        +TicketStatus status
+        +String originalTicketId
+        +serialVersionUID : long
+    }
+
+    class Ticket {
+        <<entity>>
+        +String id
+        +TicketStatus status
+        +String qrCode
+        +Customer customer
+        +ScheduleDetail scheduleDetail
+    }
+
+    class ScheduleDetail {
+        <<entity>>
+        +String id
+        +BigDecimal priceSeat
+        +Schedule schedule
+    }
+
+    class Schedule {
+        <<entity>>
+        +String id
+        +LocalDateTime departureTime
+    }
+
+    class Invoice {
+        <<entity>>
+        +String id
+        +LocalDateTime issueDate
+        +double totalAmount
+        +InvoiceType type
+        +Customer customer
+        +Employee employee
+    }
+
+    class InvoiceDetail {
+        <<entity>>
+        +String id
+        +double subTotal
+        +boolean isReturned
+        +double refundAmount
+        +Invoice invoice
+        +Ticket ticket
+    }
+
+    class TicketStatus {
+        <<enum>>
+        PAID
+        RETURNED
+        CANCELLED
+        EXCHANGED
+    }
+
+    class InvoiceType {
+        <<enum>>
+        SALE
+        REFUND
+        EXCHANGE
+    }
+
+    class Request {
+        <<common>>
+        +ActionType action
+        +Object data
+        +serialVersionUID : long
+    }
+
+    class Response {
+        <<common>>
+        +boolean success
+        +String message
+        +Object data
+        +serialVersionUID : long
+        +success(message, data)$
+        +error(message)$
+    }
+
+    ReturnTicketSearchDTO ..> Request : "SEARCH_TICKETS_FOR_RETURN"
+    ReturnTicketPreviewRequestDTO ..> Request : "PREVIEW_RETURN_TICKETS"
+    ReturnTicketConfirmDTO ..> Request : "CONFIRM_RETURN_TICKETS"
+    Request --> Response : "socket cycle"
+
+    Ticket "N" --> "1" Customer : customer
+    Ticket "1" --> "1" ScheduleDetail : scheduleDetail
+    ScheduleDetail "N" --> "1" Schedule : schedule
+
+    Invoice "N" --> "1" Customer : customer
+    Invoice "N" --> "1" Employee : employee
+    Invoice "1" --> "N" InvoiceDetail : details
+    InvoiceDetail "N" --> "1" Ticket : ticket
+    InvoiceDetail "N" --> "1" Invoice : invoice
+
+    Ticket --> TicketStatus : status
+    Invoice --> InvoiceType : type
+```
