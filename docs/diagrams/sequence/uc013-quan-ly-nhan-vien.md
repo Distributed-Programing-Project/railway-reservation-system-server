@@ -16,11 +16,11 @@ graph TB
     end
 
     subgraph SERVER ["Server"]
-        SRV["Server.java\n(ServerSocket :9090\nThreadPool)"]
-        RR["RequestRouter.java\n(switch ActionType)"]
-        ES["EmployeeService\n(business logic + tx)"]
-        ER["EmployeeRepository\n(JPQL queries)"]
-        EM["EmployeeMapper\n(Entity ↔ DTO)"]
+        SRV["Server.java\nServerSocket :9090\nThreadPool"]
+        RR["RequestRouter.java\nswitch ActionType"]
+        ES["EmployeeService\nbusiness logic + tx"]
+        ER["EmployeeRepository\nJPQL queries"]
+        EM["EmployeeMapper"]
     end
 
     subgraph DB ["Persistence"]
@@ -29,20 +29,20 @@ graph TB
     end
 
     UI -->|"build Request"| SC
-    SC -->|"ObjectOutputStream.writeObject(Request)"| SRV
+    SC -->|"writeObject Request"| SRV
     SRV -->|"submit to ThreadPool"| RR
-    RR -->|"castData → EmployeeDTO / String"| ES
+    RR -->|"castData to DTO"| ES
     ES -->|"validate + begin tx"| ER
     ER -->|"TypedQuery / persist"| JPA
     JPA -->|"SQL"| MDB
     MDB -->|"ResultSet"| JPA
     JPA -->|"Employee entity"| ER
     ER -->|"Employee"| ES
-    ES -->|"EmployeeMapper.toDto()"| EM
+    ES -->|"map to DTO"| EM
     EM -->|"EmployeeDTO"| ES
     ES -->|"Response.success/error"| RR
     RR -->|"Response"| SRV
-    SRV -->|"ObjectOutputStream.writeObject(Response)\nout.reset()"| SC
+    SRV -->|"writeObject Response"| SC
     SC -->|"Response"| UI
 ```
 
