@@ -77,6 +77,8 @@ sequenceDiagram
     participant ER as EmployeeRepositoryImpl
     participant DB as MariaDB
 
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Quản lý lịch trình"
     User->>UI: Chọn "Vô hiệu hóa" lịch trình
     UI->>UI: Xác nhận hành động
     UI->>OIS: Request(PUBLISH_OR_DISABLE_SCHEDULE, ScheduleLifecycleDTO)
@@ -149,6 +151,8 @@ sequenceDiagram
     participant ER as EmployeeRepositoryImpl
     participant DB as MariaDB
 
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Quản lý lịch trình"
     User->>UI: Chọn "Phát triển" lịch trình
     UI->>UI: Xác nhận hành động
     UI->>OIS: Request(PUBLISH_OR_DISABLE_SCHEDULE, ScheduleLifecycleDTO)

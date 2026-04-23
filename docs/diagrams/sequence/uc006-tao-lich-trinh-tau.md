@@ -63,7 +63,9 @@ sequenceDiagram
     participant Repo as ScheduleRepositoryImpl
     participant DB as MariaDB
 
-    Manager->>UI: Nhấn "Tạo lịch trình"
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Quản lý lịch trình"
+    User->>UI: Nhấn "Tạo lịch trình"
     UI->>UI: Hiển thị form (trainId, routeId, departureTime, arrivalTime)
     Manager->>UI: Điền đầy đủ form, nhấn Xác nhận
 

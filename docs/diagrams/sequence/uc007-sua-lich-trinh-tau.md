@@ -70,7 +70,9 @@ sequenceDiagram
     participant SCH_REPO as ScheduleRepositoryImpl
     participant DB as MariaDB
 
-    Manager ->> UI: Nhấn "Sửa" → điền form → nhấn "Xác nhận"
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Quản lý lịch trình"
+    User->>UI: Nhấn "Sửa" → điền form → nhấn "Xác nhận"
     UI ->> UI: Tạo ScheduleUpdateDTO(requestEmployeeId, scheduleId, trainId, routeId, departureTime, arrivalTime)
     UI ->> SC: sendRequest(new Request(UPDATE_SCHEDULE, scheduleUpdateDTO))
     SC ->> SRV: ObjectOutputStream.writeObject(request)

@@ -62,6 +62,8 @@ sequenceDiagram
     participant Repo as EmployeeRepository
     participant DB as MariaDB
 
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Quản lý nhân viên"
     User->>UI: Nhập thông tin nhân viên → nhấn Lưu
     UI->>UI: validate client-side (format email, SĐT, CCCD)
     UI->>SC: sendRequest(new Request(CREATE_EMPLOYEE, employeeDTO))
@@ -99,6 +101,8 @@ sequenceDiagram
     participant Repo as EmployeeRepository
     participant DB as MariaDB
 
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Quản lý nhân viên"
     User->>UI: Chọn nhân viên chưa có tài khoản → Cấp tài khoản
     UI->>UI: Xác nhận hành động
     UI->>SC: sendRequest(new Request(CREATE_EMPLOYEE_ACCOUNT, employeeId))
@@ -135,6 +139,8 @@ sequenceDiagram
     participant Repo as EmployeeRepository
     participant DB as MariaDB
 
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Quản lý nhân viên"
     User->>UI: Chọn nhân viên → Xác nhận xoá
     UI->>SC: sendRequest(new Request(DELETE_EMPLOYEE, employeeId))
     SC->>Router: readObject() → Request
@@ -168,6 +174,8 @@ sequenceDiagram
     participant Repo as EmployeeRepository
     participant DB as MariaDB
 
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Quản lý nhân viên"
     User->>UI: Chọn nhân viên → Reset mật khẩu → Xác nhận
     UI->>SC: sendRequest(new Request(RESET_EMPLOYEE_PASSWORD, employeeId))
     SC->>Router: readObject() → Request
@@ -198,6 +206,8 @@ sequenceDiagram
     participant Repo as EmployeeRepository
     participant DB as MariaDB
 
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Quản lý nhân viên"
     User->>UI: Vào màn hình Quản lý nhân viên
     UI->>SC: sendRequest(new Request(FIND_ALL_EMPLOYEES, EmployeeFilterDTO { page=0, size=20, statusFilter=null }))
     SC->>Router: readObject() → Request
