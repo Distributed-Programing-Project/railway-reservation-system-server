@@ -6,17 +6,17 @@
 
 ```mermaid
 graph TB
-    subgraph CLIENT ["🖥️ Client (JavaFX)"]
+    subgraph CLIENT ["Client (JavaFX)"]
         UI["ScheduleManagementController"]
         SC["SocketClient"]
     end
 
-    subgraph TRANSPORT ["🔌 TCP Socket Transport"]
+    subgraph TRANSPORT ["TCP Socket Transport"]
         OOS["ObjectOutputStream.writeObject(Request)"]
         OIS["ObjectInputStream.readObject() → Response"]
     end
 
-    subgraph SERVER ["⚙️ Server (Java Socket Server)"]
+    subgraph SERVER ["Server (Java Socket Server)"]
         SRV["Server.java\nhandleClient(Socket)"]
         RR["RequestRouter.route(Request)"]
         SVC["ScheduleServiceImpl\n.updateSchedule(ScheduleUpdateDTO)"]
@@ -25,7 +25,7 @@ graph TB
         JPA["JPAUtils.getEntityManager()"]
     end
 
-    subgraph DB ["🗄️ MariaDB :3307"]
+    subgraph DB ["MariaDB"]
         T_EMP["employees"]
         T_SCH["schedules"]
         T_DET["schedule_details"]
@@ -60,7 +60,7 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor Manager as 👤 Nhân viên quản lý
+    actor Manager as Nhân viên quản lý
     participant UI as ScheduleManagementController
     participant SC as SocketClient
     participant SRV as Server.handleClient()

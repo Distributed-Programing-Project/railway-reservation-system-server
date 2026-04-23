@@ -6,17 +6,17 @@
 
 ```mermaid
 graph TB
-    subgraph CLIENT ["🖥️ Client (JavaFX)"]
+    subgraph CLIENT ["Client (JavaFX)"]
         UI["CustomerManagementView\n(Sửa khách hàng form)"]
         SC["SocketClient"]
     end
 
-    subgraph TRANSPORT ["🔌 TCP Socket Transport"]
+    subgraph TRANSPORT ["TCP Socket Transport"]
         OOS["ObjectOutputStream.writeObject(Request)"]
         OIS["ObjectInputStream.readObject() → Response"]
     end
 
-    subgraph SERVER ["⚙️ Server (Java Socket Server)"]
+    subgraph SERVER ["Server (Java Socket Server)"]
         SRV["Server.java\nhandleClient(Socket)"]
         RR["RequestRouter.route(Request)\n(Hiện chưa có ActionType cho UC004)"]
         SVC["CustomerServiceImpl\n.updateCustomer(CustomerDTO)"]
@@ -26,7 +26,7 @@ graph TB
         REPO["CustomerRepositoryImpl\n.findCustomerById(...)\n.existsByIdCard(...)\n.existsByEmail(...)\n.updateCustomer(...)"]
     end
 
-    subgraph DB ["🗄️ MariaDB"]
+    subgraph DB ["MariaDB"]
         T_CUS["customers"]
     end
 
@@ -52,7 +52,7 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor Clerk as 👤 Nhân viên
+    actor Clerk as Nhân viên
     participant UI as CustomerManagementView
     participant Socket as SocketClient
     participant Server as Server.java
@@ -61,6 +61,8 @@ sequenceDiagram
     participant Repo as CustomerRepositoryImpl
     participant DB as MariaDB
 
+    Clerk->>UI: Đăng nhập thành công
+    Clerk->>UI: Chọn màn hình "Quản lý khách hàng"
     Clerk->>UI: Chọn khách hàng, bấm "Sửa"
     UI->>UI: Chỉnh sửa fullName/idCard/phone/email
     UI->>UI: new CustomerDTO(customerId, fullName, idCard, phone, email)

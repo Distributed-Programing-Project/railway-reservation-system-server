@@ -36,8 +36,8 @@ graph TD
 
 ```mermaid
 sequenceDiagram
-    actor User as 👤 Nhân viên quản lý
-    participant UI as 🖥️ ScheduleController (JavaFX)
+    actor User as Nhân viên quản lý
+    participant UI as ScheduleController (JavaFX)
     participant ClientNet as SocketClient
     participant ServerNet as ClientHandler
     participant Router as RequestRouter

@@ -54,8 +54,8 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor User as 👤 Nhân viên quản lý
-    participant UI as 🖥️ EmployeeManagementController
+    actor User as Nhân viên quản lý
+    participant UI as EmployeeManagementController
     participant SC as SocketClient
     participant Router as RequestRouter
     participant Svc as EmployeeService
@@ -93,8 +93,8 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    actor User as 👤 Nhân viên quản lý
-    participant UI as 🖥️ EmployeeManagementController
+    actor User as Nhân viên quản lý
+    participant UI as EmployeeManagementController
     participant SC as SocketClient
     participant Router as RequestRouter
     participant Svc as EmployeeService
@@ -131,8 +131,8 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    actor User as 👤 Nhân viên quản lý
-    participant UI as 🖥️ EmployeeManagementController
+    actor User as Nhân viên quản lý
+    participant UI as EmployeeManagementController
     participant SC as SocketClient
     participant Router as RequestRouter
     participant Svc as EmployeeService
@@ -166,8 +166,8 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    actor User as 👤 Nhân viên quản lý
-    participant UI as 🖥️ EmployeeManagementController
+    actor User as Nhân viên quản lý
+    participant UI as EmployeeManagementController
     participant SC as SocketClient
     participant Router as RequestRouter
     participant Svc as EmployeeService
@@ -198,8 +198,8 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    actor User as 👤 Nhân viên quản lý
-    participant UI as 🖥️ EmployeeManagementController
+    actor User as Nhân viên quản lý
+    participant UI as EmployeeManagementController
     participant SC as SocketClient
     participant Router as RequestRouter
     participant Svc as EmployeeService

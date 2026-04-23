@@ -4,17 +4,17 @@
 
 ```mermaid
 graph TB
-    subgraph CLIENT ["🖥 Client — JavaFX"]
+    subgraph CLIENT ["Client — JavaFX"]
         UI["StatisticsController"]
         SC["SocketClient.sendRequest()"]
     end
 
-    subgraph TRANSPORT ["🔌 TCP Socket — ObjectStream"]
+    subgraph TRANSPORT ["TCP Socket — ObjectStream"]
         REQ["Request { action: GET_STATISTICS\n data: StatisticsRequestDTO }"]
         RES["Response { success, message\n data: StatisticsResultDTO }"]
     end
 
-    subgraph SERVER ["⚙️ Server — Java 21"]
+    subgraph SERVER ["Server — Java 21"]
         SV["Server.handleClient()\n ObjectInputStream / ObjectOutputStream"]
         RR["RequestRouter.route()\n case GET_STATISTICS"]
         SS["StatisticsService.getStatistics()"]
@@ -22,7 +22,7 @@ graph TB
         SR["StatisticsRepository\n .aggregateByPeriod()"]
     end
 
-    subgraph DB ["🗄 MariaDB — localhost:3307"]
+    subgraph DB ["MariaDB — localhost:3307"]
         INV["invoices"]
         INVD["invoice_details"]
         EMP["employees"]
@@ -51,7 +51,7 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor User as 👤 Nhân viên / Quản lý
+    actor User as Nhân viên / Quản lý
     participant UI as StatisticsController
     participant SC as SocketClient
     participant SV as Server.handleClient()
