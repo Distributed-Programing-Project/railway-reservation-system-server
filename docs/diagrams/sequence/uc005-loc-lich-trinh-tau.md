@@ -36,8 +36,8 @@ graph TD
 
 ```mermaid
 sequenceDiagram
-    actor M as Manager (isManager=true)
-    participant UI as ScheduleController (JavaFX)
+    actor User as 👤 Nhân viên quản lý
+    participant UI as 🖥️ ScheduleController (JavaFX)
     participant ClientNet as SocketClient
     participant ServerNet as ClientHandler
     participant Router as RequestRouter
@@ -45,9 +45,9 @@ sequenceDiagram
     participant Repo as ScheduleRepository
     participant DB as MariaDB
 
-    M->>UI: Chọn tiêu chí (Ga đi, Ga đến, Mác tàu, Trạng thái...)
-    M->>UI: Nhấn "Lọc"
+    User->>UI: Chọn tiêu chí (Ga đi, Ga đến, Mác tàu, Trạng thái...)
     UI->>UI: Validate form (Từ ngày < Đến ngày)
+    User->>UI: Nhấn "Lọc"
     UI->>ClientNet: sendRequest(Request(FILTER_SCHEDULE, filterParams))
     ClientNet->>ServerNet: TCP send (ObjectOutputStream)
     ServerNet->>Router: dispatch(request)
@@ -63,7 +63,7 @@ sequenceDiagram
     Router-->>ServerNet: Response(SUCCESS, Page<ScheduleDTO>)
     ServerNet-->>ClientNet: TCP send (ObjectInputStream)
     ClientNet-->>UI: Response object
-    UI->>M: Hiển thị danh sách lên lưới (Grid)
+    UI-->>User: Hiển thị danh sách lên lưới (Grid)
 ```
 
 ## 3. Class Diagram
