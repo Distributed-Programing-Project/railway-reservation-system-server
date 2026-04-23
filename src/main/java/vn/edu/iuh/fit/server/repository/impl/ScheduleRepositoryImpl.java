@@ -3,13 +3,13 @@ package vn.edu.iuh.fit.server.repository.impl;
 import jakarta.persistence.EntityManager;
 import vn.edu.iuh.fit.common.constant.StatusSchedule;
 import vn.edu.iuh.fit.common.constant.TicketStatus;
+import vn.edu.iuh.fit.common.dto.ScheduleFilterDTO;
 import vn.edu.iuh.fit.server.model.Route;
 import vn.edu.iuh.fit.server.model.Schedule;
 import vn.edu.iuh.fit.server.model.ScheduleDetail;
 import vn.edu.iuh.fit.server.model.Seat;
 import vn.edu.iuh.fit.server.model.Train;
 import vn.edu.iuh.fit.server.repository.ScheduleRepository;
-import vn.edu.iuh.fit.common.dto.ScheduleFilterDTO;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Objects;
 
 public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedule, String> implements ScheduleRepository {
+
+    private static final int BATCH_SIZE = 50;
 
     public ScheduleRepositoryImpl() {
         super(Schedule.class);
@@ -27,30 +29,8 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
         schedule.setTrain(em.getReference(Train.class, schedule.getTrain().getId()));
         schedule.setRoute(em.getReference(Route.class, schedule.getRoute().getId()));
         em.persist(schedule);
-        String scheduleId = schedule.getId();
-
-        List<String> seatIds = em.createQuery(
-                "SELECT s.id FROM Seat s WHERE s.carriage.train.id = :trainId", String.class)
-                .setParameter("trainId", trainId)
-                .getResultList();
-
-        int batchSize = 50;
-        for (int i = 0; i < seatIds.size(); i++) {
-            ScheduleDetail detail = ScheduleDetail.builder()
-                    .schedule(em.getReference(Schedule.class, scheduleId))
-                    .seat(em.getReference(Seat.class, seatIds.get(i)))
-                    .priceSeat(BigDecimal.ZERO)
-                    .routeStop(null)
-                    .build();
-            em.persist(detail);
-
-            if ((i + 1) % batchSize == 0) {
-                em.flush();
-                em.clear();
-            }
-        }
-
-        return em.getReference(Schedule.class, scheduleId);
+        createScheduleDetails(em, schedule.getId(), trainId);
+        return em.getReference(Schedule.class, schedule.getId());
     }
 
     @Override
@@ -88,7 +68,6 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
         if (existingSchedule == null) {
             return false;
         }
-
         deleteScheduleDetailsByScheduleId(em, scheduleId);
         em.remove(existingSchedule);
         return true;
@@ -250,7 +229,6 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
                 .setParameter("trainId", trainId)
                 .getResultList();
 
-        int batchSize = 50;
         for (int i = 0; i < seatIds.size(); i++) {
             ScheduleDetail detail = ScheduleDetail.builder()
                     .schedule(em.getReference(Schedule.class, scheduleId))
@@ -260,7 +238,7 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
                     .build();
             em.persist(detail);
 
-            if ((i + 1) % batchSize == 0) {
+            if ((i + 1) % BATCH_SIZE == 0) {
                 em.flush();
                 em.clear();
             }
@@ -307,5 +285,4 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
                 .getSingleResult();
         return count != null ? count : 0L;
     }
-
 }

@@ -18,7 +18,7 @@ graph TB
 
     subgraph SERVER ["Server (Java Socket Server)"]
         SRV["Server.java\nhandleClient(Socket)"]
-        RR["RequestRouter.route(Request)\n(Hiện chưa có ActionType cho UC004)"]
+        RR["RequestRouter.route(Request)\n(ActionType.DELETE_CUSTOMER)"]
         SVC["CustomerServiceImpl\n.deleteCustomer(CustomerDeleteRequestDTO)"]
         VAL["ValidationUtils.validate(dto)"]
         JPA["JPAUtils.getEntityManager()"]
@@ -35,7 +35,7 @@ graph TB
         T_INV["invoices"]
     end
 
-    UI -- "new Request(UC004_DELETE_CUSTOMER?, CustomerDeleteRequestDTO)" --> SC
+    UI -- "new Request(DELETE_CUSTOMER, CustomerDeleteRequestDTO)" --> SC
     SC --> OOS
     OOS -- "TCP Socket" --> SRV
     SRV --> RR
@@ -75,8 +75,7 @@ sequenceDiagram
     Manager->>UI: Chọn màn hình "Quản lý khách hàng"
     Manager->>UI: Chọn khách hàng, bấm "Xóa"
     UI->>UI: new CustomerDeleteRequestDTO(customerId, requestEmployeeId)
-    UI->>Socket: sendRequest(new Request(UC004_DELETE_CUSTOMER?, requestDTO))
-    note over Socket,Router: Code hiện tại chưa có ActionType/RequestRouter cho UC004.\nSequence mô tả đường gọi tới CustomerServiceImpl.deleteCustomer().
+    UI->>Socket: sendRequest(new Request(DELETE_CUSTOMER, requestDTO))
     Socket->>Server: ObjectOutputStream.writeObject(request)
     Server->>Router: route(request)
     Router->>Service: deleteCustomer(requestDTO)

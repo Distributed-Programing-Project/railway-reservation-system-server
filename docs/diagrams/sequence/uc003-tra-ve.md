@@ -169,7 +169,7 @@ sequenceDiagram
 
         Service->>Service: computeReturn(em, ticketIds)
         alt refundAmount mismatch (tolerance 1.0)
-            note over Service,DB: Early return trong try, transaction vẫn active (code không rollback tường minh).
+            Service->>Service: rollbackQuietly(tx)
             Service-->>Router: Response.error(REFUND_AMOUNT_MISMATCH)
         else refundAmount khớp
             Service->>EmpRepo: findEmployeeById(em, employeeId)
@@ -178,12 +178,12 @@ sequenceDiagram
             EmpRepo-->>Service: employee
 
             alt employee == null
-                note over Service,DB: Early return, không rollback tường minh.
+                Service->>Service: rollbackQuietly(tx)
                 Service-->>Router: Response.error(EmployeeMessages.notFoundById)
             else employee tồn tại
                 Service->>Service: check tất cả ticket thuộc cùng customer
                 alt Customer mismatch
-                    note over Service,DB: Early return, không rollback tường minh.
+                    Service->>Service: rollbackQuietly(tx)
                     Service-->>Router: Response.error(CUSTOMER_MISMATCH)
                 else Cùng customer
                     Service->>InvRepo: createInvoice(em, Invoice(type=REFUND,totalAmount=totalRefundAmount,employee))

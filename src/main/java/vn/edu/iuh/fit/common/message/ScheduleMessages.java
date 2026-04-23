@@ -26,6 +26,7 @@ public final class ScheduleMessages {
     public static final String DEPARTURE_TIME_IN_PAST = "Ngày hoặc giờ khởi hành ở quá khứ không hợp lệ";
     public static final String ARRIVAL_TIME_NOT_AFTER_DEPARTURE = "Ngày giờ đến dự kiến phải sau giờ khởi hành";
     public static final String EMPLOYEE_NOT_FOUND_BY_ID = "Không tìm thấy nhân viên: id=%s";
+    public static final String EMPLOYEE_INACTIVE = "Nhân viên đã bị vô hiệu hóa";
     public static final String ONLY_DRAFT_CAN_BE_PUBLISHED = "Chỉ có thể phát triển lịch trình đang ở trạng thái Nháp";
     public static final String WRONG_STATUS_DISABLE = "Chỉ có thể vô hiệu hoá lịch trình đang ở trạng thái Nháp hoặc Chưa khởi hành";
     public static final String TICKETS_SOLD_BLOCKED = "Không thể vô hiệu hoá lịch trình đã có khách mua vé. Vui lòng thực hiện hoàn vé trước.";

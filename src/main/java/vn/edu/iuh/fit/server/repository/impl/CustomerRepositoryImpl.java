@@ -157,23 +157,26 @@ public class CustomerRepositoryImpl implements CustomerRepository {
     return count != null && count > 0;
   }
 
-  @Override
-  public boolean hasUpcomingPaidTicket(EntityManager em, String customerId, LocalDateTime now) {
-    if (customerId == null || customerId.isBlank()) {
-      return false;
+    @Override
+    public boolean hasUpcomingPaidTicket(EntityManager em, String customerId, LocalDateTime now) {
+        if (customerId == null || customerId.isBlank()) {
+            return false;
+        }
+        if (now == null) {
+            now = LocalDateTime.now();
+        }
+        String jpql = "SELECT COUNT(t) FROM Ticket t " +
+            "JOIN t.scheduleDetail sd " +
+            "JOIN sd.schedule s " +
+            "WHERE t.customer.id = :customerId " +
+            "AND t.status = :status " +
+            "AND s.departureTime > :now " +
+            "AND t.originalTicketId IS NULL";
+        Long count = em.createQuery(jpql, Long.class)
+            .setParameter("customerId", customerId.trim())
+            .setParameter("status", TicketStatus.PAID)
+            .setParameter("now", now)
+            .getSingleResult();
+        return count != null && count > 0;
     }
-    if (now == null) {
-      now = LocalDateTime.now();
-    }
-    String jpql = "SELECT COUNT(t) FROM Ticket t " +
-        "JOIN t.scheduleDetail sd " +
-        "JOIN sd.schedule s " +
-        "WHERE t.customer.id = :customerId AND t.status = :status AND s.departureTime > :now";
-    Long count = em.createQuery(jpql, Long.class)
-        .setParameter("customerId", customerId.trim())
-        .setParameter("status", TicketStatus.PAID)
-        .setParameter("now", now)
-        .getSingleResult();
-    return count != null && count > 0;
-  }
 }

@@ -18,7 +18,7 @@ graph TB
 
     subgraph SERVER ["Server (Java Socket Server)"]
         SRV["Server.java\nhandleClient(Socket)"]
-        RR["RequestRouter.route(Request)\n(Hiện chưa có ActionType cho UC004)"]
+        RR["RequestRouter.route(Request)\n(ActionType.UPDATE_CUSTOMER)"]
         SVC["CustomerServiceImpl\n.updateCustomer(CustomerDTO)"]
         VAL["ValidationUtils.validate(dto)"]
         MAP["CustomerMapper\nDTO ⇄ Entity"]
@@ -30,7 +30,7 @@ graph TB
         T_CUS["customers"]
     end
 
-    UI -- "new Request(UC004_UPDATE_CUSTOMER?, CustomerDTO)" --> SC
+    UI -- "new Request(UPDATE_CUSTOMER, CustomerDTO)" --> SC
     SC --> OOS
     OOS -- "TCP Socket" --> SRV
     SRV --> RR
@@ -66,8 +66,7 @@ sequenceDiagram
     Clerk->>UI: Chọn khách hàng, bấm "Sửa"
     UI->>UI: Chỉnh sửa fullName/idCard/phone/email
     UI->>UI: new CustomerDTO(customerId, fullName, idCard, phone, email)
-    UI->>Socket: sendRequest(new Request(UC004_UPDATE_CUSTOMER?, customerDTO))
-    note over Socket,Router: Code hiện tại chưa có ActionType/RequestRouter cho UC004.\nSequence mô tả đường gọi tới CustomerServiceImpl.updateCustomer().
+    UI->>Socket: sendRequest(new Request(UPDATE_CUSTOMER, customerDTO))
     Socket->>Server: ObjectOutputStream.writeObject(request)
     Server->>Router: route(request)
     Router->>Service: updateCustomer(customerDTO)
