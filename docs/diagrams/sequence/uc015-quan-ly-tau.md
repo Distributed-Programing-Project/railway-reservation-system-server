@@ -56,7 +56,7 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor User as 👤 Nhân viên Quản lý
+    actor User as Nhân viên Quản lý
     participant UI as TrainManagementController
     participant SC as SocketClient
     participant RR as RequestRouter

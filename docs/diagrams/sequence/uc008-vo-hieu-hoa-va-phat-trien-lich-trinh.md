@@ -6,37 +6,37 @@
 
 ```mermaid
 flowchart TB
-    subgraph Client ["🖥️ Client (Java Swing / JavaFX)"]
+    subgraph Client ["Client (Java Swing / JavaFX)"]
         UI[("Màn hình\nQuản lý lịch trình")]
     end
 
-    subgraph SocketLayer ["🔌 TCP Socket Layer"]
+    subgraph SocketLayer ["TCP Socket Layer"]
         OOS["ObjectOutputStream"]
         OIS["ObjectInputStream"]
     end
 
-    subgraph NetworkLayer ["🌐 Network Layer"]
+    subgraph NetworkLayer ["Network Layer"]
         RH["NetworkHandler\n.handleConnection()"]
         RR["RequestRouter.route()"]
     end
 
-    subgraph ServiceLayer ["⚙️ Service Layer"]
+    subgraph ServiceLayer ["Service Layer"]
         SS["ScheduleServiceImpl"]
         ES["EmployeeServiceImpl"]
     end
 
-    subgraph RepositoryLayer ["💾 Repository Layer"]
+    subgraph RepositoryLayer ["Repository Layer"]
         SR["ScheduleRepositoryImpl"]
         TR["TicketRepository"]
         SDR["ScheduleDetailRepository"]
         ER["EmployeeRepositoryImpl"]
     end
 
-    subgraph Persistence ["🗄️ JPA / Hibernate"]
+    subgraph Persistence ["JPA / Hibernate"]
         EMF["EntityManagerFactory\n(Hibernate)"]
     end
 
-    subgraph Database ["🗃️ MariaDB"]
+    subgraph Database ["MariaDB"]
         SCH["schedules"]
         SD["schedule_details"]
         TKT["tickets"]
@@ -67,8 +67,8 @@ flowchart TB
 
 ```mermaid
 sequenceDiagram
-    participant User as 👤 Nhân viên quản lý
-    participant UI as 🖥️ Client (Swing/FX)
+    participant User as Nhân viên quản lý
+    participant UI as Client (Swing/FX)
     participant OIS as ObjectInputStream
     participant RR as RequestRouter
     participant SS as ScheduleServiceImpl
@@ -141,8 +141,8 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant User as 👤 Nhân viên quản lý
-    participant UI as 🖥️ Client (Swing/FX)
+    participant User as Nhân viên quản lý
+    participant UI as Client (Swing/FX)
     participant OIS as ObjectInputStream
     participant RR as RequestRouter
     participant SS as ScheduleServiceImpl

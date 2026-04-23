@@ -6,17 +6,17 @@
 
 ```mermaid
 graph TB
-    subgraph CLIENT ["🖥️ Client (JavaFX)"]
+    subgraph CLIENT ["Client (JavaFX)"]
         UI["CustomerManagementView\n(Xóa khách hàng)"]
         SC["SocketClient"]
     end
 
-    subgraph TRANSPORT ["🔌 TCP Socket Transport"]
+    subgraph TRANSPORT ["TCP Socket Transport"]
         OOS["ObjectOutputStream.writeObject(Request)"]
         OIS["ObjectInputStream.readObject() → Response"]
     end
 
-    subgraph SERVER ["⚙️ Server (Java Socket Server)"]
+    subgraph SERVER ["Server (Java Socket Server)"]
         SRV["Server.java\nhandleClient(Socket)"]
         RR["RequestRouter.route(Request)\n(Hiện chưa có ActionType cho UC004)"]
         SVC["CustomerServiceImpl\n.deleteCustomer(CustomerDeleteRequestDTO)"]
@@ -26,7 +26,7 @@ graph TB
         E_REPO["EmployeeRepositoryImpl\n.findEmployeeById(...)"]
     end
 
-    subgraph DB ["🗄️ MariaDB"]
+    subgraph DB ["MariaDB"]
         T_EMP["employees"]
         T_CUS["customers"]
         T_TICKET["tickets"]
@@ -61,7 +61,7 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor Manager as 👤 Quản lý (Manager)
+    actor Manager as Quản lý
     participant UI as CustomerManagementView
     participant Socket as SocketClient
     participant Server as Server.java

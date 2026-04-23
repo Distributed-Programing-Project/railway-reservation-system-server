@@ -71,7 +71,7 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor Clerk as NhanVienBanVe
+    actor Clerk as Nhân viên bán vé
     participant UI as TicketExchangeView
     participant Socket as SocketClient
     participant Server as Server.java
