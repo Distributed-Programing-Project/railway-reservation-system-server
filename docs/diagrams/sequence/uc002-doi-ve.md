@@ -7,24 +7,24 @@
 ```mermaid
 graph TB
     subgraph CLIENT ["Client (JavaFX)"]
-        UI["TicketExchangeView\n(Đổi vé UI)"]
+        UI["TicketExchangeView<br/>(Đổi vé UI)"]
         SC["SocketClient"]
     end
 
     subgraph TRANSPORT ["TCP Socket Transport"]
         OOS["ObjectOutputStream.writeObject(Request)"]
-        OIS["ObjectInputStream.readObject() -> Response"]
+        OIS["ObjectInputStream.readObject() trả về Response"]
     end
 
     subgraph SERVER ["Server (Java Socket Server)"]
-        SRV["Server.java\nhandleClient(Socket)"]
-        RR["RequestRouter.route(Request)\n(Hiện chưa có ActionType cho UC002)"]
-        SVC["TicketServiceImpl\n.exchangeTickets(ExchangeTicketRequestDTO)"]
+        SRV["Server.java<br/>handleClient(Socket)"]
+        RR["RequestRouter.route(Request)<br/>(Hiện chưa có ActionType cho UC002)"]
+        SVC["TicketServiceImpl<br/>.exchangeTickets(ExchangeTicketRequestDTO)"]
         JPA["JPAUtils.getEntityManager()"]
-        T_REPO["TicketRepositoryImpl\n.findTicketsForExchange(...)\n.updateTicket(...)\n.createTicket(...)"]
-        SD_REPO["ScheduleDetailRepositoryImpl\n.findById(...)\n.getSoldSeatIds(...)\n.updateScheduleDetail(...)"]
-        I_REPO["InvoiceRepositoryImpl\n.createInvoice(em, invoice)"]
-        ID_REPO["InvoiceDetailRepositoryImpl\n.createInvoiceDetail(em, detail)"]
+        T_REPO["TicketRepositoryImpl<br/>.findTicketsForExchange(...)<br/>.updateTicket(...)<br/>.createTicket(...)"]
+        SD_REPO["ScheduleDetailRepositoryImpl<br/>.findById(...)<br/>.getSoldSeatIds(...)<br/>.updateScheduleDetail(...)"]
+        I_REPO["InvoiceRepositoryImpl<br/>.createInvoice(em, invoice)"]
+        ID_REPO["InvoiceDetailRepositoryImpl<br/>.createInvoiceDetail(em, detail)"]
     end
 
     subgraph DB ["MariaDB"]
@@ -86,7 +86,7 @@ sequenceDiagram
     Clerk->>UI: Chọn "Đổi vé", chọn vé cũ + ghế/chuyến mới
     UI->>UI: new ExchangeTicketRequestDTO(oldTicketIds, newScheduleDetailIds, cashReceived, taxCode, companyName)
     UI->>Socket: sendRequest(new Request(UC002_EXCHANGE?, requestDTO))
-    note over Socket,Router: Code hiện tại chưa có ActionType/RequestRouter cho UC002.\nSequence mô tả đường gọi tới TicketServiceImpl.exchangeTickets().
+    note over Socket,Router: Code hiện tại chưa có ActionType/RequestRouter cho UC002.<br/>Sequence mô tả đường gọi tới TicketServiceImpl.exchangeTickets().
     Socket->>Server: ObjectOutputStream.writeObject(request)
     Server->>Router: route(request)
     Router->>Service: exchangeTickets(requestDTO)
@@ -103,40 +103,40 @@ sequenceDiagram
         Server-->>Socket: Response
         Socket-->>UI: Response(success=false)
     else Hợp lệ
-        Service->>Service: JPAUtils.getEntityManager() -> em
+        Service->>Service: JPAUtils.getEntityManager() trả về em
         Service->>Service: em.getTransaction().begin()
 
         Service->>TicketRepo: findTicketsForExchange(oldTicketIds, em)
         TicketRepo->>DB: JPQL SELECT Ticket t JOIN FETCH t.scheduleDetail sd JOIN FETCH sd.schedule WHERE t.id IN :ids
-        DB-->>TicketRepo: List<Ticket> oldTickets
+        DB-->>TicketRepo: List(Ticket) oldTickets
         TicketRepo-->>Service: oldTickets
 
         alt oldTickets.size != oldTicketIds.size
-            note over Service,DB: Early return trong try; transaction vẫn active (code không rollback tường minh).
+            note over Service,DB: Early return trong try, transaction vẫn active (code không rollback tường minh).
             Service-->>Router: Response.error(SOME_TICKETS_INVALID)
         else Đủ tickets
             Service->>Service: validateBusinessRules(oldTickets)
             alt ticket.isExchanged == true OR ticket.originalTicketId != null
-                note over Service,DB: Early return; không rollback tường minh.
+                note over Service,DB: Early return, không rollback tường minh.
                 Service-->>Router: Response.error(TICKET_ALREADY_EXCHANGED)
             else ticket.status != PAID
-                note over Service,DB: Early return; không rollback tường minh.
+                note over Service,DB: Early return, không rollback tường minh.
                 Service-->>Router: Response.error(TICKET_NOT_PAID)
-            else < 24h trước giờ khởi hành
-                note over Service,DB: Early return; không rollback tường minh.
+            else nhỏ hơn 24h trước giờ khởi hành
+                note over Service,DB: Early return, không rollback tường minh.
                 Service-->>Router: Response.error(EXCHANGE_TIME_EXPIRED)
             else Pass business rules
                 loop Mỗi oldTicket
-                    Service->>Service: oldTicket.exchanged=true; oldTicket.status=EXCHANGED
+                    Service->>Service: oldTicket.exchanged=true, oldTicket.status=EXCHANGED
                     Service->>TicketRepo: updateTicket(em, oldTicket)
-                    TicketRepo->>DB: em.merge(Ticket) -> UPDATE tickets
+                    TicketRepo->>DB: em.merge(Ticket) thực hiện UPDATE tickets
                     DB-->>TicketRepo: ok
                     TicketRepo-->>Service: ok
                 end
 
-                loop i = 0..n-1 (oldTicketId -> newScheduleDetailId)
+                loop i = 0..n-1 (oldTicketId sang newScheduleDetailId)
                     Service->>SDRepo: findById(newSeatId, em)
-                    SDRepo->>DB: em.find(ScheduleDetail, newSeatId) -> SELECT schedule_details
+                    SDRepo->>DB: em.find(ScheduleDetail, newSeatId) thực hiện SELECT schedule_details
                     DB-->>SDRepo: ScheduleDetail? newSeat
                     SDRepo-->>Service: newSeat
 
@@ -145,20 +145,20 @@ sequenceDiagram
                     else newSeat tồn tại
                         Service->>SDRepo: getSoldSeatIds(em, scheduleId) [cache theo scheduleId]
                         SDRepo->>DB: JPQL SELECT sd.seat.id FROM Ticket t JOIN t.scheduleDetail sd WHERE sd.schedule.id=:scheduleId AND t.status NOT IN (CANCELLED,EXCHANGED,RETURNED)
-                        DB-->>SDRepo: Set<String> soldSeatIds
+                        DB-->>SDRepo: Set(String) soldSeatIds
                         SDRepo-->>Service: soldSeatIds
 
                         alt soldSeatIds contains newSeat.seat.id
-                            note over Service,DB: Early return; không rollback tường minh.
+                            note over Service,DB: Early return, không rollback tường minh.
                             Service-->>Router: Response.error(SEAT_NOT_AVAILABLE)
                         else Ghế còn trống
                             Service->>SDRepo: updateScheduleDetail(em, newSeat)
-                            SDRepo->>DB: em.merge(ScheduleDetail versioned) -> optimistic lock check
+                            SDRepo->>DB: em.merge(ScheduleDetail versioned) thực hiện optimistic lock check
                             DB-->>SDRepo: ok
                             SDRepo-->>Service: ok
 
                             Service->>TicketRepo: createTicket(newTicket{status=PAID, originalTicketId=oldTicket.id}, em)
-                            TicketRepo->>DB: em.persist(Ticket) -> INSERT tickets
+                            TicketRepo->>DB: em.persist(Ticket) thực hiện INSERT tickets
                             DB-->>TicketRepo: ok
                             TicketRepo-->>Service: ok
                         end
@@ -166,13 +166,13 @@ sequenceDiagram
                 end
 
                 Service->>InvRepo: createInvoice(em, Invoice{type=EXCHANGE,totalAmount=finalAmount,taxCode,companyName})
-                InvRepo->>DB: em.persist(Invoice) -> INSERT invoices
+                InvRepo->>DB: em.persist(Invoice) thực hiện INSERT invoices
                 DB-->>InvRepo: invoiceId
                 InvRepo-->>Service: invoice
 
                 loop Mỗi newTicket
                     Service->>InvDetRepo: createInvoiceDetail(em, InvoiceDetail{subTotal=finalAmount/n,isReturned=false})
-                    InvDetRepo->>DB: em.persist(InvoiceDetail) -> INSERT invoice_details
+                    InvDetRepo->>DB: em.persist(InvoiceDetail) thực hiện INSERT invoice_details
                     DB-->>InvDetRepo: ok
                     InvDetRepo-->>Service: ok
                 end
@@ -203,7 +203,6 @@ sequenceDiagram
 ```mermaid
 classDiagram
     class ExchangeTicketRequestDTO {
-        <<DTO>>
         +List~String~ oldTicketIds
         +List~String~ newScheduleDetailIds
         +double cashReceived
@@ -211,9 +210,9 @@ classDiagram
         +String companyName
         +serialVersionUID : long
     }
+    note for ExchangeTicketRequestDTO "DTO"
 
     class Ticket {
-        <<entity>>
         +String id
         +TicketStatus status
         +boolean exchanged
@@ -223,25 +222,25 @@ classDiagram
         +TicketType type
         +boolean roundTrip
     }
+    note for Ticket "entity"
 
     class ScheduleDetail {
-        <<entity>>
         +String id
         +BigDecimal priceSeat
         +int version
         +Seat seat
         +Schedule schedule
     }
+    note for ScheduleDetail "entity"
 
     class Schedule {
-        <<entity>>
         +String id
         +LocalDateTime departureTime
         +Train train
     }
+    note for Schedule "entity"
 
     class Invoice {
-        <<entity>>
         +String id
         +LocalDateTime issueDate
         +double totalAmount
@@ -250,9 +249,9 @@ classDiagram
         +String companyName
         +Customer customer
     }
+    note for Invoice "entity"
 
     class InvoiceDetail {
-        <<entity>>
         +String id
         +double subTotal
         +boolean isReturned
@@ -260,31 +259,31 @@ classDiagram
         +Invoice invoice
         +Ticket ticket
     }
+    note for InvoiceDetail "entity"
 
     class TicketStatus {
-        <<enum>>
         PAID
         EXCHANGED
         RETURNED
         CANCELLED
     }
+    note for TicketStatus "enum"
 
     class InvoiceType {
-        <<enum>>
         SALE
         REFUND
         EXCHANGE
     }
+    note for InvoiceType "enum"
 
     class Request {
-        <<common>>
         +ActionType action
         +Object data
         +serialVersionUID : long
     }
+    note for Request "common"
 
     class Response {
-        <<common>>
         +boolean success
         +String message
         +Object data
@@ -292,6 +291,7 @@ classDiagram
         +success(message, data)$
         +error(message)$
     }
+    note for Response "common"
 
     ExchangeTicketRequestDTO ..> Request : "data field"
     Request --> Response : "socket cycle"

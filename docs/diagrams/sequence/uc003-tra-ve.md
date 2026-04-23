@@ -7,26 +7,26 @@
 ```mermaid
 graph TB
     subgraph CLIENT ["Client (JavaFX)"]
-        UI["TicketReturnView\n(Trả vé UI)"]
+        UI["TicketReturnView<br/>(Trả vé UI)"]
         SC["SocketClient"]
     end
 
     subgraph TRANSPORT ["TCP Socket Transport"]
         OOS["ObjectOutputStream.writeObject(Request)"]
-        OIS["ObjectInputStream.readObject() -> Response"]
+        OIS["ObjectInputStream.readObject() trả về Response"]
     end
 
     subgraph SERVER ["Server (Java Socket Server)"]
-        SRV["Server.java\nhandleClient(Socket)"]
+        SRV["Server.java<br/>handleClient(Socket)"]
         RR["RequestRouter.route(Request)"]
-        SVC1["TicketServiceImpl\n.searchTicketsForReturn(ReturnTicketSearchDTO)"]
-        SVC2["TicketServiceImpl\n.previewReturnTickets(ReturnTicketPreviewRequestDTO)"]
-        SVC3["TicketServiceImpl\n.confirmReturnTickets(ReturnTicketConfirmDTO)"]
+        SVC1["TicketServiceImpl<br/>.searchTicketsForReturn(ReturnTicketSearchDTO)"]
+        SVC2["TicketServiceImpl<br/>.previewReturnTickets(ReturnTicketPreviewRequestDTO)"]
+        SVC3["TicketServiceImpl<br/>.confirmReturnTickets(ReturnTicketConfirmDTO)"]
         JPA["JPAUtils.getEntityManager()"]
-        T_REPO["TicketRepositoryImpl\n.findTicketsByCustomerIdCardWithStatus(...)\n.findTicketsByIdsWithSchedule(...)"]
-        E_REPO["EmployeeRepositoryImpl\n.findEmployeeById(...)"]
-        I_REPO["InvoiceRepositoryImpl\n.createInvoice(em, invoice)"]
-        ID_REPO["InvoiceDetailRepositoryImpl\n.createInvoiceDetail(...)\n.findInvoiceDetailsByTicketIdsAndInvoiceType(...)\n.updateInvoiceDetails(...)"]
+        T_REPO["TicketRepositoryImpl<br/>.findTicketsByCustomerIdCardWithStatus(...)<br/>.findTicketsByIdsWithSchedule(...)"]
+        E_REPO["EmployeeRepositoryImpl<br/>.findEmployeeById(...)"]
+        I_REPO["InvoiceRepositoryImpl<br/>.createInvoice(em, invoice)"]
+        ID_REPO["InvoiceDetailRepositoryImpl<br/>.createInvoiceDetail(...)<br/>.findInvoiceDetailsByTicketIdsAndInvoiceType(...)<br/>.updateInvoiceDetails(...)"]
     end
 
     subgraph DB ["MariaDB"]
@@ -104,7 +104,7 @@ sequenceDiagram
         alt Lỗi validation
             Service-->>Router: Response.error(DATA_INVALID_PREFIX + errors)
         else Hợp lệ
-            Service->>Service: JPAUtils.getEntityManager() -> em
+            Service->>Service: JPAUtils.getEntityManager() trả về em
             Service->>TicketRepo: findTicketsByCustomerIdCardWithStatus(em, idCard, PAID)
             TicketRepo->>DB: JPQL SELECT Ticket JOIN FETCH customer/scheduleDetail/schedule WHERE (idCard OR passport) AND status=PAID
             DB-->>TicketRepo: List of Ticket
@@ -138,9 +138,9 @@ sequenceDiagram
             loop Mỗi ticket
                 Service->>Service: validate status=PAID
                 Service->>Service: validate schedule and departureTime not null
-                Service->>Service: validate minutesToDeparture >= 4h
-                Service->>Service: feeRate = (minutesToDeparture < 24h ? 20% : 10%)
-                Service->>Service: fee = max(price*feeRate, 10000); clamp fee to price
+                Service->>Service: validate minutesToDeparture tối thiểu 4h
+                Service->>Service: feeRate = (minutesToDeparture nhỏ hơn 24h thì 20%, ngược lại 10%)
+                Service->>Service: fee = max(price*feeRate, 10000), clamp fee to price
                 Service->>Service: refundAmount = price - fee
             end
             Service-->>Router: Response.success(PREVIEW_SUCCESS, ReturnTicketPreviewDTO(totalTicketPrice, refundFee, refundAmount))
@@ -162,36 +162,36 @@ sequenceDiagram
     alt Lỗi validation
         Service-->>Router: Response.error(DATA_INVALID_PREFIX + errors)
     else Hợp lệ
-        Service->>Service: JPAUtils.getEntityManager() -> em
+        Service->>Service: JPAUtils.getEntityManager() trả về em
         Service->>Service: em.getTransaction().begin()
 
         Service->>Service: computeReturn(em, ticketIds)
         alt refundAmount mismatch (tolerance 1.0)
-            note over Service,DB: Early return trong try; transaction vẫn active (code không rollback tường minh).
+            note over Service,DB: Early return trong try, transaction vẫn active (code không rollback tường minh).
             Service-->>Router: Response.error(REFUND_AMOUNT_MISMATCH)
         else refundAmount khớp
             Service->>EmpRepo: findEmployeeById(em, employeeId)
-            EmpRepo->>DB: em.find(Employee, employeeId) -> SELECT employees
+            EmpRepo->>DB: em.find(Employee, employeeId) thực hiện SELECT employees
             DB-->>EmpRepo: Employee or null
             EmpRepo-->>Service: employee
 
             alt employee == null
-                note over Service,DB: Early return; không rollback tường minh.
+                note over Service,DB: Early return, không rollback tường minh.
                 Service-->>Router: Response.error(EmployeeMessages.notFoundById)
             else employee tồn tại
                 Service->>Service: check tất cả ticket thuộc cùng customer
                 alt Customer mismatch
-                    note over Service,DB: Early return; không rollback tường minh.
+                    note over Service,DB: Early return, không rollback tường minh.
                     Service-->>Router: Response.error(CUSTOMER_MISMATCH)
                 else Cùng customer
                     Service->>InvRepo: createInvoice(em, Invoice(type=REFUND,totalAmount=totalRefundAmount,employee))
-                    InvRepo->>DB: em.persist(Invoice) -> INSERT invoices
+                    InvRepo->>DB: em.persist(Invoice) thực hiện INSERT invoices
                     DB-->>InvRepo: refundInvoiceId
                     InvRepo-->>Service: refundInvoice
 
                     loop Mỗi ticket (refund detail)
                         Service->>InvDetRepo: createInvoiceDetail(em, InvoiceDetail(isReturned=true, refundAmount, subTotal=ticketPrice))
-                        InvDetRepo->>DB: em.persist(InvoiceDetail) -> INSERT invoice_details
+                        InvDetRepo->>DB: em.persist(InvoiceDetail) thực hiện INSERT invoice_details
                         DB-->>InvDetRepo: ok
                         InvDetRepo-->>Service: ok
                     end
@@ -202,18 +202,18 @@ sequenceDiagram
                     InvDetRepo-->>Service: saleDetails
 
                     loop Mỗi saleDetail
-                        Service->>Service: saleDetail.returned=true; saleDetail.refundAmount=refundAmountByTicketId[ticketId]
+                        Service->>Service: saleDetail.returned=true, saleDetail.refundAmount=refundAmountByTicketId[ticketId]
                     end
                     Service->>InvDetRepo: updateInvoiceDetails(em, saleDetails)
-                    InvDetRepo->>DB: em.merge(InvoiceDetail) x N -> UPDATE invoice_details
+                    InvDetRepo->>DB: em.merge(InvoiceDetail) x N thực hiện UPDATE invoice_details
                     DB-->>InvDetRepo: ok
                     InvDetRepo-->>Service: ok
 
                     loop Mỗi ticket
-                        Service->>Service: ticket.status=RETURNED; ticket.qrCode="INVALID"
+                        Service->>Service: ticket.status=RETURNED, ticket.qrCode="INVALID"
                     end
                     Service->>TicketRepo: updateTickets(em, tickets)
-                    TicketRepo->>DB: em.merge(Ticket) x N -> UPDATE tickets
+                    TicketRepo->>DB: em.merge(Ticket) x N thực hiện UPDATE tickets
                     DB-->>TicketRepo: ok
                     TicketRepo-->>Service: ok
 
@@ -247,35 +247,34 @@ sequenceDiagram
 ```mermaid
 classDiagram
     class ReturnTicketSearchDTO {
-        <<DTO>>
         +String idCard
         +serialVersionUID : long
     }
+    note for ReturnTicketSearchDTO "DTO"
 
     class ReturnTicketPreviewRequestDTO {
-        <<DTO>>
         +List~String~ ticketIds
         +serialVersionUID : long
     }
+    note for ReturnTicketPreviewRequestDTO "DTO"
 
     class ReturnTicketPreviewDTO {
-        <<DTO>>
         +double totalTicketPrice
         +double refundFee
         +double refundAmount
         +serialVersionUID : long
     }
+    note for ReturnTicketPreviewDTO "DTO"
 
     class ReturnTicketConfirmDTO {
-        <<DTO>>
         +List~String~ ticketIds
         +double refundAmount
         +String employeeId
         +serialVersionUID : long
     }
+    note for ReturnTicketConfirmDTO "DTO"
 
     class ReturnTicketTicketDTO {
-        <<DTO>>
         +String id
         +String customerId
         +String scheduleDetailId
@@ -288,31 +287,31 @@ classDiagram
         +String originalTicketId
         +serialVersionUID : long
     }
+    note for ReturnTicketTicketDTO "DTO"
 
     class Ticket {
-        <<entity>>
         +String id
         +TicketStatus status
         +String qrCode
         +Customer customer
         +ScheduleDetail scheduleDetail
     }
+    note for Ticket "entity"
 
     class ScheduleDetail {
-        <<entity>>
         +String id
         +BigDecimal priceSeat
         +Schedule schedule
     }
+    note for ScheduleDetail "entity"
 
     class Schedule {
-        <<entity>>
         +String id
         +LocalDateTime departureTime
     }
+    note for Schedule "entity"
 
     class Invoice {
-        <<entity>>
         +String id
         +LocalDateTime issueDate
         +double totalAmount
@@ -320,9 +319,9 @@ classDiagram
         +Customer customer
         +Employee employee
     }
+    note for Invoice "entity"
 
     class InvoiceDetail {
-        <<entity>>
         +String id
         +double subTotal
         +boolean isReturned
@@ -330,31 +329,31 @@ classDiagram
         +Invoice invoice
         +Ticket ticket
     }
+    note for InvoiceDetail "entity"
 
     class TicketStatus {
-        <<enum>>
         PAID
         RETURNED
         CANCELLED
         EXCHANGED
     }
+    note for TicketStatus "enum"
 
     class InvoiceType {
-        <<enum>>
         SALE
         REFUND
         EXCHANGE
     }
+    note for InvoiceType "enum"
 
     class Request {
-        <<common>>
         +ActionType action
         +Object data
         +serialVersionUID : long
     }
+    note for Request "common"
 
     class Response {
-        <<common>>
         +boolean success
         +String message
         +Object data
@@ -362,6 +361,7 @@ classDiagram
         +success(message, data)$
         +error(message)$
     }
+    note for Response "common"
 
     ReturnTicketSearchDTO ..> Request : "SEARCH_TICKETS_FOR_RETURN"
     ReturnTicketPreviewRequestDTO ..> Request : "PREVIEW_RETURN_TICKETS"
