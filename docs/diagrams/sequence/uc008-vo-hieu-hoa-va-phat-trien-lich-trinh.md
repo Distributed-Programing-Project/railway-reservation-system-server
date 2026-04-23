@@ -67,7 +67,8 @@ flowchart TB
 
 ```mermaid
 sequenceDiagram
-    participant Client as 🖥️ Client
+    participant User as 👤 Nhân viên quản lý
+    participant UI as 🖥️ Client (Swing/FX)
     participant OIS as ObjectInputStream
     participant RR as RequestRouter
     participant SS as ScheduleServiceImpl
@@ -76,7 +77,9 @@ sequenceDiagram
     participant ER as EmployeeRepositoryImpl
     participant DB as MariaDB
 
-    Client->>OIS: Request(PUBLISH_OR_DISABLE_SCHEDULE, ScheduleLifecycleDTO)
+    User->>UI: Chọn "Vô hiệu hóa" lịch trình
+    UI->>UI: Xác nhận hành động
+    UI->>OIS: Request(PUBLISH_OR_DISABLE_SCHEDULE, ScheduleLifecycleDTO)
     OIS->>RR: route(request)
     RR->>SS: disableSchedule(dto)
 
@@ -86,7 +89,8 @@ sequenceDiagram
 
     alt Employee not found or not Manager
         SS-->>RR: Response.error(UNAUTHORIZED)
-        RR-->>Client: Response.error
+        RR-->>UI: Response.error
+        UI-->>User: Hiển thị lỗi "Không có quyền"
     end
 
     SS->>SR: findScheduleById(em, dto.scheduleId)
@@ -94,6 +98,8 @@ sequenceDiagram
 
     alt Schedule not found
         SS-->>RR: Response.error(SCHEDULE_NOT_FOUND)
+        RR-->>UI: Response.error
+        UI-->>User: Hiển thị lỗi "Không tìm thấy lịch trình"
     end
 
     alt schedule.status == DRAFT
@@ -111,6 +117,8 @@ sequenceDiagram
         alt soldCount > 0
             Note over SS: Đã có khách mua vé → Từ chối
             SS-->>RR: Response.error(TICKETS_SOLD_BLOCKED)
+            RR-->>UI: Response.error
+            UI-->>User: Hiển thị lỗi "Đã có vé được bán"
         else soldCount == 0
             Note over SS: Chưa có ai mua → PAUSED
             SS->>SR: updateStatus(em, scheduleId, PAUSED)
@@ -119,16 +127,20 @@ sequenceDiagram
         end
     else schedule.status != DRAFT, NOT_STARTED
         SS-->>RR: Response.error(WRONG_STATUS_DISABLE)
+        RR-->>UI: Response.error
+        UI-->>User: Hiển thị lỗi "Sai trạng thái"
     end
 
-    RR-->>Client: Response
+    RR-->>UI: Response
+    UI-->>User: Thông báo kết quả & làm mới danh sách
 ```
 
 ### Luồng PUBLISH (Phát triển)
 
 ```mermaid
 sequenceDiagram
-    participant Client as 🖥️ Client
+    participant User as 👤 Nhân viên quản lý
+    participant UI as 🖥️ Client (Swing/FX)
     participant OIS as ObjectInputStream
     participant RR as RequestRouter
     participant SS as ScheduleServiceImpl
@@ -137,7 +149,9 @@ sequenceDiagram
     participant ER as EmployeeRepositoryImpl
     participant DB as MariaDB
 
-    Client->>OIS: Request(PUBLISH_OR_DISABLE_SCHEDULE, ScheduleLifecycleDTO)
+    User->>UI: Chọn "Phát triển" lịch trình
+    UI->>UI: Xác nhận hành động
+    UI->>OIS: Request(PUBLISH_OR_DISABLE_SCHEDULE, ScheduleLifecycleDTO)
     OIS->>RR: route(request)
     RR->>SS: publishSchedule(dto)
 
@@ -147,6 +161,8 @@ sequenceDiagram
 
     alt Employee not Manager
         SS-->>RR: Response.error(UNAUTHORIZED)
+        RR-->>UI: Response.error
+        UI-->>User: Hiển thị lỗi "Không có quyền"
     end
 
     SS->>SR: findScheduleById(em, dto.scheduleId)
@@ -154,22 +170,27 @@ sequenceDiagram
 
     alt Schedule not DRAFT
         SS-->>RR: Response.error(ONLY_DRAFT_CAN_BE_PUBLISHED)
+        RR-->>UI: Response.error
+        UI-->>User: Hiển thị lỗi "Chỉ nháp mới phát triển được"
     end
 
     Note over SS: Kiểm tra tất cả priceSeat > 0
-    SS->>SDR: checkAllSeatsPriced(em, scheduleId)
+    SS->>SDR: existsUnpricedSeat(em, scheduleId)
     SDR-->>SS: hasUnpricedSeats: boolean
 
     alt hasUnpricedSeats == true
         Note over SS: Còn ghế giá 0 → Chặn
         SS-->>RR: Response.error(PRICE_NOT_CONFIGURED)
+        RR-->>UI: Response.error
+        UI-->>User: Hiển thị lỗi "Chưa cấu hình giá vé"
     else hasUnpricedSeats == false
         SS->>SR: updateStatus(em, scheduleId, NOT_STARTED)
         SR-->>SS: true
         SS-->>RR: Response.success(PUBLISH_SUCCESS)
     end
 
-    RR-->>Client: Response
+    RR-->>UI: Response
+    UI-->>User: Thông báo thành công & làm mới danh sách
 ```
 
 ---
