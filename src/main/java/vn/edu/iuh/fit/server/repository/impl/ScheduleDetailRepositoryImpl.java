@@ -1,5 +1,6 @@
 package vn.edu.iuh.fit.server.repository.impl;
 
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -43,5 +44,18 @@ public class ScheduleDetailRepositoryImpl extends AbstractGenericRepositoryImpl<
 
 
         return new HashSet<>(seatIds);
+    }
+
+    @Override
+    public boolean existsUnpricedSeat(EntityManager em, String scheduleId) {
+        Long count = em.createQuery(
+                        "SELECT COUNT(sd) FROM ScheduleDetail sd " +
+                        "WHERE sd.schedule.id = :scheduleId " +
+                        "AND (sd.priceSeat IS NULL OR sd.priceSeat <= :zero)",
+                        Long.class)
+                .setParameter("scheduleId", scheduleId)
+                .setParameter("zero", BigDecimal.ZERO)
+                .getSingleResult();
+        return count != null && count > 0;
     }
 }

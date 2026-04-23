@@ -16,11 +16,11 @@ graph TB
     end
 
     subgraph SERVER ["Server"]
-        SRV["Server.java\n(ServerSocket :9090\nThreadPool)"]
-        RR["RequestRouter.java\n(switch ActionType)"]
-        ES["EmployeeService\n(business logic + tx)"]
-        ER["EmployeeRepository\n(JPQL queries)"]
-        EM["EmployeeMapper\n(Entity ↔ DTO)"]
+        SRV["Server.java\nServerSocket :9090\nThreadPool"]
+        RR["RequestRouter.java\nswitch ActionType"]
+        ES["EmployeeService\nbusiness logic + tx"]
+        ER["EmployeeRepository\nJPQL queries"]
+        EM["EmployeeMapper"]
     end
 
     subgraph DB ["Persistence"]
@@ -29,20 +29,20 @@ graph TB
     end
 
     UI -->|"build Request"| SC
-    SC -->|"ObjectOutputStream.writeObject(Request)"| SRV
+    SC -->|"writeObject Request"| SRV
     SRV -->|"submit to ThreadPool"| RR
-    RR -->|"castData → EmployeeDTO / String"| ES
+    RR -->|"castData to DTO"| ES
     ES -->|"validate + begin tx"| ER
-    ER -->|"TypedQuery / persist"| JPA
+    ER -->|"TypedQuery persist"| JPA
     JPA -->|"SQL"| MDB
     MDB -->|"ResultSet"| JPA
     JPA -->|"Employee entity"| ER
     ER -->|"Employee"| ES
-    ES -->|"EmployeeMapper.toDto()"| EM
+    ES -->|"map to DTO"| EM
     EM -->|"EmployeeDTO"| ES
     ES -->|"Response.success/error"| RR
     RR -->|"Response"| SRV
-    SRV -->|"ObjectOutputStream.writeObject(Response)\nout.reset()"| SC
+    SRV -->|"writeObject Response"| SC
     SC -->|"Response"| UI
 ```
 
@@ -54,15 +54,15 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor Manager
-    participant UI as EmployeeManagementController
+    actor User as 👤 Nhân viên quản lý
+    participant UI as 🖥️ EmployeeManagementController
     participant SC as SocketClient
     participant Router as RequestRouter
     participant Svc as EmployeeService
     participant Repo as EmployeeRepository
     participant DB as MariaDB
 
-    Manager->>UI: Nhập thông tin nhân viên → nhấn Lưu
+    User->>UI: Nhập thông tin nhân viên → nhấn Lưu
     UI->>UI: validate client-side (format email, SĐT, CCCD)
     UI->>SC: sendRequest(new Request(CREATE_EMPLOYEE, employeeDTO))
     SC->>Router: ObjectInputStream.readObject() → Request
@@ -84,22 +84,23 @@ sequenceDiagram
     Svc-->>Router: Response.success("Tạo nhân viên thành công", employeeDTO)
     Router-->>SC: ObjectOutputStream.writeObject(response) + out.reset()
     SC-->>UI: Response { success=true, data=EmployeeDTO }
-    UI-->>Manager: Hiển thị thông báo + employeeCode được sinh
+    UI-->>User: Hiển thị thông báo + employeeCode được sinh
 ```
 
 ### Luồng B — Cấp tài khoản
 
 ```mermaid
 sequenceDiagram
-    actor Manager
-    participant UI as EmployeeManagementController
+    actor User as 👤 Nhân viên quản lý
+    participant UI as 🖥️ EmployeeManagementController
     participant SC as SocketClient
     participant Router as RequestRouter
     participant Svc as EmployeeService
     participant Repo as EmployeeRepository
     participant DB as MariaDB
 
-    Manager->>UI: Chọn nhân viên chưa có tài khoản → Cấp tài khoản
+    User->>UI: Chọn nhân viên chưa có tài khoản → Cấp tài khoản
+    UI->>UI: Xác nhận hành động
     UI->>SC: sendRequest(new Request(CREATE_EMPLOYEE_ACCOUNT, employeeId))
     SC->>Router: ObjectInputStream.readObject() → Request
     Router->>Router: castData(request, String.class)
@@ -119,22 +120,22 @@ sequenceDiagram
     Svc-->>Router: Response.success("Cấp tài khoản thành công", AccountCreatedDTO { username, temporaryPassword=rawPassword })
     Router-->>SC: writeObject(response) + reset()
     SC-->>UI: Response { data=AccountCreatedDTO }
-    UI-->>Manager: Hiển thị username + mật khẩu tạm thời (1 lần duy nhất)
+    UI-->>User: Hiển thị username + mật khẩu tạm thời (1 lần duy nhất)
 ```
 
 ### Luồng C — Xoá mềm nhân viên
 
 ```mermaid
 sequenceDiagram
-    actor Manager
-    participant UI as EmployeeManagementController
+    actor User as 👤 Nhân viên quản lý
+    participant UI as 🖥️ EmployeeManagementController
     participant SC as SocketClient
     participant Router as RequestRouter
     participant Svc as EmployeeService
     participant Repo as EmployeeRepository
     participant DB as MariaDB
 
-    Manager->>UI: Chọn nhân viên → Xác nhận xoá
+    User->>UI: Chọn nhân viên → Xác nhận xoá
     UI->>SC: sendRequest(new Request(DELETE_EMPLOYEE, employeeId))
     SC->>Router: readObject() → Request
     Router->>Svc: softDeleteEmployee(employeeId, currentManagerId)
@@ -152,22 +153,22 @@ sequenceDiagram
     Svc-->>Router: Response.success("Xoá mềm thành công", employeeDTO)
     Router-->>SC: writeObject(response) + reset()
     SC-->>UI: Response { success=true }
-    UI-->>Manager: Thông báo xoá mềm thành công
+    UI-->>User: Thông báo xoá mềm thành công
 ```
 
 ### Luồng D — Reset mật khẩu
 
 ```mermaid
 sequenceDiagram
-    actor Manager
-    participant UI as EmployeeManagementController
+    actor User as 👤 Nhân viên quản lý
+    participant UI as 🖥️ EmployeeManagementController
     participant SC as SocketClient
     participant Router as RequestRouter
     participant Svc as EmployeeService
     participant Repo as EmployeeRepository
     participant DB as MariaDB
 
-    Manager->>UI: Chọn nhân viên → Reset mật khẩu → Xác nhận
+    User->>UI: Chọn nhân viên → Reset mật khẩu → Xác nhận
     UI->>SC: sendRequest(new Request(RESET_EMPLOYEE_PASSWORD, employeeId))
     SC->>Router: readObject() → Request
     Router->>Svc: resetEmployeePassword(employeeId)
@@ -182,22 +183,22 @@ sequenceDiagram
     Svc-->>Router: Response.success("Reset thành công", AccountCreatedDTO { username, temporaryPassword=rawPassword })
     Router-->>SC: writeObject(response) + reset()
     SC-->>UI: Response { data=AccountCreatedDTO }
-    UI-->>Manager: Hiển thị mật khẩu mới (1 lần duy nhất)
+    UI-->>User: Hiển thị mật khẩu mới (1 lần duy nhất)
 ```
 
 ### Luồng E — Xem danh sách nhân viên
 
 ```mermaid
 sequenceDiagram
-    actor Manager
-    participant UI as EmployeeManagementController
+    actor User as 👤 Nhân viên quản lý
+    participant UI as 🖥️ EmployeeManagementController
     participant SC as SocketClient
     participant Router as RequestRouter
     participant Svc as EmployeeService
     participant Repo as EmployeeRepository
     participant DB as MariaDB
 
-    Manager->>UI: Vào màn hình Quản lý nhân viên
+    User->>UI: Vào màn hình Quản lý nhân viên
     UI->>SC: sendRequest(new Request(FIND_ALL_EMPLOYEES, EmployeeFilterDTO { page=0, size=20, statusFilter=null }))
     SC->>Router: readObject() → Request
     Router->>Router: castData(request, EmployeeFilterDTO.class)
@@ -212,7 +213,7 @@ sequenceDiagram
     Svc-->>Router: Response.success("OK", EmployeePageDTO { content, totalElements, totalPages, currentPage })
     Router-->>SC: writeObject(response) + reset()
     SC-->>UI: Response { data=EmployeePageDTO }
-    UI-->>Manager: Hiển thị bảng danh sách nhân viên
+    UI-->>User: Hiển thị bảng danh sách nhân viên
 ```
 
 ---

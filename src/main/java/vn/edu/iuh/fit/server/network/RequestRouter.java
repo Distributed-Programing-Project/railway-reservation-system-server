@@ -10,6 +10,7 @@ import vn.edu.iuh.fit.common.dto.ReturnTicketPreviewRequestDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketSearchDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleCreateDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleFilterDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleLifecycleDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleUpdateDTO;
 import vn.edu.iuh.fit.common.dto.CreateCarriageDTO;
 import vn.edu.iuh.fit.common.dto.CreateTrainDTO;
@@ -18,6 +19,7 @@ import vn.edu.iuh.fit.common.dto.TrainFilterDTO;
 import vn.edu.iuh.fit.common.dto.UpdateTrainCarriagesDTO;
 import vn.edu.iuh.fit.common.dto.UpdateTrainStatusDTO;
 import vn.edu.iuh.fit.common.message.CommonMessages;
+import vn.edu.iuh.fit.common.message.ScheduleMessages;
 import vn.edu.iuh.fit.server.service.EmployeeService;
 import vn.edu.iuh.fit.server.service.LoginService;
 import vn.edu.iuh.fit.server.service.ScheduleService;
@@ -75,6 +77,18 @@ public class RequestRouter {
             case UPDATE_TRAIN_CARRIAGES ->
                 trainService.updateTrainCarriages(castData(request, UpdateTrainCarriagesDTO.class));
             case UPDATE_TRAIN_STATUS -> trainService.updateTrainStatus(castData(request, UpdateTrainStatusDTO.class));
+
+            case PUBLISH_OR_DISABLE_SCHEDULE -> {
+                ScheduleLifecycleDTO dto = castData(request, ScheduleLifecycleDTO.class);
+                String action = dto.getAction().trim().toUpperCase();
+                if ("PUBLISH".equals(action)) {
+                    yield scheduleService.publishSchedule(dto);
+                } else if ("DISABLE".equals(action)) {
+                    yield scheduleService.disableSchedule(dto);
+                } else {
+                    yield Response.error(ScheduleMessages.ACTION_INVALID);
+                }
+            }
 
             default -> Response.error(String.format(CommonMessages.UNKNOWN_ACTION, request.getAction()));
         };

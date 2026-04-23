@@ -16,4 +16,6 @@ public interface ScheduleDetailRepository {
     ScheduleDetail findById(String id, EntityManager em);
 
     ScheduleDetail updateScheduleDetail(EntityManager em, ScheduleDetail scheduleDetail);
+
+    boolean existsUnpricedSeat(EntityManager em, String scheduleId);
 }
