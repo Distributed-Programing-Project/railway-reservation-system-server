@@ -45,6 +45,8 @@ sequenceDiagram
     participant Repo as ScheduleRepository
     participant DB as MariaDB
 
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Quản lý lịch trình"
     User->>UI: Chọn tiêu chí (Ga đi, Ga đến, Mác tàu, Trạng thái...)
     UI->>UI: Validate form (Từ ngày < Đến ngày)
     User->>UI: Nhấn "Lọc"

@@ -61,6 +61,8 @@ sequenceDiagram
     participant SR as StatisticsRepository
     participant DB as MariaDB
 
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Thống kê"
     User->>UI: Chọn tab (Ngày/Tuần/Tháng) + nhấn "Xem thống kê"
     UI->>UI: Collect input: periodType, targetDate, requestEmployeeId, employeeId(opt)
     UI->>UI: Build StatisticsRequestDTO

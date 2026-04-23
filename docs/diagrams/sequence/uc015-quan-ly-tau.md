@@ -56,7 +56,7 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor Manager as Nhân viên Quản lý
+    actor User as 👤 Nhân viên Quản lý
     participant UI as TrainManagementController
     participant SC as SocketClient
     participant RR as RequestRouter
@@ -66,8 +66,10 @@ sequenceDiagram
     participant SR as ScheduleRepositoryImpl
     participant DB as MariaDB
 
-    Note over Manager,DB: Luồng A — Tra cứu tàu
-    Manager->>UI: Nhập mác tàu, nhấn Tìm kiếm
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Quản lý tàu"
+    Note over User,DB: Luồng A — Tra cứu tàu
+    User->>UI: Nhập mác tàu, nhấn Tìm kiếm
     UI->>SC: sendRequest(FIND_TRAIN_BY_CODE, keyword)
     SC->>RR: route(request)
     RR->>TS: findTrainsByCode(keyword)
@@ -79,10 +81,12 @@ sequenceDiagram
     TS-->>RR: Response.success(List<TrainDTO> with carriages)
     RR-->>SC: Response
     SC-->>UI: Response
-    UI-->>Manager: Hiển thị danh sách tàu + toa
+    UI-->>User: Hiển thị danh sách tàu + toa
 
-    Note over Manager,DB: Luồng B — Lập tàu mới
-    Manager->>UI: Nhập trainCode, chọn toa từ pool, nhấn Xác nhận
+    Note over User,DB: Luồng B — Lập tàu mới
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Quản lý tàu"
+    User->>UI: Nhập trainCode, chọn toa từ pool, nhấn Xác nhận
     UI->>SC: sendRequest(FIND_UNASSIGNED_CARRIAGES, null)
     SC->>RR: route(request)
     RR->>TS: findUnassignedCarriages()
@@ -92,7 +96,7 @@ sequenceDiagram
     CR-->>TS: List<Carriage>
     TS-->>UI: Response.success(List<CarriageDTO>)
 
-    Manager->>UI: Nhấn Xác nhận lập tàu
+    User->>UI: Nhấn Xác nhận lập tàu
     UI->>SC: sendRequest(CREATE_TRAIN, CreateTrainDTO)
     SC->>RR: route(request)
     RR->>TS: createTrain(CreateTrainDTO)
@@ -110,10 +114,12 @@ sequenceDiagram
     TS-->>RR: Response.success("Tàu SE5 được tạo thành công", trainId)
     RR-->>SC: Response
     SC-->>UI: Response
-    UI-->>Manager: Hiển thị thông báo thành công
+    User->>UI: Hiển thị thông báo thành công
 
-    Note over Manager,DB: Luồng D — Đăng ký toa mới
-    Manager->>UI: Chọn CarriageType, nhấn Lưu
+    Note over User,DB: Luồng D — Đăng ký toa mới
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Quản lý tàu"
+    User->>UI: Chọn CarriageType, nhấn Lưu
     UI->>SC: sendRequest(CREATE_CARRIAGE, CreateCarriageDTO)
     SC->>RR: route(request)
     RR->>TS: createCarriage(CreateCarriageDTO)
@@ -125,9 +131,12 @@ sequenceDiagram
     CR-->>TS: Carriage
     TS->>DB: COMMIT
     TS-->>UI: Response.success("Toa mới đã được đăng ký", CarriageDTO)
+    UI-->>User: Hiển thị thông báo thành công
 
-    Note over Manager,DB: Luồng E — Cấu hình lại tàu
-    Manager->>UI: Chọn tàu, nhấn Cấu hình
+    Note over User,DB: Luồng E — Cấu hình lại tàu
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Quản lý tàu"
+    User->>UI: Chọn tàu, nhấn Cấu hình
     UI->>SC: sendRequest(UPDATE_TRAIN_CARRIAGES, UpdateTrainCarriagesDTO)
     SC->>RR: route(request)
     RR->>TS: updateTrainCarriages(UpdateTrainCarriagesDTO)
@@ -143,9 +152,12 @@ sequenceDiagram
     TR->>DB: UPDATE new carriages: train=?, number=i+1
     TS->>DB: COMMIT
     TS-->>UI: Response.success("Cấu hình tàu đã được cập nhật", null)
+    UI-->>User: Hiển thị thông báo thành công
 
-    Note over Manager,DB: Luồng F — Đổi trạng thái tàu
-    Manager->>UI: Chọn tàu, chọn trạng thái mới, Xác nhận
+    Note over User,DB: Luồng F — Đổi trạng thái tàu
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Quản lý tàu"
+    User->>UI: Chọn tàu, chọn trạng thái mới, Xác nhận
     UI->>SC: sendRequest(UPDATE_TRAIN_STATUS, UpdateTrainStatusDTO)
     SC->>RR: route(request)
     RR->>TS: updateTrainStatus(UpdateTrainStatusDTO)
@@ -160,6 +172,7 @@ sequenceDiagram
     TR->>DB: UPDATE trains SET status=? WHERE id=?
     TS->>DB: COMMIT
     TS-->>UI: Response.success("Trạng thái tàu đã được cập nhật", null)
+    UI-->>User: Hiển thị thông báo thành công
 ```
 
 ---
