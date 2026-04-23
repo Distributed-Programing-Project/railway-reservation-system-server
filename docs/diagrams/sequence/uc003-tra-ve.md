@@ -6,17 +6,17 @@
 
 ```mermaid
 graph TB
-    subgraph CLIENT ["🖥️ Client (JavaFX)"]
+    subgraph CLIENT ["Client (JavaFX)"]
         UI["TicketReturnView\n(Trả vé UI)"]
         SC["SocketClient"]
     end
 
-    subgraph TRANSPORT ["🔌 TCP Socket Transport"]
+    subgraph TRANSPORT ["TCP Socket Transport"]
         OOS["ObjectOutputStream.writeObject(Request)"]
-        OIS["ObjectInputStream.readObject() → Response"]
+        OIS["ObjectInputStream.readObject() -> Response"]
     end
 
-    subgraph SERVER ["⚙️ Server (Java Socket Server)"]
+    subgraph SERVER ["Server (Java Socket Server)"]
         SRV["Server.java\nhandleClient(Socket)"]
         RR["RequestRouter.route(Request)"]
         SVC1["TicketServiceImpl\n.searchTicketsForReturn(ReturnTicketSearchDTO)"]
@@ -29,7 +29,7 @@ graph TB
         ID_REPO["InvoiceDetailRepositoryImpl\n.createInvoiceDetail(...)\n.findInvoiceDetailsByTicketIdsAndInvoiceType(...)\n.updateInvoiceDetails(...)"]
     end
 
-    subgraph DB ["🗄️ MariaDB"]
+    subgraph DB ["MariaDB"]
         T_TICKET["tickets"]
         T_CUS["customers"]
         T_SD["schedule_details"]
@@ -64,8 +64,8 @@ graph TB
     T_REPO -- "JPQL: Ticket JOIN FETCH customer/scheduleDetail/schedule" --> T_TICKET
     E_REPO -- "em.find(Employee)" --> T_EMP
     I_REPO -- "INSERT Invoice(type=REFUND)" --> T_INV
-    ID_REPO -- "INSERT InvoiceDetail (refund) x N" --> T_INVD
-    ID_REPO -- "JPQL: InvoiceDetail JOIN FETCH invoice,ticket WHERE invoice.type=SALE" --> T_INVD
+    ID_REPO -- "INSERT InvoiceDetail(refund) x N" --> T_INVD
+    ID_REPO -- "JPQL: find sale InvoiceDetail by ticketIds" --> T_INVD
     ID_REPO -- "UPDATE InvoiceDetail.returned/refund_amount" --> T_INVD
     T_REPO -- "UPDATE Ticket.status=RETURNED, qr_code=INVALID" --> T_TICKET
 
@@ -80,7 +80,7 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor Clerk as 👤 Nhân viên bán vé
+    actor Clerk as NhanVienBanVe
     participant UI as TicketReturnView
     participant Socket as SocketClient
     participant Server as Server.java
@@ -101,15 +101,15 @@ sequenceDiagram
         Router->>Service: searchTicketsForReturn(searchDTO)
 
         Service->>Service: ValidationUtils.validate(searchDTO)
-        alt Lỗi validation (@NotEmpty)
+        alt Lỗi validation
             Service-->>Router: Response.error(DATA_INVALID_PREFIX + errors)
         else Hợp lệ
-            Service->>Service: JPAUtils.getEntityManager() → em
+            Service->>Service: JPAUtils.getEntityManager() -> em
             Service->>TicketRepo: findTicketsByCustomerIdCardWithStatus(em, idCard, PAID)
-            TicketRepo->>DB: JPQL SELECT Ticket t JOIN FETCH t.customer c JOIN FETCH t.scheduleDetail sd JOIN FETCH sd.schedule s WHERE (c.idCard=:idCard OR c.passport=:idCard) AND t.status=:status
-            DB-->>TicketRepo: List<Ticket>
+            TicketRepo->>DB: JPQL SELECT Ticket JOIN FETCH customer/scheduleDetail/schedule WHERE (idCard OR passport) AND status=PAID
+            DB-->>TicketRepo: List of Ticket
             TicketRepo-->>Service: tickets
-            Service-->>Router: Response.success(FIND_SUCCESS, List<ReturnTicketTicketDTO>)
+            Service-->>Router: Response.success(FIND_SUCCESS, List of ReturnTicketTicketDTO)
         end
 
         Router-->>Server: Response
@@ -126,25 +126,24 @@ sequenceDiagram
         Router->>Service: previewReturnTickets(previewDTO)
 
         Service->>Service: ValidationUtils.validate(previewDTO)
-        alt Lỗi validation (@NotEmpty)
+        alt Lỗi validation
             Service-->>Router: Response.error(DATA_INVALID_PREFIX + errors)
         else Hợp lệ
             Service->>Service: computeReturn(em, ticketIds)
-            Service->>Service: validate distinctIds + load tickets
             Service->>TicketRepo: findTicketsByIdsWithSchedule(em, distinctIds)
-            TicketRepo->>DB: JPQL SELECT Ticket t JOIN FETCH t.customer c JOIN FETCH t.scheduleDetail sd JOIN FETCH sd.schedule s WHERE t.id IN :ids
-            DB-->>TicketRepo: List<Ticket> tickets
+            TicketRepo->>DB: JPQL SELECT Ticket JOIN FETCH customer/scheduleDetail/schedule WHERE id IN :ids
+            DB-->>TicketRepo: List of Ticket
             TicketRepo-->>Service: tickets
 
             loop Mỗi ticket
-                Service->>Service: status == PAID ?
-                Service->>Service: scheduleDetail/schedule/departureTime != null ?
-                Service->>Service: minutesToDeparture >= 4h ?
+                Service->>Service: validate status=PAID
+                Service->>Service: validate schedule and departureTime not null
+                Service->>Service: validate minutesToDeparture >= 4h
                 Service->>Service: feeRate = (minutesToDeparture < 24h ? 20% : 10%)
-                Service->>Service: fee = max(price*feeRate, 10_000); fee<=price
+                Service->>Service: fee = max(price*feeRate, 10000); clamp fee to price
                 Service->>Service: refundAmount = price - fee
             end
-            Service-->>Router: Response.success(PREVIEW_SUCCESS, ReturnTicketPreviewDTO{totalTicketPrice,refundFee,refundAmount})
+            Service-->>Router: Response.success(PREVIEW_SUCCESS, ReturnTicketPreviewDTO(totalTicketPrice, refundFee, refundAmount))
         end
 
         Router-->>Server: Response
@@ -160,20 +159,20 @@ sequenceDiagram
     Router->>Service: confirmReturnTickets(confirmDTO)
 
     Service->>Service: ValidationUtils.validate(confirmDTO)
-    alt Lỗi validation (@NotEmpty/@Min)
+    alt Lỗi validation
         Service-->>Router: Response.error(DATA_INVALID_PREFIX + errors)
     else Hợp lệ
-        Service->>Service: JPAUtils.getEntityManager() → em
+        Service->>Service: JPAUtils.getEntityManager() -> em
         Service->>Service: em.getTransaction().begin()
 
         Service->>Service: computeReturn(em, ticketIds)
-        alt |confirm.refundAmount - computed.totalRefundAmount| > 1.0
+        alt refundAmount mismatch (tolerance 1.0)
             note over Service,DB: Early return trong try; transaction vẫn active (code không rollback tường minh).
             Service-->>Router: Response.error(REFUND_AMOUNT_MISMATCH)
         else refundAmount khớp
             Service->>EmpRepo: findEmployeeById(em, employeeId)
-            EmpRepo->>DB: em.find(Employee, employeeId) → SELECT employees
-            DB-->>EmpRepo: Employee? employee
+            EmpRepo->>DB: em.find(Employee, employeeId) -> SELECT employees
+            DB-->>EmpRepo: Employee or null
             EmpRepo-->>Service: employee
 
             alt employee == null
@@ -185,28 +184,28 @@ sequenceDiagram
                     note over Service,DB: Early return; không rollback tường minh.
                     Service-->>Router: Response.error(CUSTOMER_MISMATCH)
                 else Cùng customer
-                    Service->>InvRepo: createInvoice(em, Invoice{type=REFUND,totalAmount=totalRefundAmount,employee})
-                    InvRepo->>DB: em.persist(Invoice) → INSERT invoices
+                    Service->>InvRepo: createInvoice(em, Invoice(type=REFUND,totalAmount=totalRefundAmount,employee))
+                    InvRepo->>DB: em.persist(Invoice) -> INSERT invoices
                     DB-->>InvRepo: refundInvoiceId
                     InvRepo-->>Service: refundInvoice
 
                     loop Mỗi ticket (refund detail)
-                        Service->>InvDetRepo: createInvoiceDetail(em, InvoiceDetail{isReturned=true, refundAmount, subTotal=ticketPrice})
-                        InvDetRepo->>DB: em.persist(InvoiceDetail) → INSERT invoice_details
+                        Service->>InvDetRepo: createInvoiceDetail(em, InvoiceDetail(isReturned=true, refundAmount, subTotal=ticketPrice))
+                        InvDetRepo->>DB: em.persist(InvoiceDetail) -> INSERT invoice_details
                         DB-->>InvDetRepo: ok
                         InvDetRepo-->>Service: ok
                     end
 
                     Service->>InvDetRepo: findInvoiceDetailsByTicketIdsAndInvoiceType(em, ticketIds, SALE)
-                    InvDetRepo->>DB: JPQL SELECT d FROM InvoiceDetail d JOIN FETCH d.invoice i JOIN FETCH d.ticket t WHERE t.id IN :ticketIds AND i.type=:invoiceType
-                    DB-->>InvDetRepo: List<InvoiceDetail> saleDetails
+                    InvDetRepo->>DB: JPQL SELECT InvoiceDetail JOIN FETCH invoice,ticket WHERE ticketId IN :ids AND invoice.type=SALE
+                    DB-->>InvDetRepo: List of InvoiceDetail (sale)
                     InvDetRepo-->>Service: saleDetails
 
                     loop Mỗi saleDetail
                         Service->>Service: saleDetail.returned=true; saleDetail.refundAmount=refundAmountByTicketId[ticketId]
                     end
                     Service->>InvDetRepo: updateInvoiceDetails(em, saleDetails)
-                    InvDetRepo->>DB: em.merge(InvoiceDetail) x N → UPDATE invoice_details
+                    InvDetRepo->>DB: em.merge(InvoiceDetail) x N -> UPDATE invoice_details
                     DB-->>InvDetRepo: ok
                     InvDetRepo-->>Service: ok
 
@@ -214,7 +213,7 @@ sequenceDiagram
                         Service->>Service: ticket.status=RETURNED; ticket.qrCode="INVALID"
                     end
                     Service->>TicketRepo: updateTickets(em, tickets)
-                    TicketRepo->>DB: em.merge(Ticket) x N → UPDATE tickets
+                    TicketRepo->>DB: em.merge(Ticket) x N -> UPDATE tickets
                     DB-->>TicketRepo: ok
                     TicketRepo-->>Service: ok
 
@@ -229,7 +228,7 @@ sequenceDiagram
         Socket-->>UI: Response
     end
 
-    alt IllegalArgumentException (từ computeReturn: ids trống/trùng/không hợp lệ/không đủ điều kiện thời gian)
+    alt IllegalArgumentException (từ computeReturn)
         Service->>Service: rollbackQuietly(tx)
         Service-->>Router: Response.error(e.message)
     else OptimisticLockException

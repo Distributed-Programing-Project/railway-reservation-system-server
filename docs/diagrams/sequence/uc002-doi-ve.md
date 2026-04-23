@@ -6,17 +6,17 @@
 
 ```mermaid
 graph TB
-    subgraph CLIENT ["🖥️ Client (JavaFX)"]
+    subgraph CLIENT ["Client (JavaFX)"]
         UI["TicketExchangeView\n(Đổi vé UI)"]
         SC["SocketClient"]
     end
 
-    subgraph TRANSPORT ["🔌 TCP Socket Transport"]
+    subgraph TRANSPORT ["TCP Socket Transport"]
         OOS["ObjectOutputStream.writeObject(Request)"]
-        OIS["ObjectInputStream.readObject() → Response"]
+        OIS["ObjectInputStream.readObject() -> Response"]
     end
 
-    subgraph SERVER ["⚙️ Server (Java Socket Server)"]
+    subgraph SERVER ["Server (Java Socket Server)"]
         SRV["Server.java\nhandleClient(Socket)"]
         RR["RequestRouter.route(Request)\n(Hiện chưa có ActionType cho UC002)"]
         SVC["TicketServiceImpl\n.exchangeTickets(ExchangeTicketRequestDTO)"]
@@ -27,7 +27,7 @@ graph TB
         ID_REPO["InvoiceDetailRepositoryImpl\n.createInvoiceDetail(em, detail)"]
     end
 
-    subgraph DB ["🗄️ MariaDB"]
+    subgraph DB ["MariaDB"]
         T_TICKET["tickets"]
         T_SD["schedule_details"]
         T_SCH["schedules"]
@@ -53,7 +53,7 @@ graph TB
     T_REPO -- "JPQL: Ticket JOIN FETCH ScheduleDetail/Schedule" --> T_TICKET
     SD_REPO -- "em.find(ScheduleDetail)" --> T_SD
     SD_REPO -- "JPQL: sold seat ids (Ticket.status NOT IN CANCELLED/EXCHANGED/RETURNED)" --> T_TICKET
-    SD_REPO -- "OptimisticLock via @Version" --> T_SD
+    SD_REPO -- "OptimisticLock via version field" --> T_SD
     T_REPO -- "UPDATE Ticket.status=EXCHANGED, is_exchanged=true" --> T_TICKET
     T_REPO -- "INSERT new Ticket (status=PAID, original_ticket_id=...)" --> T_TICKET
     I_REPO -- "INSERT Invoice(type=EXCHANGE)" --> T_INV
@@ -71,7 +71,7 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor Clerk as 👤 Nhân viên bán vé
+    actor Clerk as NhanVienBanVe
     participant UI as TicketExchangeView
     participant Socket as SocketClient
     participant Server as Server.java
@@ -103,7 +103,7 @@ sequenceDiagram
         Server-->>Socket: Response
         Socket-->>UI: Response(success=false)
     else Hợp lệ
-        Service->>Service: JPAUtils.getEntityManager() → em
+        Service->>Service: JPAUtils.getEntityManager() -> em
         Service->>Service: em.getTransaction().begin()
 
         Service->>TicketRepo: findTicketsForExchange(oldTicketIds, em)
@@ -129,14 +129,14 @@ sequenceDiagram
                 loop Mỗi oldTicket
                     Service->>Service: oldTicket.exchanged=true; oldTicket.status=EXCHANGED
                     Service->>TicketRepo: updateTicket(em, oldTicket)
-                    TicketRepo->>DB: em.merge(Ticket) → UPDATE tickets
+                    TicketRepo->>DB: em.merge(Ticket) -> UPDATE tickets
                     DB-->>TicketRepo: ok
                     TicketRepo-->>Service: ok
                 end
 
-                loop i = 0..n-1 (oldTicketId → newScheduleDetailId)
+                loop i = 0..n-1 (oldTicketId -> newScheduleDetailId)
                     Service->>SDRepo: findById(newSeatId, em)
-                    SDRepo->>DB: em.find(ScheduleDetail, newSeatId) → SELECT schedule_details
+                    SDRepo->>DB: em.find(ScheduleDetail, newSeatId) -> SELECT schedule_details
                     DB-->>SDRepo: ScheduleDetail? newSeat
                     SDRepo-->>Service: newSeat
 
@@ -153,12 +153,12 @@ sequenceDiagram
                             Service-->>Router: Response.error(SEAT_NOT_AVAILABLE)
                         else Ghế còn trống
                             Service->>SDRepo: updateScheduleDetail(em, newSeat)
-                            SDRepo->>DB: em.merge(ScheduleDetail @Version) → optimistic lock check
+                            SDRepo->>DB: em.merge(ScheduleDetail versioned) -> optimistic lock check
                             DB-->>SDRepo: ok
                             SDRepo-->>Service: ok
 
                             Service->>TicketRepo: createTicket(newTicket{status=PAID, originalTicketId=oldTicket.id}, em)
-                            TicketRepo->>DB: em.persist(Ticket) → INSERT tickets
+                            TicketRepo->>DB: em.persist(Ticket) -> INSERT tickets
                             DB-->>TicketRepo: ok
                             TicketRepo-->>Service: ok
                         end
@@ -166,13 +166,13 @@ sequenceDiagram
                 end
 
                 Service->>InvRepo: createInvoice(em, Invoice{type=EXCHANGE,totalAmount=finalAmount,taxCode,companyName})
-                InvRepo->>DB: em.persist(Invoice) → INSERT invoices
+                InvRepo->>DB: em.persist(Invoice) -> INSERT invoices
                 DB-->>InvRepo: invoiceId
                 InvRepo-->>Service: invoice
 
                 loop Mỗi newTicket
                     Service->>InvDetRepo: createInvoiceDetail(em, InvoiceDetail{subTotal=finalAmount/n,isReturned=false})
-                    InvDetRepo->>DB: em.persist(InvoiceDetail) → INSERT invoice_details
+                    InvDetRepo->>DB: em.persist(InvoiceDetail) -> INSERT invoice_details
                     DB-->>InvDetRepo: ok
                     InvDetRepo-->>Service: ok
                 end
@@ -187,7 +187,7 @@ sequenceDiagram
         Socket-->>UI: Response
     end
 
-    alt OptimisticLockException (xung đột @Version khi chiếm ghế)
+    alt OptimisticLockException (xung dot version khi chiem ghe)
         Service->>Service: rollbackQuietly(transaction)
         Service-->>Router: Response.error(DATA_CONFLICT)
     else Exception khác
