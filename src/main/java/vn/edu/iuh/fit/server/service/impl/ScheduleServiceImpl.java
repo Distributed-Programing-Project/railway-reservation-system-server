@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.server.service.impl;
 import vn.edu.iuh.fit.common.dto.ScheduleCreateDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleFilterDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleLifecycleDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleUpdateDTO;
 import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.model.Route;
@@ -11,8 +12,10 @@ import vn.edu.iuh.fit.server.model.Train;
 import vn.edu.iuh.fit.common.constant.StatusSchedule;
 import vn.edu.iuh.fit.server.service.ScheduleService;
 import vn.edu.iuh.fit.server.repository.EmployeeRepository;
+import vn.edu.iuh.fit.server.repository.ScheduleDetailRepository;
 import vn.edu.iuh.fit.server.repository.ScheduleRepository;
 import vn.edu.iuh.fit.server.repository.impl.EmployeeRepositoryImpl;
+import vn.edu.iuh.fit.server.repository.impl.ScheduleDetailRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.ScheduleRepositoryImpl;
 import vn.edu.iuh.fit.server.mapper.ScheduleMapper;
 import vn.edu.iuh.fit.common.message.ScheduleMessages;
@@ -34,6 +37,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     private final ScheduleRepository repository = new ScheduleRepositoryImpl();
     private final EmployeeRepository employeeRepository = new EmployeeRepositoryImpl();
+    private final ScheduleDetailRepository scheduleDetailRepository = new ScheduleDetailRepositoryImpl();
 
 
     @Override
@@ -284,6 +288,127 @@ public class ScheduleServiceImpl implements ScheduleService {
             log.error("Failed to find schedules by station ids: departureStationId={}, destinationStationId={}",
                     departureStationId, destinationStationId, e);
             return Response.error(ScheduleMessages.FIND_BY_STATION_FAILED_PREFIX + e.getMessage());
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public Response publishSchedule(ScheduleLifecycleDTO dto) {
+        List<String> errors = ValidationUtils.validate(dto);
+        if (!errors.isEmpty()) {
+            return Response.error(String.join(", ", errors));
+        }
+
+        Employee requester = findRequester(dto.getRequestEmployeeId());
+        if (requester == null) {
+            return Response.error(ScheduleMessages.employeeNotFoundById(dto.getRequestEmployeeId()));
+        }
+        if (!Boolean.TRUE.equals(requester.getIsManager())) {
+            return Response.error(ScheduleMessages.UNAUTHORIZED);
+        }
+
+        String action = dto.getAction().trim().toUpperCase();
+        if (!"PUBLISH".equals(action)) {
+            return Response.error(ScheduleMessages.ACTION_INVALID);
+        }
+
+        EntityManager em = JPAUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        try {
+            tx.begin();
+
+            Schedule existingSchedule = repository.findScheduleById(em, dto.getScheduleId());
+            if (existingSchedule == null) {
+                return Response.error(ScheduleMessages.scheduleNotFoundById(dto.getScheduleId()));
+            }
+            if (existingSchedule.getStatus() != StatusSchedule.DRAFT) {
+                return Response.error(ScheduleMessages.ONLY_DRAFT_CAN_BE_PUBLISHED);
+            }
+
+            boolean hasUnpricedSeats = scheduleDetailRepository.existsUnpricedSeat(em, dto.getScheduleId());
+            if (hasUnpricedSeats) {
+                return Response.error(ScheduleMessages.PRICE_NOT_CONFIGURED);
+            }
+
+            boolean updated = repository.updateScheduleStatus(em, dto.getScheduleId(), StatusSchedule.NOT_STARTED);
+            if (!updated) {
+                return Response.error(ScheduleMessages.UPDATE_FAILED_BY_ID);
+            }
+
+            tx.commit();
+            log.info("Schedule published: id={}", dto.getScheduleId());
+            return Response.success(ScheduleMessages.PUBLISH_SUCCESS, dto.getScheduleId());
+        } catch (Exception e) {
+            if (tx.isActive()) tx.rollback();
+            log.error("Failed to publish schedule: id={}", dto.getScheduleId(), e);
+            return Response.error(ScheduleMessages.PUBLISH_FAILED_PREFIX + e.getMessage());
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public Response disableSchedule(ScheduleLifecycleDTO dto) {
+        List<String> errors = ValidationUtils.validate(dto);
+        if (!errors.isEmpty()) {
+            return Response.error(String.join(", ", errors));
+        }
+
+        Employee requester = findRequester(dto.getRequestEmployeeId());
+        if (requester == null) {
+            return Response.error(ScheduleMessages.employeeNotFoundById(dto.getRequestEmployeeId()));
+        }
+        if (!Boolean.TRUE.equals(requester.getIsManager())) {
+            return Response.error(ScheduleMessages.UNAUTHORIZED);
+        }
+
+        String action = dto.getAction().trim().toUpperCase();
+        if (!"DISABLE".equals(action)) {
+            return Response.error(ScheduleMessages.ACTION_INVALID);
+        }
+
+        EntityManager em = JPAUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        try {
+            tx.begin();
+
+            Schedule existingSchedule = repository.findScheduleById(em, dto.getScheduleId());
+            if (existingSchedule == null) {
+                return Response.error(ScheduleMessages.scheduleNotFoundById(dto.getScheduleId()));
+            }
+
+            StatusSchedule currentStatus = existingSchedule.getStatus();
+
+            if (currentStatus == StatusSchedule.DRAFT) {
+                boolean deleted = repository.deleteSchedule(em, dto.getScheduleId());
+                if (!deleted) {
+                    return Response.error(ScheduleMessages.deleteFailedById(dto.getScheduleId()));
+                }
+                tx.commit();
+                log.info("Schedule DRAFT disabled (deleted): id={}", dto.getScheduleId());
+                return Response.success(ScheduleMessages.DISABLE_SUCCESS, dto.getScheduleId());
+            }
+
+            if (currentStatus == StatusSchedule.NOT_STARTED) {
+                long soldCount = repository.countSoldSeatsByScheduleId(em, dto.getScheduleId());
+                if (soldCount > 0) {
+                    return Response.error(ScheduleMessages.TICKETS_SOLD_BLOCKED);
+                }
+                boolean updated = repository.updateScheduleStatus(em, dto.getScheduleId(), StatusSchedule.PAUSED);
+                if (!updated) {
+                    return Response.error(ScheduleMessages.UPDATE_FAILED_BY_ID);
+                }
+                tx.commit();
+                log.info("Schedule NOT_STARTED disabled (paused): id={}", dto.getScheduleId());
+                return Response.success(ScheduleMessages.DISABLE_SUCCESS, dto.getScheduleId());
+            }
+
+            return Response.error(ScheduleMessages.WRONG_STATUS_DISABLE);
+        } catch (Exception e) {
+            if (tx.isActive()) tx.rollback();
+            log.error("Failed to disable schedule: id={}", dto.getScheduleId(), e);
+            return Response.error(ScheduleMessages.DISABLE_FAILED_PREFIX + e.getMessage());
         } finally {
             em.close();
         }
