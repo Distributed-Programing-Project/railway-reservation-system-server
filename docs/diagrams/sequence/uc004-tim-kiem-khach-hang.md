@@ -58,6 +58,8 @@ sequenceDiagram
     participant Repo as CustomerRepositoryImpl
     participant DB as MariaDB
 
+    Clerk->>UI: Đăng nhập thành công
+    Clerk->>UI: Chọn màn hình "Quản lý khách hàng"
     Clerk->>UI: Nhập keyword, chọn page/size, bấm "Tìm kiếm"
     UI->>UI: new CustomerSearchDTO(keyword, page, size)
     UI->>Socket: sendRequest(new Request(UC004_SEARCH_CUSTOMERS?, searchDTO))

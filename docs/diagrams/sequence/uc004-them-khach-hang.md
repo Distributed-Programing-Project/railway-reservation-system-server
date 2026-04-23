@@ -60,6 +60,8 @@ sequenceDiagram
     participant Repo as CustomerRepositoryImpl
     participant DB as MariaDB
 
+    Clerk->>UI: Đăng nhập thành công
+    Clerk->>UI: Chọn màn hình "Quản lý khách hàng"
     Clerk->>UI: Chọn "Thêm khách hàng"
     UI->>UI: Nhập fullName, idCard, phone, email
     UI->>UI: new CustomerDTO(customerId=null, fullName, idCard, phone, email)

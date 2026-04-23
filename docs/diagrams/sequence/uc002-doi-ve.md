@@ -83,6 +83,8 @@ sequenceDiagram
     participant InvDetRepo as InvoiceDetailRepositoryImpl
     participant DB as MariaDB
 
+    Clerk->>UI: Đăng nhập thành công
+    Clerk->>UI: Chọn màn hình "Đổi vé"
     Clerk->>UI: Chọn "Đổi vé", chọn vé cũ + ghế/chuyến mới
     UI->>UI: new ExchangeTicketRequestDTO(oldTicketIds, newScheduleDetailIds, cashReceived, taxCode, companyName)
     UI->>Socket: sendRequest(new Request(UC002_EXCHANGE?, requestDTO))

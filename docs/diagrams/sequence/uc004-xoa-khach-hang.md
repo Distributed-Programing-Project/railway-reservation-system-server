@@ -71,6 +71,8 @@ sequenceDiagram
     participant CusRepo as CustomerRepositoryImpl
     participant DB as MariaDB
 
+    Manager->>UI: Đăng nhập thành công
+    Manager->>UI: Chọn màn hình "Quản lý khách hàng"
     Manager->>UI: Chọn khách hàng, bấm "Xóa"
     UI->>UI: new CustomerDeleteRequestDTO(customerId, requestEmployeeId)
     UI->>Socket: sendRequest(new Request(UC004_DELETE_CUSTOMER?, requestDTO))

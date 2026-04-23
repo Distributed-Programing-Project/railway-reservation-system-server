@@ -93,6 +93,8 @@ sequenceDiagram
     participant DB as MariaDB
 
     opt Tìm vé theo CCCD/Hộ chiếu (SEARCH_TICKETS_FOR_RETURN)
+        Clerk->>UI: Đăng nhập thành công
+        Clerk->>UI: Chọn màn hình "Trả vé"
         Clerk->>UI: Nhập CCCD/Hộ chiếu, bấm "Tìm kiếm"
         UI->>UI: new ReturnTicketSearchDTO(idCard)
         UI->>Socket: sendRequest(new Request(SEARCH_TICKETS_FOR_RETURN, searchDTO))
