@@ -4,6 +4,7 @@ import vn.edu.iuh.fit.common.request.Request;
 import vn.edu.iuh.fit.common.response.Response;
 import vn.edu.iuh.fit.common.dto.EmployeeDTO;
 import vn.edu.iuh.fit.common.dto.EmployeeFilterDTO;
+import vn.edu.iuh.fit.common.dto.LoginRequestDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketConfirmDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketPreviewRequestDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketSearchDTO;
@@ -20,11 +21,13 @@ import vn.edu.iuh.fit.common.dto.UpdateTrainStatusDTO;
 import vn.edu.iuh.fit.common.message.CommonMessages;
 import vn.edu.iuh.fit.common.message.ScheduleMessages;
 import vn.edu.iuh.fit.server.service.EmployeeService;
+import vn.edu.iuh.fit.server.service.LoginService;
 import vn.edu.iuh.fit.server.service.ScheduleService;
 import vn.edu.iuh.fit.server.service.StatisticsService;
 import vn.edu.iuh.fit.server.service.TicketService;
 import vn.edu.iuh.fit.server.service.TrainService;
 import vn.edu.iuh.fit.server.service.impl.EmployeeServiceImpl;
+import vn.edu.iuh.fit.server.service.impl.LoginServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.ScheduleServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.StatisticsServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.TicketServiceImpl;
@@ -32,6 +35,7 @@ import vn.edu.iuh.fit.server.service.impl.TrainServiceImpl;
 
 public class RequestRouter {
 
+    private final LoginService loginService = new LoginServiceImpl();
     private final ScheduleService scheduleService = new ScheduleServiceImpl();
     private final EmployeeService employeeService = new EmployeeServiceImpl();
     private final StatisticsService statisticsService = new StatisticsServiceImpl();
@@ -44,7 +48,7 @@ public class RequestRouter {
         }
 
         return switch (request.getAction()) {
-            case LOGIN -> Response.error(CommonMessages.NOT_IMPLEMENTED);
+            case LOGIN -> loginService.login(castData(request, LoginRequestDTO.class));
 
             case FILTER_SCHEDULE -> scheduleService.filterSchedules(castData(request, ScheduleFilterDTO.class));
             case CREATE_SCHEDULE -> scheduleService.createSchedule(castData(request, ScheduleCreateDTO.class));
