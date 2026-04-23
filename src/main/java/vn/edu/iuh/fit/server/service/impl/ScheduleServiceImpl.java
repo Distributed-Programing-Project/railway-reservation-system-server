@@ -169,7 +169,6 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Override
-
     public Response deleteSchedule(String scheduleId) {
         if (scheduleId == null || scheduleId.isBlank()) {
             return Response.error(ScheduleMessages.SCHEDULE_ID_REQUIRED);
