@@ -45,7 +45,7 @@ flowchart TB
 
     UI --> OOS
     OOS --> OIS
-    OIS -->|Request{action, data}| RR
+    OIS -->|Request [action, data]| RR
     RR -->|ScheduleLifecycleDTO| SS
     SS -->|findScheduleById| SR
     SS -->|findSoldSeatCount| SDR
@@ -105,7 +105,7 @@ sequenceDiagram
         SS-->>RR: Response.success(DISABLE_SUCCESS)
     else schedule.status == NOT_STARTED
         Note over SS: Kiểm tra số vé đã bán
-        SS->>SDR: getSoldSeatCount(em, scheduleId)
+        SS->>SDR: countSoldSeatsByScheduleId(em, scheduleId)
         SDR-->>SS: soldCount: long
 
         alt soldCount > 0
@@ -206,7 +206,6 @@ classDiagram
         +WRONG_STATUS_DISABLE
         +TICKETS_SOLD_BLOCKED
         +PRICE_NOT_CONFIGURED
-        +NOT_STARTED_WITH_TICKETS
     }
 
     class ActionType {
