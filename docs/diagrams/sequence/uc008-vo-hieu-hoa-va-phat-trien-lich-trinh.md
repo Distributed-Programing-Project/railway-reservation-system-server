@@ -45,12 +45,12 @@ flowchart TB
 
     UI --> OOS
     OOS --> OIS
-    OIS -->|Request [action, data]| RR
+    OIS -->|"Request action data"| RR
     RR -->|ScheduleLifecycleDTO| SS
     SS -->|findScheduleById| SR
     SS -->|findSoldSeatCount| SDR
     SS -->|findEmployeeById| ER
-    SR -->|SELECT / UPDATE| EMF
+    SR -->|"SELECT UPDATE"| EMF
     SDR -->|SELECT COUNT| EMF
     ER -->|SELECT| EMF
     EMF --> SCH

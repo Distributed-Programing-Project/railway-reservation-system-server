@@ -33,7 +33,7 @@ graph TB
     SRV -->|"submit to ThreadPool"| RR
     RR -->|"castData to DTO"| ES
     ES -->|"validate + begin tx"| ER
-    ER -->|"TypedQuery / persist"| JPA
+    ER -->|"TypedQuery persist"| JPA
     JPA -->|"SQL"| MDB
     MDB -->|"ResultSet"| JPA
     JPA -->|"Employee entity"| ER
