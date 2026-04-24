@@ -35,4 +35,6 @@ public class CustomerDTO implements Serializable {
   private String email;
 
   private Boolean isActive;
+
+  private int rewardPoints;
 }
