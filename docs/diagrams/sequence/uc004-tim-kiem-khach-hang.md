@@ -18,7 +18,7 @@ graph TB
 
     subgraph SERVER ["Server (Java Socket Server)"]
         SRV["Server.java\nhandleClient(Socket)"]
-        RR["RequestRouter.route(Request)\n(Hiện chưa có ActionType cho UC004)"]
+        RR["RequestRouter.route(Request)\n(ActionType.SEARCH_CUSTOMERS)"]
         SVC["CustomerServiceImpl\n.searchCustomers(CustomerSearchDTO)"]
         VAL["ValidationUtils.validate(dto)"]
         JPA["JPAUtils.getEntityManager()"]
@@ -29,7 +29,7 @@ graph TB
         T_CUS["customers"]
     end
 
-    UI -- "new Request(UC004_SEARCH_CUSTOMERS?, CustomerSearchDTO)" --> SC
+    UI -- "new Request(SEARCH_CUSTOMERS, CustomerSearchDTO)" --> SC
     SC --> OOS
     OOS -- "TCP Socket" --> SRV
     SRV --> RR
@@ -62,8 +62,7 @@ sequenceDiagram
     Clerk->>UI: Chọn màn hình "Quản lý khách hàng"
     Clerk->>UI: Nhập keyword, chọn page/size, bấm "Tìm kiếm"
     UI->>UI: new CustomerSearchDTO(keyword, page, size)
-    UI->>Socket: sendRequest(new Request(UC004_SEARCH_CUSTOMERS?, searchDTO))
-    note over Socket,Router: Code hiện tại chưa có ActionType/RequestRouter cho UC004.\nSequence mô tả đường gọi tới CustomerServiceImpl.searchCustomers().
+    UI->>Socket: sendRequest(new Request(SEARCH_CUSTOMERS, searchDTO))
     Socket->>Server: ObjectOutputStream.writeObject(request)
     Server->>Router: route(request)
     Router->>Service: searchCustomers(searchDTO)

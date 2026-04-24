@@ -65,6 +65,7 @@ public class CarriageRepositoryImpl extends AbstractGenericRepositoryImpl<Carria
                     .number(i)
                     .type(seatType)
                     .carriage(carriage)
+                    .available(true)
                     .build());
         }
         return carriage;

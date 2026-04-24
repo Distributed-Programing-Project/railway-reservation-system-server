@@ -18,7 +18,7 @@ graph TB
 
     subgraph SERVER ["Server (Java Socket Server)"]
         SRV["Server.java\nhandleClient(Socket)"]
-        RR["RequestRouter.route(Request)\n(Hiện chưa có ActionType cho UC004)"]
+        RR["RequestRouter.route(Request)\n(ActionType.CREATE_CUSTOMER)"]
         SVC["CustomerServiceImpl\n.createCustomer(CustomerDTO)"]
         VAL["ValidationUtils.validate(dto)\n(Jakarta Validation)"]
         MAP["CustomerMapper\nDTO ⇄ Entity"]
@@ -30,7 +30,7 @@ graph TB
         T_CUS["customers"]
     end
 
-    UI -- "new Request(UC004_CREATE_CUSTOMER?, CustomerDTO)" --> SC
+    UI -- "new Request(CREATE_CUSTOMER, CustomerDTO)" --> SC
     SC --> OOS
     OOS -- "TCP Socket" --> SRV
     SRV --> RR
@@ -65,8 +65,7 @@ sequenceDiagram
     Clerk->>UI: Chọn "Thêm khách hàng"
     UI->>UI: Nhập fullName, idCard, phone, email
     UI->>UI: new CustomerDTO(customerId=null, fullName, idCard, phone, email)
-    UI->>Socket: sendRequest(new Request(UC004_CREATE_CUSTOMER?, customerDTO))
-    note over Socket,Router: Code hiện tại chưa có ActionType/RequestRouter cho UC004.\nSequence mô tả đường gọi tới CustomerServiceImpl.createCustomer().
+    UI->>Socket: sendRequest(new Request(CREATE_CUSTOMER, customerDTO))
     Socket->>Server: ObjectOutputStream.writeObject(request)
     Server->>Router: route(request)
     Router->>Service: createCustomer(customerDTO)

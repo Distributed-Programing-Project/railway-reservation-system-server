@@ -12,6 +12,7 @@ public final class TicketMessages {
     public static final String SEAT_NOT_AVAILABLE = "Ghế số %s của chuyến %s đã có người đặt.";
     public static final String TICKET_ALREADY_EXCHANGED = "Vé %s đã từng được đổi trước đó.";
     public static final String TICKET_NOT_PAID = "Vé %s không ở trạng thái hợp lệ để đổi.";
+    public static final String TICKET_ALREADY_RETURNED = "Vé %s đã được trả, không thể đổi.";
     public static final String EXCHANGE_TIME_EXPIRED = "Vé %s không được đổi vì chỉ còn %d h tới giờ khởi hành (yêu cầu ít nhất 24h).";
     
     public static final String CREATE_SUCCESS = "Tạo vé thành công";
@@ -40,6 +41,9 @@ public final class TicketMessages {
     public static final String REFUND_AMOUNT_MISMATCH = "Số tiền hoàn trả không khớp với tính toán của hệ thống.";
     public static final String CUSTOMER_MISMATCH = "Tất cả các vé phải thuộc cùng một khách hàng để thực hiện trả theo lô.";
     public static final String TICKET_IDS_REQUIRED = "Danh sách mã vé không được để trống.";
+    public static final String EMPLOYEE_ID_REQUIRED = "Employee ID không được để trống";
+    public static final String TAX_CODE_TOO_LONG = "Mã số thuế không được vượt quá 20 ký tự";
+    public static final String COMPANY_NAME_TOO_LONG = "Tên công ty không được vượt quá 200 ký tự";
     public static final String TICKET_IDS_DUPLICATE = "Danh sách mã vé chứa các giá trị trùng lặp.";
     public static final String SCHEDULE_NOT_FOUND = "Không tìm thấy thông tin lịch trình cho vé này.";
 

@@ -13,6 +13,14 @@ public interface ScheduleDetailRepository {
      */
     Set<String> getSoldSeatIds(EntityManager em, String scheduleId);
 
+    /**
+     * Get the set of Seat IDs that are booked/sold for a given schedule,
+     * using pessimistic lock (SELECT FOR UPDATE) to prevent race conditions
+     * during concurrent ticket booking.
+     * Caller must ensure the EntityManager has an active transaction.
+     */
+    Set<String> getSoldSeatIdsWithLock(EntityManager em, String scheduleId);
+
     ScheduleDetail findById(String id, EntityManager em);
 
     ScheduleDetail updateScheduleDetail(EntityManager em, ScheduleDetail scheduleDetail);

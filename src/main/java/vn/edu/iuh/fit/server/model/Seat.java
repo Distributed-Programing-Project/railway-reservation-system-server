@@ -39,6 +39,9 @@ public class Seat {
   @Column(name = "sequence_number")
   private int number;
 
+  @Column(name = "is_available")
+  private boolean available;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "seat_type")
   private SeatType type;
