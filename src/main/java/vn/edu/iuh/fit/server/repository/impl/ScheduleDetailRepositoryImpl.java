@@ -9,6 +9,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import vn.edu.iuh.fit.common.constant.TicketStatus;
 import vn.edu.iuh.fit.server.model.ScheduleDetail;
+import vn.edu.iuh.fit.server.model.Seat;
 import vn.edu.iuh.fit.server.repository.ScheduleDetailRepository;
 
 public class ScheduleDetailRepositoryImpl extends AbstractGenericRepositoryImpl<ScheduleDetail, String>
@@ -21,6 +22,19 @@ public class ScheduleDetailRepositoryImpl extends AbstractGenericRepositoryImpl<
     @Override
     public ScheduleDetail findById(String id, EntityManager em) {
         return em.find(ScheduleDetail.class, id);
+    }
+
+    @Override
+    public List<ScheduleDetail> findByIdsWithSeatAndSchedule(EntityManager em, List<String> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        String jpql = "SELECT sd FROM ScheduleDetail sd " +
+                "JOIN FETCH sd.seat s " +
+                "JOIN FETCH sd.schedule sc " +
+                "LEFT JOIN FETCH sc.train " +
+                "WHERE sd.id IN :ids";
+        return em.createQuery(jpql, ScheduleDetail.class)
+                .setParameter("ids", ids)
+                .getResultList();
     }
 
     @Override
@@ -46,11 +60,18 @@ public class ScheduleDetailRepositoryImpl extends AbstractGenericRepositoryImpl<
     @Override
     public Set<String> getSoldSeatIdsWithLock(EntityManager em, String scheduleId) {
         List<String> seatIds = em.createQuery(
-                "SELECT sd.seat.id FROM ScheduleDetail sd WHERE sd.schedule.id = :scheduleId",
+                "SELECT sd.seat.id FROM Ticket t JOIN t.scheduleDetail sd " +
+                "WHERE sd.schedule.id = :scheduleId " +
+                "AND t.status NOT IN (:cancelledStatus, :exchangedStatus, :returnedStatus)",
                 String.class)
                 .setParameter("scheduleId", scheduleId)
-                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .setParameter("cancelledStatus", TicketStatus.CANCELLED)
+                .setParameter("exchangedStatus", TicketStatus.EXCHANGED)
+                .setParameter("returnedStatus", TicketStatus.RETURNED)
                 .getResultList();
+        for (String seatId : seatIds) {
+            em.lock(em.getReference(Seat.class, seatId), LockModeType.PESSIMISTIC_WRITE);
+        }
         return new HashSet<>(seatIds);
     }
 

@@ -31,7 +31,7 @@ public class CarriageRepositoryImpl extends AbstractGenericRepositoryImpl<Carria
         if (carriageIds == null || carriageIds.isEmpty()) return List.of();
         return doWithEntityManager(em ->
                 em.createQuery(
-                        "SELECT c FROM Carriage c WHERE c.id IN :ids",
+                        "SELECT c FROM Carriage c LEFT JOIN FETCH c.seats WHERE c.id IN :ids",
                         Carriage.class)
                         .setParameter("ids", carriageIds)
                         .getResultList()
@@ -42,12 +42,14 @@ public class CarriageRepositoryImpl extends AbstractGenericRepositoryImpl<Carria
     public List<Carriage> findCarriagesByTrainId(String trainId) {
         return doWithEntityManager(em ->
                 em.createQuery(
-                        "SELECT c FROM Carriage c WHERE c.train.id = :trainId ORDER BY c.number",
+                        "SELECT c FROM Carriage c LEFT JOIN FETCH c.seats WHERE c.train.id = :trainId ORDER BY c.number",
                         Carriage.class)
                         .setParameter("trainId", trainId)
                         .getResultList()
         );
     }
+
+    private static final int BATCH_SIZE = 50;
 
     @Override
     public Carriage saveCarriageWithSeats(EntityManager em, CarriageType type) {
@@ -67,6 +69,11 @@ public class CarriageRepositoryImpl extends AbstractGenericRepositoryImpl<Carria
                     .carriage(carriage)
                     .available(true)
                     .build());
+
+            if (i % BATCH_SIZE == 0) {
+                em.flush();
+                em.clear();
+            }
         }
         return carriage;
     }

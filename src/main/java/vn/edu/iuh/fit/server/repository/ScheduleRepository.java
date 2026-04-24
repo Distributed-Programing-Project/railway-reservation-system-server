@@ -29,6 +29,6 @@ public interface ScheduleRepository {
 
     List<Schedule> filterSchedules(EntityManager em, ScheduleFilterDTO filter);
 
-    long countFutureActiveSchedulesByTrainId(String trainId);
+    long countFutureActiveSchedulesByTrainId(EntityManager em, String trainId);
 }
 
