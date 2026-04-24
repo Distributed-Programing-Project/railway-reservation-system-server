@@ -17,6 +17,8 @@ public interface TicketMapper {
     @Mapping(target = "scheduleId", source = "scheduleDetail.schedule.id")
     @Mapping(target = "departureTime", source = "scheduleDetail.schedule.departureTime")
     @Mapping(target = "ticketPrice", expression = "java(ticket.getScheduleDetail() != null && ticket.getScheduleDetail().getPriceSeat() != null ? ticket.getScheduleDetail().getPriceSeat().doubleValue() : 0.0)")
+    @Mapping(target = "passengerName", source = "passengerName")
+    @Mapping(target = "passengerIdCard", source = "passengerIdCard")
     ReturnTicketTicketDTO toReturnTicketDto(Ticket ticket);
 
     List<ReturnTicketTicketDTO> toReturnTicketDtoList(List<Ticket> tickets);

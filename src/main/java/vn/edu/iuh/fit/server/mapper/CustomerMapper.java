@@ -21,8 +21,9 @@ public interface CustomerMapper {
     @Mapping(target = "name", source = "fullName")
     @Mapping(target = "phoneNumber", source = "phone")
     @Mapping(target = "id", source = "customerId")
-    @Mapping(target = "tickets", ignore = true)
     @Mapping(target = "passport", ignore = true)
+    @Mapping(target = "tickets", ignore = true)
+    @Mapping(target = "rewardPoints", ignore = true)
     Customer toEntity(CustomerDTO dto);
 
     List<CustomerDTO> toDtoList(List<Customer> customers);
