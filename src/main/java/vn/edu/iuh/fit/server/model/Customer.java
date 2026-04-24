@@ -49,6 +49,10 @@ public class Customer {
   @Column(name = "is_active", nullable = false)
   private boolean isActive = true;
 
+  @Builder.Default
+  @Column(name = "reward_points")
+  private int rewardPoints = 0;
+
   @OneToMany(mappedBy = "customer")
   private List<Ticket> tickets;
 }

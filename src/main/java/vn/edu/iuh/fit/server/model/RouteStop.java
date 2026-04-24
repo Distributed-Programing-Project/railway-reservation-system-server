@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.List;
 
@@ -14,6 +15,7 @@ import java.util.List;
 @Builder
 @Entity
 @Table(name = "route_stops")
+@BatchSize(size = 25)
 public class RouteStop {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -21,13 +23,13 @@ public class RouteStop {
     private String id;
 
     @Column(name = "order_stop")
-    private int orderStop ;
+    private int orderStop;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "station_stop_id")
     private Station stationStop;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "route_id")
     private Route route;
 

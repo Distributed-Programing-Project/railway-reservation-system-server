@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -17,6 +18,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.BatchSize;
 import vn.edu.iuh.fit.common.constant.TicketStatus;
 import vn.edu.iuh.fit.common.constant.TicketType;
 
@@ -28,6 +30,7 @@ import vn.edu.iuh.fit.common.constant.TicketType;
 @Builder
 @Entity
 @Table(name = "tickets")
+@BatchSize(size = 25)
 public class Ticket {
 
   @Id
@@ -35,11 +38,11 @@ public class Ticket {
   @Column(name = "ticket_id", length = 36)
   private String id;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "customer_id")
   private Customer customer;
 
-  @OneToOne
+  @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "schedule_detail_id")
   private ScheduleDetail scheduleDetail;
 
@@ -62,4 +65,10 @@ public class Ticket {
 
   @Column(name = "is_exchanged")
   private boolean exchanged;
+
+  @Column(name = "passenger_name", columnDefinition = "NVARCHAR(255)")
+  private String passengerName;
+
+  @Column(name = "passenger_id_card", length = 20)
+  private String passengerIdCard;
 }

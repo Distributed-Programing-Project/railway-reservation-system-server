@@ -2,6 +2,7 @@ package vn.edu.iuh.fit.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.List;
 
@@ -13,6 +14,7 @@ import java.util.List;
 @Builder
 @Entity
 @Table(name = "stations")
+@BatchSize(size = 25)
 public class Station {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -33,4 +35,16 @@ public class Station {
 
     @OneToMany(mappedBy = "stationStop")
     private List<RouteStop> routeStops;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Station that)) return false;
+        return id != null && id.equals(that.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

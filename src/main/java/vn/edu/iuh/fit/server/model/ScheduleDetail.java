@@ -2,6 +2,7 @@ package vn.edu.iuh.fit.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.math.BigDecimal;
 
@@ -13,6 +14,7 @@ import java.math.BigDecimal;
 @Builder
 @Entity
 @Table(name = "schedule_details")
+@BatchSize(size = 25)
 public class ScheduleDetail {
 
     @Id
@@ -23,13 +25,13 @@ public class ScheduleDetail {
     @Column(name = "price_seat")
     private BigDecimal priceSeat;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Seat seat;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Schedule schedule;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "route_stop_id")
     private RouteStop routeStop;
 
