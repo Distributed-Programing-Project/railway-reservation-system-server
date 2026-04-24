@@ -15,7 +15,7 @@ public class InvoiceDetailDTO implements Serializable {
   private String id;
   private String invoiceId;
   private String ticketId;
-  private double subTotal;
+  private Double subTotal;
   private double discount;
   private double insurance;
   private boolean isReturned;

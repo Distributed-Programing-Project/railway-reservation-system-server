@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import vn.edu.iuh.fit.common.constant.InvoiceType;
 import vn.edu.iuh.fit.common.constant.TicketStatus;
 import vn.edu.iuh.fit.common.dto.ExchangeTicketRequestDTO;
+import vn.edu.iuh.fit.common.dto.ExchangeTicketResponseDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketConfirmDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketPreviewDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketPreviewRequestDTO;
@@ -109,23 +110,30 @@ public class TicketServiceImpl implements TicketService {
         .collect(Collectors.toMap(Ticket::getId, t -> t));
 
     double totalOldPrice = 0;
-    double totalNewPrice = 0;
-    List<Ticket> newTickets = new ArrayList<>();
-    Map<String, Set<String>> soldSeatIdsMap = new HashMap<>();
-
     for (Ticket oldTicket : oldTickets) {
       totalOldPrice += oldTicket.getScheduleDetail().getPriceSeat().doubleValue();
       oldTicket.setExchanged(true);
       oldTicket.setStatus(TicketStatus.EXCHANGED);
-      ticketRepository.updateTicket(em, oldTicket);
+      oldTicket.setQrCode(INVALID_QR_CODE);
     }
+    ticketRepository.updateTickets(em, oldTickets);
 
-    for (int i = 0; i < requestDTO.getNewScheduleDetailIds().size(); i++) {
+    List<String> newSeatIds = requestDTO.getNewScheduleDetailIds();
+    Map<String, ScheduleDetail> newSeatMap = scheduleDetailRepository
+        .findByIdsWithSeatAndSchedule(em, newSeatIds)
+        .stream()
+        .collect(Collectors.toMap(ScheduleDetail::getId, sd -> sd));
+
+    double totalNewPrice = 0;
+    List<Ticket> newTickets = new ArrayList<>();
+    Map<String, Set<String>> soldSeatIdsMap = new HashMap<>();
+
+    for (int i = 0; i < newSeatIds.size(); i++) {
       String oldTicketId = requestDTO.getOldTicketIds().get(i);
-      String newSeatId = requestDTO.getNewScheduleDetailIds().get(i);
+      String newSeatId = newSeatIds.get(i);
       Ticket oldTicket = ticketMap.get(oldTicketId);
+      ScheduleDetail newSeat = newSeatMap.get(newSeatId);
 
-      ScheduleDetail newSeat = scheduleDetailRepository.findById(newSeatId, em);
       if (newSeat == null) {
         throw new IllegalArgumentException(TicketMessages.scheduleDetailNotFound(newSeatId));
       }
@@ -156,10 +164,17 @@ public class TicketServiceImpl implements TicketService {
           .originalTicketId(oldTicket.getId())
           .status(TicketStatus.PAID)
           .exchanged(false)
+          .passengerName(oldTicket.getPassengerName())
+          .passengerIdCard(oldTicket.getPassengerIdCard())
           .build();
 
       ticketRepository.createTicket(newTicket, em);
       newTickets.add(newTicket);
+    }
+
+    em.flush();
+    for (Ticket newTicket : newTickets) {
+      em.merge(newTicket.getScheduleDetail().getSeat());
     }
 
     double totalFee = oldTickets.size() * EXCHANGE_FEE;
@@ -188,7 +203,13 @@ public class TicketServiceImpl implements TicketService {
     }
 
     log.info("Giao dịch đổi vé hoàn tất. Số lượng: {}", oldTickets.size());
-    return Response.success(String.format(TicketMessages.EXCHANGE_SUCCESS, finalAmount), null);
+    ExchangeTicketResponseDTO responseData = ExchangeTicketResponseDTO.builder()
+        .invoiceId(invoice.getId())
+        .totalAmount(finalAmount)
+        .oldTicketCount(oldTickets.size())
+        .newTicketCount(newTickets.size())
+        .build();
+    return Response.success(String.format(TicketMessages.EXCHANGE_SUCCESS, finalAmount), responseData);
   }
 
   private Response validateBusinessRules(List<Ticket> oldTickets) {
@@ -245,12 +266,8 @@ public class TicketServiceImpl implements TicketService {
         if (computation.tickets.isEmpty()) {
           return Response.error(TicketMessages.TICKET_IDS_REQUIRED);
         }
-        String customerId = computation.tickets.get(0).getCustomer().getId();
-        boolean differentCustomer = computation.tickets.stream()
-            .anyMatch(t -> t.getCustomer() == null || !customerId.equals(t.getCustomer().getId()));
-        if (differentCustomer) {
-          return Response.error(TicketMessages.CUSTOMER_MISMATCH);
-        }
+        Response mismatch = validateSameCustomer(computation.tickets);
+        if (mismatch != null) return mismatch;
         ReturnTicketPreviewDTO preview = ReturnTicketPreviewDTO.builder()
             .totalTicketPrice(computation.totalTicketPrice)
             .refundFee(computation.totalRefundFee)
@@ -287,6 +304,19 @@ public class TicketServiceImpl implements TicketService {
     }
   }
 
+  private Response validateSameCustomer(List<Ticket> tickets) {
+    if (tickets == null || tickets.isEmpty()) {
+      return Response.error(TicketMessages.TICKET_IDS_REQUIRED);
+    }
+    String customerId = tickets.get(0).getCustomer().getId();
+    boolean differentCustomer = tickets.stream()
+        .anyMatch(t -> t.getCustomer() == null || !customerId.equals(t.getCustomer().getId()));
+    if (differentCustomer) {
+      return Response.error(TicketMessages.CUSTOMER_MISMATCH);
+    }
+    return null;
+  }
+
   private Response doConfirmReturnTickets(ReturnTicketConfirmDTO confirmDTO, jakarta.persistence.EntityManager em) {
     ReturnComputation computation = doComputeReturn(em, confirmDTO.getTicketIds());
     if (Math.abs(confirmDTO.getRefundAmount() - computation.totalRefundAmount) > REFUND_TOLERANCE) {
@@ -301,12 +331,8 @@ public class TicketServiceImpl implements TicketService {
     if (computation.tickets.isEmpty()) {
       return Response.error(TicketMessages.TICKET_IDS_REQUIRED);
     }
-    String customerId = computation.tickets.get(0).getCustomer().getId();
-    boolean differentCustomer = computation.tickets.stream()
-        .anyMatch(t -> t.getCustomer() == null || !customerId.equals(t.getCustomer().getId()));
-    if (differentCustomer) {
-      return Response.error(TicketMessages.CUSTOMER_MISMATCH);
-    }
+    Response mismatch = validateSameCustomer(computation.tickets);
+    if (mismatch != null) return mismatch;
 
     Invoice refundInvoice = Invoice.builder()
         .issueDate(LocalDateTime.now())
@@ -325,7 +351,7 @@ public class TicketServiceImpl implements TicketService {
           .ticket(ticket)
           .subTotal(ticketPrice)
           .discount(0)
-          .insurance(0)
+          .insurance(0) // Insurance is non-refundable per current business rule
           .isReturned(true)
           .refundAmount(refundAmount)
           .build();
@@ -346,13 +372,24 @@ public class TicketServiceImpl implements TicketService {
     for (Ticket ticket : computation.tickets) {
       ticket.setStatus(TicketStatus.RETURNED);
       ticket.setQrCode(INVALID_QR_CODE);
-      ScheduleDetail sd = ticket.getScheduleDetail();
-      if (sd != null && sd.getSeat() != null) {
-        sd.getSeat().setAvailable(true);
-        scheduleDetailRepository.updateScheduleDetail(em, sd);
-      }
     }
     ticketRepository.updateTickets(em, computation.tickets);
+
+    List<String> sdIds = computation.tickets.stream()
+        .map(Ticket::getScheduleDetail)
+        .filter(sd -> sd != null)
+        .map(sd -> sd.getId())
+        .distinct()
+        .toList();
+    if (!sdIds.isEmpty()) {
+      List<ScheduleDetail> sds = scheduleDetailRepository.findByIdsWithSeatAndSchedule(em, sdIds);
+      for (ScheduleDetail sd : sds) {
+        if (sd.getSeat() != null) {
+          sd.getSeat().setAvailable(true);
+        }
+      }
+      em.flush();
+    }
 
     log.info("Trả vé thành công. Số lượng: {}", computation.tickets.size());
     return Response.success(TicketMessages.RETURN_SUCCESS, refundInvoice.getId());

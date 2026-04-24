@@ -6,19 +6,18 @@ import vn.edu.iuh.fit.server.util.JPAUtils;
 
 import java.util.function.Function;
 
+// Lớp cơ sở abstract cho các repository, hỗ trợ quản lý EntityManager và transaction
 public abstract class AbstractGenericRepositoryImpl<T, ID> {
 
+    // Lưu class của entity để các repository con sử dụng (ví dụ: User.class)
     protected Class<T> entityClass;
 
+    // Constructor nhận vào class của entity tương ứng
     public AbstractGenericRepositoryImpl(Class<T> entityClass) {
         this.entityClass = entityClass;
     }
 
-    /**
-     * Execute a transactional operation (INSERT, UPDATE, DELETE).
-     * Handles begin, commit, rollback on unchecked exception, and EM close.
-     * @throws RuntimeException re-wraps any RuntimeException from the action after rollback
-     */
+    // Thực thi hành động trong transaction: begin -> action -> commit, nếu lỗi thì rollback
     public static <R> R transactional(Function<EntityManager, R> action) {
         EntityManager em = null;
         EntityTransaction tx = null;
@@ -41,10 +40,7 @@ public abstract class AbstractGenericRepositoryImpl<T, ID> {
         }
     }
 
-    /**
-     * Execute a read-only operation with EntityManager.
-     * Handles EM open/close; re-throws exception.
-     */
+    // Thực thi hành động chỉ đọc (không có transaction), chỉ cần mở và đóng EntityManager
     public static <R> R readOnly(Function<EntityManager, R> action) {
         EntityManager em = null;
         try {
@@ -57,17 +53,14 @@ public abstract class AbstractGenericRepositoryImpl<T, ID> {
         }
     }
 
-    /**
-     * Use for INSERT, UPDATE, DELETE in a new transaction.
-     */
+    // [Deprecated] Wrapper cho transactional, sử dụng để tương thích ngược với code cũ
+    @Deprecated
     protected <R> R doInTransaction(Function<EntityManager, R> function) {
         return transactional(function);
     }
 
-    /**
-     * Use for INSERT, UPDATE, DELETE with error handling.
-     * @param onError called after rollback; returns the error result value
-     */
+    // [Deprecated] Tương tự transactional nhưng gọi onError khi có lỗi thay vì throw
+    @Deprecated
     protected <R> R doInTransaction(Function<EntityManager, R> action, Function<Exception, R> onError) {
         EntityManager em = null;
         EntityTransaction tx = null;
@@ -90,35 +83,19 @@ public abstract class AbstractGenericRepositoryImpl<T, ID> {
         }
     }
 
-    /**
-     * Use for SELECT (search, filter) without transaction.
-     */
+    // [Deprecated] Wrapper cho readOnly, sử dụng để tương thích ngược với code cũ
+    @Deprecated
     protected <R> R doWithEntityManager(Function<EntityManager, R> function) {
         return readOnly(function);
     }
 
-    /**
-     * Use for SELECT with error handling.
-     * @param onError called when an exception occurs; returns the error result value
-     */
+    // [Deprecated] Wrapper cho readOnly(action, onError)
+    @Deprecated
     protected <R> R doWithEntityManager(Function<EntityManager, R> action, Function<Exception, R> onError) {
-        EntityManager em = null;
-        try {
-            em = JPAUtils.getEntityManager();
-            return action.apply(em);
-        } catch (Exception e) {
-            return onError.apply(e);
-        } finally {
-            if (em != null && em.isOpen()) {
-                em.close();
-            }
-        }
+        return readOnly(action, onError);
     }
 
-    /**
-     * Execute a read-only operation with EntityManager and error handling.
-     * @param onError called when an exception occurs; returns the error result value
-     */
+    // Tương tự readOnly nhưng có xử lý lỗi riêng qua onError, không throw exception
     public static <R> R readOnly(Function<EntityManager, R> action, Function<Exception, R> onError) {
         EntityManager em = null;
         try {

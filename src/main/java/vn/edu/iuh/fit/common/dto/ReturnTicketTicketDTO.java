@@ -27,5 +27,7 @@ public class ReturnTicketTicketDTO implements Serializable {
     private boolean roundTrip;
     private TicketStatus status;
     private String originalTicketId;
+    private String passengerName;
+    private String passengerIdCard;
 }
 

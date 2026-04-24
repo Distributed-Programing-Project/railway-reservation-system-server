@@ -8,6 +8,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -21,6 +22,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.BatchSize;
 import vn.edu.iuh.fit.common.constant.InvoiceType;
 
 @NoArgsConstructor
@@ -31,6 +33,7 @@ import vn.edu.iuh.fit.common.constant.InvoiceType;
 @Builder
 @Entity
 @Table(name = "invoices")
+@BatchSize(size = 25)
 public class Invoice {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
@@ -47,11 +50,11 @@ public class Invoice {
   @Column(name = "invoice_type")
   private InvoiceType type;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "customer_id")
   private Customer customer;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "employee_id")
   private Employee employee;
 

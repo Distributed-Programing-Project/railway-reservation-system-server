@@ -24,7 +24,11 @@ public class EmployeeRepositoryImpl extends AbstractGenericRepositoryImpl<Employ
 
     @Override
     public Employee findEmployeeById(EntityManager em, String employeeId) {
-        return em.find(Employee.class, employeeId);
+        return em.createQuery("SELECT e FROM Employee e LEFT JOIN FETCH e.account WHERE e.employeeId = :id", Employee.class)
+                .setParameter("id", employeeId)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
     }
 
     @Override

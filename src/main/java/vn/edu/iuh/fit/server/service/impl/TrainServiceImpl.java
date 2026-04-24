@@ -42,9 +42,14 @@ public class TrainServiceImpl implements TrainService {
         if (!errors.isEmpty()) {
             return Response.error(String.join(", ", errors));
         }
-        List<Train> trains = trainRepository.findAllTrains(filter.getStatusFilter());
-        List<TrainDTO> trainDTOList = TrainMapper.INSTANCE.toDtoList(trains);
-        return Response.success(TrainMessages.FIND_ALL_SUCCESS, trainDTOList);
+        try {
+            List<Train> trains = trainRepository.findAllTrains(filter.getStatusFilter());
+            List<TrainDTO> trainDTOList = TrainMapper.INSTANCE.toDtoList(trains);
+            return Response.success(TrainMessages.FIND_ALL_SUCCESS, trainDTOList);
+        } catch (RuntimeException e) {
+            log.error("Failed to find all trains", e);
+            return Response.error(TrainMessages.SYSTEM_ERROR);
+        }
     }
 
     @Override
@@ -52,15 +57,11 @@ public class TrainServiceImpl implements TrainService {
         if (keyword == null || keyword.isBlank()) {
             return Response.error(TrainMessages.FIND_BY_CODE_BLANK);
         }
-        List<Train> trains = trainRepository.findTrainsByCodeLike(keyword);
-        List<TrainDTO> trainDTOList = trains.stream()
-                .map(train -> {
-                    TrainDTO dto = TrainMapper.INSTANCE.toDto(train);
-                    dto.setCarriages(CarriageMapper.INSTANCE.toDtoList(train.getCarriages()));
-                    return dto;
-                })
-                .toList();
-        return Response.success(TrainMessages.FIND_BY_CODE_SUCCESS, trainDTOList);
+    List<Train> trains = trainRepository.findTrainsByCodeLike(keyword);
+    List<TrainDTO> trainDTOList = trains.stream()
+            .map(TrainMapper.INSTANCE::toDto)
+            .toList();
+    return Response.success(TrainMessages.FIND_BY_CODE_SUCCESS, trainDTOList);
     }
 
     @Override
@@ -121,19 +122,17 @@ public class TrainServiceImpl implements TrainService {
             return Response.error(String.join(", ", errors));
         }
 
-        long futureScheduleCount = scheduleRepository.countFutureActiveSchedulesByTrainId(dto.getTrainId());
-        if (futureScheduleCount > 0) {
-            return Response.error(TrainMessages.HAS_FUTURE_SCHEDULES);
-        }
-
         try {
             return AbstractGenericRepositoryImpl.transactional(em -> {
+                long futureScheduleCount = scheduleRepository.countFutureActiveSchedulesByTrainId(em, dto.getTrainId());
+                if (futureScheduleCount > 0) {
+                    throw new IllegalStateException(TrainMessages.HAS_FUTURE_SCHEDULES);
+                }
                 trainRepository.updateTrainCarriages(em, dto.getTrainId(), dto.getCarriageIds());
                 log.info("Train carriages updated: trainId={}", dto.getTrainId());
                 return Response.success(TrainMessages.UPDATE_CARRIAGES_SUCCESS, null);
             });
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            log.warn("Business rule violation during train carriages update: {}", e.getMessage());
+        } catch (IllegalStateException e) {
             return Response.error(e.getMessage());
         } catch (RuntimeException e) {
             log.error("Failed to update train carriages: trainId={}", dto.getTrainId(), e);
@@ -148,21 +147,19 @@ public class TrainServiceImpl implements TrainService {
             return Response.error(String.join(", ", errors));
         }
 
-        if (dto.getStatus() == TrainStatus.INACTIVE || dto.getStatus() == TrainStatus.MAINTENANCE) {
-            long futureScheduleCount = scheduleRepository.countFutureActiveSchedulesByTrainId(dto.getTrainId());
-            if (futureScheduleCount > 0) {
-                return Response.error(TrainMessages.HAS_FUTURE_SCHEDULES);
-            }
-        }
-
         try {
             return AbstractGenericRepositoryImpl.transactional(em -> {
+                if (dto.getStatus() == TrainStatus.INACTIVE || dto.getStatus() == TrainStatus.MAINTENANCE) {
+                    long futureScheduleCount = scheduleRepository.countFutureActiveSchedulesByTrainId(em, dto.getTrainId());
+                    if (futureScheduleCount > 0) {
+                        throw new IllegalStateException(TrainMessages.HAS_FUTURE_SCHEDULES);
+                    }
+                }
                 trainRepository.updateTrainStatus(em, dto.getTrainId(), dto.getStatus());
                 log.info("Train status updated: trainId={}, status={}", dto.getTrainId(), dto.getStatus());
                 return Response.success(TrainMessages.UPDATE_STATUS_SUCCESS, null);
             });
-        } catch (IllegalArgumentException e) {
-            log.warn("Business rule violation during train status update: {}", e.getMessage());
+        } catch (IllegalStateException e) {
             return Response.error(e.getMessage());
         } catch (RuntimeException e) {
             log.error("Failed to update train status: trainId={}, status={}", dto.getTrainId(), dto.getStatus(), e);
