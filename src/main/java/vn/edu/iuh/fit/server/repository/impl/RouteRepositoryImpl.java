@@ -27,11 +27,19 @@ public class RouteRepositoryImpl extends AbstractGenericRepositoryImpl<Route, St
 
     @Override
     public Route findReverseRoute(EntityManager em, String routeId) {
-        Route route = em.find(Route.class, routeId);
+        Route route = em.createQuery(
+                        "SELECT r FROM Route r LEFT JOIN FETCH r.departureStation LEFT JOIN FETCH r.destinationStation WHERE r.id = :id",
+                        Route.class)
+                .setParameter("id", routeId)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
         if (route == null) return null;
-        return em.createQuery("SELECT r FROM Route r WHERE r.departureStation = :dest AND r.destinationStation = :dep", Route.class)
-                .setParameter("dest", route.getDestinationStation())
-                .setParameter("dep", route.getDepartureStation())
+        return em.createQuery(
+                        "SELECT r FROM Route r LEFT JOIN FETCH r.departureStation LEFT JOIN FETCH r.destinationStation WHERE r.departureStation.id = :dest AND r.destinationStation.id = :dep",
+                        Route.class)
+                .setParameter("dest", route.getDestinationStation().getId())
+                .setParameter("dep", route.getDepartureStation().getId())
                 .getResultStream()
                 .findFirst()
                 .orElse(null);
@@ -56,17 +64,27 @@ public class RouteRepositoryImpl extends AbstractGenericRepositoryImpl<Route, St
 
     @Override
     public Route findRouteById(EntityManager em, String routeId) {
-        return em.find(Route.class, routeId);
+        return em.createQuery(
+                        "SELECT r FROM Route r LEFT JOIN FETCH r.departureStation LEFT JOIN FETCH r.destinationStation WHERE r.id = :id",
+                        Route.class)
+                .setParameter("id", routeId)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
     public List<Route> findAllRoutes(EntityManager em) {
-        return em.createQuery("SELECT r FROM Route r", Route.class).getResultList();
+        return em.createQuery(
+                        "SELECT r FROM Route r LEFT JOIN FETCH r.departureStation LEFT JOIN FETCH r.destinationStation",
+                        Route.class)
+                .getResultList();
     }
 
     @Override
     public List<Route> searchRoutes(EntityManager em, String departureStationId, String destinationStationId, String status) {
-        StringBuilder jpql = new StringBuilder("SELECT r FROM Route r WHERE 1=1 ");
+        StringBuilder jpql = new StringBuilder(
+                "SELECT r FROM Route r LEFT JOIN FETCH r.departureStation LEFT JOIN FETCH r.destinationStation WHERE 1=1 ");
         if (departureStationId != null && !departureStationId.isEmpty()) {
             jpql.append("AND r.departureStation.id = :depId ");
         }

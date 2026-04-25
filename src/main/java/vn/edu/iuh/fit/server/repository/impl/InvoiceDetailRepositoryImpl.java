@@ -25,8 +25,10 @@ public class InvoiceDetailRepositoryImpl extends AbstractGenericRepositoryImpl<I
             InvoiceType invoiceType) {
         String jpql = "SELECT d FROM InvoiceDetail d " +
                 "JOIN FETCH d.invoice i " +
-                "JOIN FETCH d.ticket t " +
-                "WHERE t.id IN :ticketIds AND i.type = :invoiceType";
+                "LEFT JOIN FETCH i.customer " +
+                "LEFT JOIN FETCH i.employee " +
+                "JOIN FETCH d.ticket " +
+                "WHERE d.ticket.id IN :ticketIds AND i.type = :invoiceType";
         return em.createQuery(jpql, InvoiceDetail.class)
                 .setParameter("ticketIds", ticketIds)
                 .setParameter("invoiceType", invoiceType)

@@ -72,8 +72,8 @@ Nhân viên tại quầy tiếp nhận yêu cầu đổi vé từ khách hàng. 
 ## Luồng lỗi
 
 - **[Vé không đủ điều kiện]:** Thời gian đổi vé nằm trong khoảng < 24h trước giờ tàu chạy → Hệ thống cảnh báo lỗi và ngăn chặn giao dịch.
-- **[Vé đã đổi một lần]:** Hệ thống kiểm tra thấy vé đã có `originalTicketId` → Thông báo _"Vé này đã được đổi trước đó, không thể đổi lần thứ hai"_.
-- **[Lỗi chiếm chỗ]:** Trong lúc chọn ghế mới, ghế đó đã bị quầy khác bán mất → Hệ thống báo lỗi xung đột và yêu cầu nhân viên chọn lại ghế khác.
+- **[Vé đã đổi một lần]:** Hệ thống kiểm tra thấy vé đã có `originalTicketId` hoặc `isExchanged = true` → Thông báo _"Vé này đã được đổi trước đó, không thể đổi lần thứ hai"_.
+- **[Lỗi chiếm chỗ]:** Trong lúc chọn ghế mới, ghế đó đã bị quầy khác bán mất (`OptimisticLockException`) → Hệ thống báo lỗi xung đột và yêu cầu nhân viên chọn lại ghế khác.
 
 ---
 
@@ -87,11 +87,26 @@ Nhân viên tại quầy tiếp nhận yêu cầu đổi vé từ khách hàng. 
 
 ### Giao dịch đổi
 
-| Field                  | Kiểu            | Mô tả                        |
-| ---------------------- | --------------- | ---------------------------- |
-| `oldTicketIds`         | `List<String>`  | Danh sách mã vé cũ           |
-| `newScheduleDetailIds` | `List<Integer>` | Danh sách ID ghế mới đã chọn |
-| `cashReceived`         | `double`        | Số tiền thực nhận từ khách   |
+| Field                  | Kiểu            | Bắt buộc | Mô tả                        |
+| ---------------------- | --------------- | -------- | ---------------------------- |
+| `oldTicketIds`         | `List<String>`  | ✓        | Danh sách mã vé cũ           |
+| `newScheduleDetailIds` | `List<String>`  | ✓        | Danh sách scheduleDetailId ghế mới |
+| `employeeId`           | `String`        | ✓        | ID nhân viên thực hiện giao dịch |
+| `taxCode`              | `String`        | ✗        | Mã số thuế (VAT)             |
+| `companyName`          | `String`        | ✗        | Tên công ty (VAT)            |
+
+---
+
+### Dữ liệu ra (Server → Client)
+
+### Thông tin đổi vé thành công
+
+| Field              | Kiểu     | Mô tả                                      |
+| ------------------ | -------- | ------------------------------------------ |
+| `invoiceId`        | `String` | ID hóa đơn đổi vé (EXCHANGE)              |
+| `totalAmount`      | `double` | Tổng số tiền (phí đổi + chênh lệch giá) |
+| `oldTicketCount`   | `int`    | Số lượng vé cũ đã đổi                     |
+| `newTicketCount`   | `int`    | Số lượng vé mới đã tạo                    |
 
 ---
 
@@ -129,18 +144,16 @@ graph LR
 
 ## 🛠 Yêu cầu cập nhật Database / Entity (Từ BA Review)
 
-Để hiện thực hóa nghiệp vụ đổi vé, các Entity cần được bổ sung các thuộc tính sau:
+**Trạng thái:** ✅ TẤT CẢ ĐÃ IMPLEMENT
 
-1. **Ticket Entity:**
-   - Thêm `originalTicketId` (String): Lưu ID của vé cũ. Dùng để kiểm tra điều kiện "chỉ đổi 1 lần". Nếu trường này có giá trị, hệ thống sẽ từ chối đổi tiếp.
-   - Thêm `isExchanged` (boolean): Đánh dấu vé đã bị thay thế để không cho phép sử dụng đi tàu hoặc đổi/trả lần nữa.
+1. **Ticket Entity:** ✅ Đã có — `originalTicketId` (String) và `isExchanged` (boolean) đã được implement.
+   - **Lý do (Vấn đề thực tế):** Trường `originalTicketId` lưu ID của vé cũ, dùng để kiểm tra điều kiện "chỉ đổi 1 lần". Nếu trường này có giá trị, hệ thống sẽ từ chối đổi tiếp. Trường `isExchanged` đánh dấu vé đã bị thay thế để không cho phép sử dụng đi tàu hoặc đổi/trả lần nữa. QR code của vé cũ được invalidate (`qrCode = "INVALID"`) khi đổi vé — đã implement.
 
-2. **Invoice Entity:**
-   - `InvoiceType`: Bổ sung giá trị `EXCHANGE` vào Enum để phân biệt với hóa đơn bán mới (`SALE`) hoặc hoàn tiền (`REFUND`).
-   - Thêm các trường hỗ trợ hóa đơn VAT nếu khách yêu cầu đổi cho pháp nhân (`taxCode`, `companyName`).
+2. **Invoice Entity:** ✅ Đã có — `InvoiceType.EXCHANGE` đã có trong enum. `taxCode`, `companyName` đã có trong entity.
+   - **Lý do (Vấn đề thực tế):** Cần phân biệt hóa đơn đổi vé với hóa đơn bán mới (`SALE`) và hoàn tiền (`REFUND`). Thông tin VAT (`taxCode`, `companyName`) cần thiết nếu khách đổi vé cho pháp nhân.
 
-3. **InvoiceDetail Entity:**
-   - Đảm bảo trường `subTotal` có thể lưu giá trị âm. Điều này cực kỳ quan trọng để ghi nhận dòng "Thu hồi vé cũ" trong báo cáo tài chính của hóa đơn đổi vé.
+3. **InvoiceDetail Entity:** ✅ Đã có — `subTotal` đã đổi sang `Double` để hỗ trợ giá trị âm.
+   - **Lý do (Vấn đề thực tế):** Nếu usecase đổi vé cần ghi nhận dòng "thu hồi vé cũ" với số âm trong báo cáo tài chính, cần kiểu dữ liệu hỗ trợ giá trị âm.
 
-4. **ScheduleDetail Entity:**
-   - Cần có `@Version` để triển khai **Optimistic Locking**. Điều này ngăn chặn việc hai nhân viên ở hai quầy khác nhau cùng đổi vé vào chung một chỗ ngồi trống tại cùng một thời điểm.
+4. **ScheduleDetail Entity:** ✅ Đã có — `@Version int version` đã được implement.
+   - **Lý do (Vấn đề thực tế):** Cần Optimistic Locking để ngăn chặn việc hai nhân viên ở hai quầy khác nhau cùng đổi vé vào chung một chỗ ngồi trống tại cùng một thời điểm. Khi quầy A đổi thành công, version tăng lên; quầy B đến sau sẽ bị ném `OptimisticLockException` và bị từ chối.

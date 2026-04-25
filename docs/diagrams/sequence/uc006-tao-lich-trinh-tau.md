@@ -6,17 +6,17 @@
 
 ```mermaid
 graph TB
-    subgraph CLIENT ["🖥️ Client (JavaFX)"]
+    subgraph CLIENT ["Client (JavaFX)"]
         UI["ScheduleManagementController"]
         SC["SocketClient"]
     end
 
-    subgraph TRANSPORT ["🔌 TCP Socket Transport"]
+    subgraph TRANSPORT ["TCP Socket Transport"]
         OOS["ObjectOutputStream.writeObject(Request)"]
         OIS["ObjectInputStream.readObject() → Response"]
     end
 
-    subgraph SERVER ["⚙️ Server (Java Socket Server)"]
+    subgraph SERVER ["Server (Java Socket Server)"]
         SRV["Server.java\nhandleClient(Socket)"]
         RR["RequestRouter.route(Request)"]
         SVC["ScheduleServiceImpl\n.createSchedule(ScheduleCreateDTO)"]
@@ -24,7 +24,7 @@ graph TB
         JPA["JPAUtils.getEntityManager()"]
     end
 
-    subgraph DB ["🗄️ MariaDB"]
+    subgraph DB ["MariaDB"]
         T_SCH["schedules"]
         T_DET["schedule_details"]
         T_SEAT["seats / carriages"]
@@ -54,7 +54,7 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor Manager as 👤 Nhân viên quản lý
+    actor Manager as Nhân viên quản lý
     participant UI as ScheduleManagementController
     participant Socket as SocketClient
     participant Server as Server.java
@@ -63,7 +63,9 @@ sequenceDiagram
     participant Repo as ScheduleRepositoryImpl
     participant DB as MariaDB
 
-    Manager->>UI: Nhấn "Tạo lịch trình"
+    User->>UI: Đăng nhập thành công
+    User->>UI: Chọn màn hình "Quản lý lịch trình"
+    User->>UI: Nhấn "Tạo lịch trình"
     UI->>UI: Hiển thị form (trainId, routeId, departureTime, arrivalTime)
     Manager->>UI: Điền đầy đủ form, nhấn Xác nhận
 

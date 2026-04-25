@@ -3,8 +3,9 @@ package vn.edu.iuh.fit.common.dto;
 import java.io.Serializable;
 import java.util.List;
 
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,10 +25,12 @@ public class ExchangeTicketRequestDTO implements Serializable {
     @NotEmpty(message = TicketMessages.NEW_SCHEDULE_DETAIL_IDS_REQUIRED)
     private List<String> newScheduleDetailIds;
 
-    @Min(value = 0, message = TicketMessages.CASH_RECEIVED_NOT_NEGATIVE)
-    private double cashReceived;
+    @NotBlank(message = TicketMessages.EMPLOYEE_ID_REQUIRED)
+    private String employeeId;
 
-    // Hỗ trợ xuất VAT
+    @Size(max = 20, message = TicketMessages.TAX_CODE_TOO_LONG)
     private String taxCode;
+
+    @Size(max = 200, message = TicketMessages.COMPANY_NAME_TOO_LONG)
     private String companyName;
 }

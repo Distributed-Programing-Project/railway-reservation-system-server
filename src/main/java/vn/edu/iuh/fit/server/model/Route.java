@@ -2,9 +2,11 @@ package vn.edu.iuh.fit.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import vn.edu.iuh.fit.common.constant.RouteStatus;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.List;
+
+import vn.edu.iuh.fit.common.constant.RouteStatus;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -14,6 +16,7 @@ import java.util.List;
 @Builder
 @Entity
 @Table(name = "routes")
+@BatchSize(size = 25)
 public class Route {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -23,11 +26,11 @@ public class Route {
     @Column(name = "route_code", length = 20)
     private String routeCode;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "departure_station_id", nullable = false)
     private Station departureStation; // Điểm đi
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "destination_station_id", nullable = false)
     private Station destinationStation;  // Điểm đến
 
@@ -43,4 +46,3 @@ public class Route {
     @OneToMany(mappedBy = "route")
     private List<Schedule> schedules;
 }
-

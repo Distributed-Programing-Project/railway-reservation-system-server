@@ -6,6 +6,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -19,6 +20,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.BatchSize;
 import vn.edu.iuh.fit.common.constant.SeatType;
 
 @NoArgsConstructor
@@ -29,6 +31,7 @@ import vn.edu.iuh.fit.common.constant.SeatType;
 @Builder
 @Entity
 @Table(name = "seats")
+@BatchSize(size = 25)
 public class Seat {
 
   @Id
@@ -39,11 +42,14 @@ public class Seat {
   @Column(name = "sequence_number")
   private int number;
 
+  @Column(name = "is_available")
+  private boolean available;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "seat_type")
   private SeatType type;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "carriage_id")
   private Carriage carriage;
 

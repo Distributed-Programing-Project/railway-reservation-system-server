@@ -15,12 +15,13 @@ public class TicketRepositoryImpl extends AbstractGenericRepositoryImpl<Ticket, 
 
   @Override
   public List<Ticket> findTicketsForExchange(List<String> ticketIds, EntityManager em) {
-    // Dùng JOIN FETCH 2 cấp để lấy luôn thông tin chuyến tàu, tránh việc
-    // lúc check 24h Hibernate lại bắn thêm query phụ.
     String jpql = "SELECT t FROM Ticket t " +
         "JOIN FETCH t.scheduleDetail sd " +
-        "JOIN FETCH sd.schedule " +
-        "WHERE t.id IN :ids";
+        "JOIN FETCH sd.schedule s " +
+        "JOIN FETCH t.customer c " +
+        "WHERE t.id IN :ids " +
+        "AND t.isExchanged = false " +
+        "AND c.isActive = true";
 
     return em.createQuery(jpql, Ticket.class)
         .setParameter("ids", ticketIds)
@@ -29,12 +30,8 @@ public class TicketRepositoryImpl extends AbstractGenericRepositoryImpl<Ticket, 
 
   @Override
   public boolean createTicket(Ticket ticket, EntityManager em) {
-    try {
-      em.persist(ticket);
-      return true;
-    } catch (Exception e) {
-      return false;
-    }
+    em.persist(ticket);
+    return true;
   }
 
   @Override

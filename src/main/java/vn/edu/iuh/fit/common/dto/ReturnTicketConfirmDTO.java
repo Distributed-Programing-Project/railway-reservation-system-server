@@ -5,13 +5,13 @@ import java.util.List;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import vn.edu.iuh.fit.common.message.TicketMessages;
-import vn.edu.iuh.fit.common.message.EmployeeMessages;
 
 @Data
 @NoArgsConstructor
@@ -26,7 +26,7 @@ public class ReturnTicketConfirmDTO implements Serializable {
     @Min(value = 0, message = TicketMessages.REFUND_AMOUNT_INVALID)
     private double refundAmount;
 
-    @NotEmpty(message = EmployeeMessages.EMPLOYEE_ID_REQUIRED)
+    @NotBlank(message = TicketMessages.EMPLOYEE_ID_REQUIRED)
     private String employeeId;
 }
 
