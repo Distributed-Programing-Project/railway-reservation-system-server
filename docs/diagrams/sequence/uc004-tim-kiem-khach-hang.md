@@ -6,30 +6,30 @@
 
 ```mermaid
 graph TB
-    subgraph CLIENT ["🖥️ Client (JavaFX)"]
+    subgraph CLIENT ["Client (JavaFX)"]
         UI["CustomerManagementView\n(Tìm kiếm + phân trang)"]
         SC["SocketClient"]
     end
 
-    subgraph TRANSPORT ["🔌 TCP Socket Transport"]
+    subgraph TRANSPORT ["TCP Socket Transport"]
         OOS["ObjectOutputStream.writeObject(Request)"]
         OIS["ObjectInputStream.readObject() → Response"]
     end
 
-    subgraph SERVER ["⚙️ Server (Java Socket Server)"]
+    subgraph SERVER ["Server (Java Socket Server)"]
         SRV["Server.java\nhandleClient(Socket)"]
-        RR["RequestRouter.route(Request)\n(Hiện chưa có ActionType cho UC004)"]
+        RR["RequestRouter.route(Request)\n(ActionType.SEARCH_CUSTOMERS)"]
         SVC["CustomerServiceImpl\n.searchCustomers(CustomerSearchDTO)"]
         VAL["ValidationUtils.validate(dto)"]
         JPA["JPAUtils.getEntityManager()"]
         REPO["CustomerRepositoryImpl\n.searchActiveCustomers(...)\n.countActiveCustomers(...)"]
     end
 
-    subgraph DB ["🗄️ MariaDB"]
+    subgraph DB ["MariaDB"]
         T_CUS["customers"]
     end
 
-    UI -- "new Request(UC004_SEARCH_CUSTOMERS?, CustomerSearchDTO)" --> SC
+    UI -- "new Request(SEARCH_CUSTOMERS, CustomerSearchDTO)" --> SC
     SC --> OOS
     OOS -- "TCP Socket" --> SRV
     SRV --> RR
@@ -49,7 +49,7 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor Clerk as 👤 Nhân viên
+    actor Clerk as Nhân viên
     participant UI as CustomerManagementView
     participant Socket as SocketClient
     participant Server as Server.java
@@ -58,10 +58,11 @@ sequenceDiagram
     participant Repo as CustomerRepositoryImpl
     participant DB as MariaDB
 
+    Clerk->>UI: Đăng nhập thành công
+    Clerk->>UI: Chọn màn hình "Quản lý khách hàng"
     Clerk->>UI: Nhập keyword, chọn page/size, bấm "Tìm kiếm"
     UI->>UI: new CustomerSearchDTO(keyword, page, size)
-    UI->>Socket: sendRequest(new Request(UC004_SEARCH_CUSTOMERS?, searchDTO))
-    note over Socket,Router: Code hiện tại chưa có ActionType/RequestRouter cho UC004.\nSequence mô tả đường gọi tới CustomerServiceImpl.searchCustomers().
+    UI->>Socket: sendRequest(new Request(SEARCH_CUSTOMERS, searchDTO))
     Socket->>Server: ObjectOutputStream.writeObject(request)
     Server->>Router: route(request)
     Router->>Service: searchCustomers(searchDTO)

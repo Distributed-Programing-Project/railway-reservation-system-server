@@ -18,7 +18,7 @@ graph TB
 
     subgraph SERVER ["Server (Java Socket Server)"]
         SRV["Server.java<br/>handleClient(Socket)"]
-        RR["RequestRouter.route(Request)<br/>(Hiện chưa có ActionType cho UC002)"]
+        RR["RequestRouter.route(Request)<br/>(ActionType.EXCHANGE_TICKET)"]
         SVC["TicketServiceImpl<br/>.exchangeTickets(ExchangeTicketRequestDTO)"]
         JPA["JPAUtils.getEntityManager()"]
         T_REPO["TicketRepositoryImpl<br/>.findTicketsForExchange(...)<br/>.updateTicket(...)<br/>.createTicket(...)"]
@@ -38,7 +38,7 @@ graph TB
         T_INVD["invoice_details"]
     end
 
-    UI -- "new Request(UC002_EXCHANGE?, ExchangeTicketRequestDTO)" --> SC
+    UI -- "new Request(EXCHANGE_TICKET, ExchangeTicketRequestDTO)" --> SC
     SC --> OOS
     OOS -- "TCP Socket" --> SRV
     SRV --> RR
@@ -71,7 +71,7 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor Clerk as NhanVienBanVe
+    actor Clerk as Nhân viên bán vé
     participant UI as TicketExchangeView
     participant Socket as SocketClient
     participant Server as Server.java
@@ -83,10 +83,11 @@ sequenceDiagram
     participant InvDetRepo as InvoiceDetailRepositoryImpl
     participant DB as MariaDB
 
+    Clerk->>UI: Đăng nhập thành công
+    Clerk->>UI: Chọn màn hình "Đổi vé"
     Clerk->>UI: Chọn "Đổi vé", chọn vé cũ + ghế/chuyến mới
     UI->>UI: new ExchangeTicketRequestDTO(oldTicketIds, newScheduleDetailIds, cashReceived, taxCode, companyName)
-    UI->>Socket: sendRequest(new Request(UC002_EXCHANGE?, requestDTO))
-    note over Socket,Router: Code hiện tại chưa có ActionType/RequestRouter cho UC002.<br/>Sequence mô tả đường gọi tới TicketServiceImpl.exchangeTickets().
+    UI->>Socket: sendRequest(new Request(EXCHANGE_TICKET, requestDTO))
     Socket->>Server: ObjectOutputStream.writeObject(request)
     Server->>Router: route(request)
     Router->>Service: exchangeTickets(requestDTO)
@@ -106,24 +107,37 @@ sequenceDiagram
         Service->>Service: JPAUtils.getEntityManager() trả về em
         Service->>Service: em.getTransaction().begin()
 
+        Service->>EmpRepo: findEmployeeById(requestDTO.employeeId, em)
+        EmpRepo->>DB: SELECT employees WHERE id = :employeeId
+        DB-->>EmpRepo: Employee? employee
+        EmpRepo-->>Service: employee
+
+        alt employee == null
+            Service->>Service: rollbackQuietly(transaction)
+            Service-->>Router: Response.error(NOT_FOUND_EMPLOYEE)
+        else employee.getIsManager() != true
+            Service->>Service: rollbackQuietly(transaction)
+            Service-->>Router: Response.error(MANAGER_ONLY)
+        end
+
         Service->>TicketRepo: findTicketsForExchange(oldTicketIds, em)
-        TicketRepo->>DB: JPQL SELECT Ticket t JOIN FETCH t.scheduleDetail sd JOIN FETCH sd.schedule WHERE t.id IN :ids
+        TicketRepo->>DB: JPQL SELECT t FROM Ticket t JOIN FETCH t.scheduleDetail sd JOIN FETCH sd.schedule s JOIN FETCH t.customer c WHERE t.id IN :ids AND t.isExchanged=false AND c.isActive=true
         DB-->>TicketRepo: List(Ticket) oldTickets
         TicketRepo-->>Service: oldTickets
 
         alt oldTickets.size != oldTicketIds.size
-            note over Service,DB: Early return trong try, transaction vẫn active (code không rollback tường minh).
+            Service->>Service: rollbackQuietly(transaction)
             Service-->>Router: Response.error(SOME_TICKETS_INVALID)
         else Đủ tickets
             Service->>Service: validateBusinessRules(oldTickets)
             alt ticket.isExchanged == true OR ticket.originalTicketId != null
-                note over Service,DB: Early return, không rollback tường minh.
+                Service->>Service: rollbackQuietly(transaction)
                 Service-->>Router: Response.error(TICKET_ALREADY_EXCHANGED)
             else ticket.status != PAID
-                note over Service,DB: Early return, không rollback tường minh.
+                Service->>Service: rollbackQuietly(transaction)
                 Service-->>Router: Response.error(TICKET_NOT_PAID)
             else nhỏ hơn 24h trước giờ khởi hành
-                note over Service,DB: Early return, không rollback tường minh.
+                Service->>Service: rollbackQuietly(transaction)
                 Service-->>Router: Response.error(EXCHANGE_TIME_EXPIRED)
             else Pass business rules
                 loop Mỗi oldTicket
@@ -143,13 +157,13 @@ sequenceDiagram
                     alt newSeat == null
                         Service->>Service: throw IllegalArgumentException(scheduleDetailNotFound)
                     else newSeat tồn tại
-                        Service->>SDRepo: getSoldSeatIds(em, scheduleId) [cache theo scheduleId]
-                        SDRepo->>DB: JPQL SELECT sd.seat.id FROM Ticket t JOIN t.scheduleDetail sd WHERE sd.schedule.id=:scheduleId AND t.status NOT IN (CANCELLED,EXCHANGED,RETURNED)
+                        Service->>SDRepo: getSoldSeatIdsWithLock(em, scheduleId) [cache theo scheduleId, SELECT FOR UPDATE]
+                        SDRepo->>DB: SELECT sd.seat.id FROM ScheduleDetail sd WHERE sd.schedule.id=:scheduleId [PESSIMISTIC_WRITE]
                         DB-->>SDRepo: Set(String) soldSeatIds
                         SDRepo-->>Service: soldSeatIds
 
                         alt soldSeatIds contains newSeat.seat.id
-                            note over Service,DB: Early return, không rollback tường minh.
+                            Service->>Service: rollbackQuietly(transaction)
                             Service-->>Router: Response.error(SEAT_NOT_AVAILABLE)
                         else Ghế còn trống
                             Service->>SDRepo: updateScheduleDetail(em, newSeat)
@@ -165,7 +179,7 @@ sequenceDiagram
                     end
                 end
 
-                Service->>InvRepo: createInvoice(em, Invoice{type=EXCHANGE,totalAmount=finalAmount,taxCode,companyName})
+                Service->>InvRepo: createInvoice(em, Invoice{type=EXCHANGE,totalAmount=finalAmount,customer,employee,taxCode,companyName})
                 InvRepo->>DB: em.persist(Invoice) thực hiện INSERT invoices
                 DB-->>InvRepo: invoiceId
                 InvRepo-->>Service: invoice

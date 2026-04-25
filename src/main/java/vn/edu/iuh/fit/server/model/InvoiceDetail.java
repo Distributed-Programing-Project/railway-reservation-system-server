@@ -15,6 +15,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.BatchSize;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,6 +25,7 @@ import lombok.ToString;
 @Builder
 @Entity
 @Table(name = "invoice_details")
+@BatchSize(size = 25)
 public class InvoiceDetail {
 
   @Id
@@ -31,7 +33,7 @@ public class InvoiceDetail {
   @Column(name = "invoice_detail_id", length = 36)
   private String id;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "invoice_id", nullable = false)
   private Invoice invoice;
 
@@ -40,7 +42,7 @@ public class InvoiceDetail {
   private Ticket ticket;
 
   @Column(name = "sub_total")
-  private double subTotal;
+  private Double subTotal;
 
   @Column(name = "discount")
   private double discount;

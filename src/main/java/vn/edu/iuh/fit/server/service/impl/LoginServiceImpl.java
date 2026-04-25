@@ -1,6 +1,5 @@
 package vn.edu.iuh.fit.server.service.impl;
 
-import jakarta.persistence.EntityManager;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,8 +10,8 @@ import vn.edu.iuh.fit.common.response.Response;
 import vn.edu.iuh.fit.server.model.Account;
 import vn.edu.iuh.fit.server.repository.AccountRepository;
 import vn.edu.iuh.fit.server.repository.impl.AccountRepositoryImpl;
+import vn.edu.iuh.fit.server.repository.impl.AbstractGenericRepositoryImpl;
 import vn.edu.iuh.fit.server.service.LoginService;
-import vn.edu.iuh.fit.server.util.JPAUtils;
 
 public class LoginServiceImpl implements LoginService {
 
@@ -31,35 +30,34 @@ public class LoginServiceImpl implements LoginService {
             return Response.error(LoginMessages.USERNAME_PASSWORD_REQUIRED);
         }
 
-        EntityManager em = JPAUtils.getEntityManager();
         try {
-            Account account = accountRepository.findByUsername(em, username);
-            if (account == null) {
-                log.warn("Login failed: username not found={}", username);
-                return Response.error(LoginMessages.INVALID_CREDENTIALS);
-            }
+            return AbstractGenericRepositoryImpl.readOnly(em -> {
+                Account account = accountRepository.findByUsername(em, username);
+                if (account == null) {
+                    log.warn("Login failed: username not found={}", username);
+                    return Response.error(LoginMessages.INVALID_CREDENTIALS);
+                }
 
-            if (!account.isActive()) {
-                log.warn("Login failed: account inactive username={}", username);
-                return Response.error(LoginMessages.ACCOUNT_INACTIVE);
-            }
+                if (!account.isActive()) {
+                    log.warn("Login failed: account inactive username={}", username);
+                    return Response.error(LoginMessages.ACCOUNT_INACTIVE);
+                }
 
-            if (!passwordMatches(password, account.getPassword())) {
-                log.warn("Login failed: invalid password username={}", username);
-                return Response.error(LoginMessages.INVALID_CREDENTIALS);
-            }
+                if (!passwordMatches(password, account.getPassword())) {
+                    log.warn("Login failed: invalid password username={}", username);
+                    return Response.error(LoginMessages.INVALID_CREDENTIALS);
+                }
 
-            log.info("Login successful: username={}", username);
-            return Response.success(LoginMessages.LOGIN_SUCCESS, AccountDTO.builder()
-                    .id(account.getId())
-                    .username(account.getUsername())
-                    .active(account.isActive())
-                    .build());
+                log.info("Login successful: username={}", username);
+                return Response.success(LoginMessages.LOGIN_SUCCESS, AccountDTO.builder()
+                        .id(account.getId())
+                        .username(account.getUsername())
+                        .active(account.isActive())
+                        .build());
+            });
         } catch (Exception e) {
             log.error("Login failed with system error: username={}", username, e);
             return Response.error(LoginMessages.SYSTEM_ERROR_PREFIX + e.getMessage());
-        } finally {
-            em.close();
         }
     }
 
@@ -78,7 +76,7 @@ public class LoginServiceImpl implements LoginService {
         if (isBCryptHash(storedPassword)) {
             return BCrypt.checkpw(rawPassword, storedPassword);
         }
-        return rawPassword.equals(storedPassword);
+        return false;
     }
 
     private boolean isBCryptHash(String value) {

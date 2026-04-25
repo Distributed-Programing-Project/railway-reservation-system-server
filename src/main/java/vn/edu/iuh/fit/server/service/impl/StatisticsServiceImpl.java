@@ -1,23 +1,22 @@
 package vn.edu.iuh.fit.server.service.impl;
 
-import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import vn.edu.iuh.fit.common.response.Response;
+import vn.edu.iuh.fit.common.constant.EmployeeStatus;
 import vn.edu.iuh.fit.common.constant.StatisticsPeriod;
 import vn.edu.iuh.fit.common.dto.DailyRevenueDTO;
 import vn.edu.iuh.fit.common.dto.StatisticsRequestDTO;
 import vn.edu.iuh.fit.common.dto.StatisticsResultDTO;
+import vn.edu.iuh.fit.common.message.StatisticsMessages;
+import vn.edu.iuh.fit.common.response.Response;
 import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.repository.EmployeeRepository;
 import vn.edu.iuh.fit.server.repository.StatisticsRepository;
+import vn.edu.iuh.fit.server.repository.impl.AbstractGenericRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.EmployeeRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.StatisticsRepositoryImpl;
 import vn.edu.iuh.fit.server.service.StatisticsService;
-import vn.edu.iuh.fit.server.util.JPAUtils;
 import vn.edu.iuh.fit.server.util.ValidationUtils;
-import vn.edu.iuh.fit.common.message.StatisticsMessages;
-
 
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -46,13 +45,10 @@ public class StatisticsServiceImpl implements StatisticsService {
             return Response.error(String.join(", ", errors));
         }
 
-        Employee requester = findRequester(requestDTO.getRequestEmployeeId());
-        if (requester == null) {
-            return Response.error(String.format(StatisticsMessages.REQUEST_EMPLOYEE_NOT_FOUND, requestDTO.getRequestEmployeeId()));
-        }
+        Response authError = requireActiveManager(requestDTO.getRequestEmployeeId());
+        if (authError != null) return authError;
 
-
-        String effectiveEmployeeId = resolveEffectiveEmployeeId(requester, requestDTO.getEmployeeId());
+        String effectiveEmployeeId = resolveEffectiveEmployeeId(requestDTO.getRequestEmployeeId(), requestDTO.getEmployeeId());
         LocalDate[] dateRange = computeDateRange(requestDTO.getPeriodType(), requestDTO.getTargetDate());
         LocalDate startDate = dateRange[0];
         LocalDate endDate = dateRange[1];
@@ -69,23 +65,26 @@ public class StatisticsServiceImpl implements StatisticsService {
                     requestDTO.getPeriodType(), requestDTO.getTargetDate(), e);
             return Response.error(StatisticsMessages.SYSTEM_ERROR);
         }
-
     }
 
-    private Employee findRequester(String requestEmployeeId) {
-        EntityManager em = JPAUtils.getEntityManager();
-        try {
-            return employeeRepository.findEmployeeById(em, requestEmployeeId);
-        } finally {
-            if (em.isOpen()) em.close();
-        }
+    private Response requireActiveManager(String employeeId) {
+        return AbstractGenericRepositoryImpl.readOnly(em -> {
+            Employee requester = employeeRepository.findEmployeeById(em, employeeId);
+            if (requester == null) {
+                return Response.error(String.format(StatisticsMessages.REQUEST_EMPLOYEE_NOT_FOUND, employeeId));
+            }
+            if (requester.getEmployeeStatus() != EmployeeStatus.ACTIVE) {
+                return Response.error(StatisticsMessages.REQUEST_EMPLOYEE_INACTIVE);
+            }
+            if (!Boolean.TRUE.equals(requester.getIsManager())) {
+                return Response.error(StatisticsMessages.NOT_MANAGER);
+            }
+            return null;
+        });
     }
 
-    private String resolveEffectiveEmployeeId(Employee requester, String filterEmployeeId) {
-        if (Boolean.TRUE.equals(requester.getIsManager())) {
-            return filterEmployeeId;
-        }
-        return requester.getEmployeeId();
+    private String resolveEffectiveEmployeeId(String requestEmployeeId, String filterEmployeeId) {
+        return filterEmployeeId;
     }
 
     private LocalDate[] computeDateRange(StatisticsPeriod periodType, LocalDate targetDate) {

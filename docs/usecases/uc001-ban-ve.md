@@ -143,7 +143,6 @@ Nhân viên tại quầy tiếp nhận yêu cầu mua vé từ khách hàng, tì
 | `pointsToRedeem` | `int` | ✗ | Số điểm muốn đổi |
 | `companyName` | `String` | ✗ | Tên công ty (cho hóa đơn VAT) |
 | `taxCode` | `String` | ✗ | Mã số thuế (cho hóa đơn VAT) |
-| `companyAddress` | `String` | ✗ | Địa chỉ công ty (cho hóa đơn VAT) |
 
 ---
 
@@ -253,16 +252,18 @@ graph LR
 
 ## 🛠 Yêu cầu cập nhật Database / Entity (Từ BA Review)
 
+**Trạng thái:** ✅ TẤT CẢ ĐÃ IMPLEMENT
+
 Để đáp ứng được usecase này, Tech Lead / Developer cần thực hiện cập nhật các Entity sau trước khi implement:
 
-1. **Ticket Entity:** Thêm `passengerName` (String) và `passengerIdCard` (String).
+1. **Ticket Entity:** ✅ Đã có — `passengerName` (NVARCHAR) và `passengerIdCard` đã được implement.
    - **Lý do (Vấn đề thực tế):** Giả sử anh A đại diện mua 3 vé cho gia đình (gồm anh A, vợ B và con C). Với thiết kế hiện tại, cả 3 vé này đều trỏ về `Customer` là anh A. Nhưng ngành đường sắt quy định vé lên tàu là **vé định danh**. Nhân viên soát vé phải đối chiếu tên và CCCD in trên vé với người thực tế lên tàu. Nếu không có 2 trường này ở bảng Ticket, khi in 3 vé ra, hệ thống sẽ in cả 3 vé mang tên "Anh A", dẫn đến việc vợ và con anh A sẽ không được lên tàu vì sai tên trên vé.
 
-2. **Invoice Entity:** Thêm `paymentMethod` (Enum: CASH, TRANSFER), `taxCode` (String), `companyName` (String), `companyAddress` (String).
+2. **Invoice Entity:** ✅ Đã có — `taxCode`, `companyName` đã có trong entity. `paymentMethod` chưa có (nếu cần).
    - **Lý do (Vấn đề thực tế):** Trong luồng phụ [AF-3], khách hàng có thể yêu cầu xuất hóa đơn đỏ (VAT) cho công ty. Hệ thống hiện tại hoàn toàn không có chỗ nào để lưu tên công ty hay mã số thuế của giao dịch này. Để Kế toán có thể xuất được hóa đơn điện tử hợp pháp, bắt buộc phải lưu thông tin pháp nhân. Đồng thời, `paymentMethod` (Tiền mặt / Chuyển khoản) là bắt buộc để đối soát tiền nong cuối ca làm việc của nhân viên.
 
-3. **Customer Entity:** Thêm `rewardPoints` (int).
+3. **Customer Entity:** ✅ Đã có — `rewardPoints` (int) đã được implement.
    - **Lý do (Vấn đề thực tế):** Luồng phụ [AF-4] cho phép khách hàng Tích điểm và Đổi điểm. Nếu không có trường `rewardPoints` (số điểm tích lũy), hệ thống không có cơ sở nào để biết khách đang có bao nhiêu điểm để trừ đi lấy tiền giảm giá, cũng như không biết lưu điểm mới được cộng thêm vào đâu sau khi khách mua vé xong.
 
-4. **ScheduleDetail Entity:** Thêm `@Version Long version` để phục vụ Optimistic Locking.
+4. **ScheduleDetail Entity:** ✅ Đã có — `@Version int version` đã được implement.
    - **Lý do (Vấn đề thực tế):** Lỗi bán trùng ghế! Giả sử ghế 1A trên chuyến SE1 đang mở bán. Khách A ở quầy số 1 và khách B ở quầy số 2 cùng chọn ghế 1A, rồi cả 2 cùng bấm thanh toán gần như một lúc. Nếu không có cơ chế khóa, hệ thống sẽ lỡ bán ghế 1A cho cả 2 người, dẫn đến việc 2 khách cãi nhau tranh ghế khi lên tàu. Với `@Version` (Optimistic Locking), quầy nào thanh toán xong trước sẽ làm version của ghế tăng lên 1, quầy số 2 đến sau sẽ bị ném lỗi `OptimisticLockException` và bị từ chối, đảm bảo 1 ghế chỉ bán 1 lần.

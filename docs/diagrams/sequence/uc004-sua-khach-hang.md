@@ -6,19 +6,19 @@
 
 ```mermaid
 graph TB
-    subgraph CLIENT ["🖥️ Client (JavaFX)"]
+    subgraph CLIENT ["Client (JavaFX)"]
         UI["CustomerManagementView\n(Sửa khách hàng form)"]
         SC["SocketClient"]
     end
 
-    subgraph TRANSPORT ["🔌 TCP Socket Transport"]
+    subgraph TRANSPORT ["TCP Socket Transport"]
         OOS["ObjectOutputStream.writeObject(Request)"]
         OIS["ObjectInputStream.readObject() → Response"]
     end
 
-    subgraph SERVER ["⚙️ Server (Java Socket Server)"]
+    subgraph SERVER ["Server (Java Socket Server)"]
         SRV["Server.java\nhandleClient(Socket)"]
-        RR["RequestRouter.route(Request)\n(Hiện chưa có ActionType cho UC004)"]
+        RR["RequestRouter.route(Request)\n(ActionType.UPDATE_CUSTOMER)"]
         SVC["CustomerServiceImpl\n.updateCustomer(CustomerDTO)"]
         VAL["ValidationUtils.validate(dto)"]
         MAP["CustomerMapper\nDTO ⇄ Entity"]
@@ -26,11 +26,11 @@ graph TB
         REPO["CustomerRepositoryImpl\n.findCustomerById(...)\n.existsByIdCard(...)\n.existsByEmail(...)\n.updateCustomer(...)"]
     end
 
-    subgraph DB ["🗄️ MariaDB"]
+    subgraph DB ["MariaDB"]
         T_CUS["customers"]
     end
 
-    UI -- "new Request(UC004_UPDATE_CUSTOMER?, CustomerDTO)" --> SC
+    UI -- "new Request(UPDATE_CUSTOMER, CustomerDTO)" --> SC
     SC --> OOS
     OOS -- "TCP Socket" --> SRV
     SRV --> RR
@@ -52,7 +52,7 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor Clerk as 👤 Nhân viên
+    actor Clerk as Nhân viên
     participant UI as CustomerManagementView
     participant Socket as SocketClient
     participant Server as Server.java
@@ -61,11 +61,12 @@ sequenceDiagram
     participant Repo as CustomerRepositoryImpl
     participant DB as MariaDB
 
+    Clerk->>UI: Đăng nhập thành công
+    Clerk->>UI: Chọn màn hình "Quản lý khách hàng"
     Clerk->>UI: Chọn khách hàng, bấm "Sửa"
     UI->>UI: Chỉnh sửa fullName/idCard/phone/email
     UI->>UI: new CustomerDTO(customerId, fullName, idCard, phone, email)
-    UI->>Socket: sendRequest(new Request(UC004_UPDATE_CUSTOMER?, customerDTO))
-    note over Socket,Router: Code hiện tại chưa có ActionType/RequestRouter cho UC004.\nSequence mô tả đường gọi tới CustomerServiceImpl.updateCustomer().
+    UI->>Socket: sendRequest(new Request(UPDATE_CUSTOMER, customerDTO))
     Socket->>Server: ObjectOutputStream.writeObject(request)
     Server->>Router: route(request)
     Router->>Service: updateCustomer(customerDTO)

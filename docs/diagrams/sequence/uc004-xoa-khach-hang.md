@@ -6,19 +6,19 @@
 
 ```mermaid
 graph TB
-    subgraph CLIENT ["🖥️ Client (JavaFX)"]
+    subgraph CLIENT ["Client (JavaFX)"]
         UI["CustomerManagementView\n(Xóa khách hàng)"]
         SC["SocketClient"]
     end
 
-    subgraph TRANSPORT ["🔌 TCP Socket Transport"]
+    subgraph TRANSPORT ["TCP Socket Transport"]
         OOS["ObjectOutputStream.writeObject(Request)"]
         OIS["ObjectInputStream.readObject() → Response"]
     end
 
-    subgraph SERVER ["⚙️ Server (Java Socket Server)"]
+    subgraph SERVER ["Server (Java Socket Server)"]
         SRV["Server.java\nhandleClient(Socket)"]
-        RR["RequestRouter.route(Request)\n(Hiện chưa có ActionType cho UC004)"]
+        RR["RequestRouter.route(Request)\n(ActionType.DELETE_CUSTOMER)"]
         SVC["CustomerServiceImpl\n.deleteCustomer(CustomerDeleteRequestDTO)"]
         VAL["ValidationUtils.validate(dto)"]
         JPA["JPAUtils.getEntityManager()"]
@@ -26,7 +26,7 @@ graph TB
         E_REPO["EmployeeRepositoryImpl\n.findEmployeeById(...)"]
     end
 
-    subgraph DB ["🗄️ MariaDB"]
+    subgraph DB ["MariaDB"]
         T_EMP["employees"]
         T_CUS["customers"]
         T_TICKET["tickets"]
@@ -35,7 +35,7 @@ graph TB
         T_INV["invoices"]
     end
 
-    UI -- "new Request(UC004_DELETE_CUSTOMER?, CustomerDeleteRequestDTO)" --> SC
+    UI -- "new Request(DELETE_CUSTOMER, CustomerDeleteRequestDTO)" --> SC
     SC --> OOS
     OOS -- "TCP Socket" --> SRV
     SRV --> RR
@@ -61,7 +61,7 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor Manager as 👤 Quản lý (Manager)
+    actor Manager as Quản lý
     participant UI as CustomerManagementView
     participant Socket as SocketClient
     participant Server as Server.java
@@ -71,10 +71,11 @@ sequenceDiagram
     participant CusRepo as CustomerRepositoryImpl
     participant DB as MariaDB
 
+    Manager->>UI: Đăng nhập thành công
+    Manager->>UI: Chọn màn hình "Quản lý khách hàng"
     Manager->>UI: Chọn khách hàng, bấm "Xóa"
     UI->>UI: new CustomerDeleteRequestDTO(customerId, requestEmployeeId)
-    UI->>Socket: sendRequest(new Request(UC004_DELETE_CUSTOMER?, requestDTO))
-    note over Socket,Router: Code hiện tại chưa có ActionType/RequestRouter cho UC004.\nSequence mô tả đường gọi tới CustomerServiceImpl.deleteCustomer().
+    UI->>Socket: sendRequest(new Request(DELETE_CUSTOMER, requestDTO))
     Socket->>Server: ObjectOutputStream.writeObject(request)
     Server->>Router: route(request)
     Router->>Service: deleteCustomer(requestDTO)

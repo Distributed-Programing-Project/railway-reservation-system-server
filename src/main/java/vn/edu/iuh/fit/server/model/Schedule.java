@@ -2,6 +2,7 @@ package vn.edu.iuh.fit.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import vn.edu.iuh.fit.common.constant.StatusSchedule;
 
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ import java.util.List;
 @Builder
 @Entity
 @Table(name = "schedules")
+@BatchSize(size = 25)
 public class Schedule {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -31,11 +33,11 @@ public class Schedule {
     @Enumerated(EnumType.STRING)
     private StatusSchedule status;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "train_id")
     private Train train;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Route route;
 
     @OneToMany(mappedBy = "schedule", cascade = CascadeType.REMOVE)

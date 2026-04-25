@@ -61,7 +61,7 @@ public class Employee {
     private LocalDate updatedAt;
 
     @JsonIgnore
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id")
     private Account account;
 

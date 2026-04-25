@@ -6,19 +6,19 @@
 
 ```mermaid
 graph TB
-    subgraph CLIENT ["🖥️ Client (JavaFX)"]
+    subgraph CLIENT ["Client (JavaFX)"]
         UI["CustomerManagementView\n(Thêm khách hàng form)"]
         SC["SocketClient"]
     end
 
-    subgraph TRANSPORT ["🔌 TCP Socket Transport"]
+    subgraph TRANSPORT ["TCP Socket Transport"]
         OOS["ObjectOutputStream.writeObject(Request)"]
         OIS["ObjectInputStream.readObject() → Response"]
     end
 
-    subgraph SERVER ["⚙️ Server (Java Socket Server)"]
+    subgraph SERVER ["Server (Java Socket Server)"]
         SRV["Server.java\nhandleClient(Socket)"]
-        RR["RequestRouter.route(Request)\n(Hiện chưa có ActionType cho UC004)"]
+        RR["RequestRouter.route(Request)\n(ActionType.CREATE_CUSTOMER)"]
         SVC["CustomerServiceImpl\n.createCustomer(CustomerDTO)"]
         VAL["ValidationUtils.validate(dto)\n(Jakarta Validation)"]
         MAP["CustomerMapper\nDTO ⇄ Entity"]
@@ -26,11 +26,11 @@ graph TB
         REPO["CustomerRepositoryImpl\n.existsByIdCard(...)\n.existsByEmail(...)\n.createCustomer(...)"]
     end
 
-    subgraph DB ["🗄️ MariaDB"]
+    subgraph DB ["MariaDB"]
         T_CUS["customers"]
     end
 
-    UI -- "new Request(UC004_CREATE_CUSTOMER?, CustomerDTO)" --> SC
+    UI -- "new Request(CREATE_CUSTOMER, CustomerDTO)" --> SC
     SC --> OOS
     OOS -- "TCP Socket" --> SRV
     SRV --> RR
@@ -51,7 +51,7 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor Clerk as 👤 Nhân viên
+    actor Clerk as Nhân viên
     participant UI as CustomerManagementView
     participant Socket as SocketClient
     participant Server as Server.java
@@ -60,11 +60,12 @@ sequenceDiagram
     participant Repo as CustomerRepositoryImpl
     participant DB as MariaDB
 
+    Clerk->>UI: Đăng nhập thành công
+    Clerk->>UI: Chọn màn hình "Quản lý khách hàng"
     Clerk->>UI: Chọn "Thêm khách hàng"
     UI->>UI: Nhập fullName, idCard, phone, email
     UI->>UI: new CustomerDTO(customerId=null, fullName, idCard, phone, email)
-    UI->>Socket: sendRequest(new Request(UC004_CREATE_CUSTOMER?, customerDTO))
-    note over Socket,Router: Code hiện tại chưa có ActionType/RequestRouter cho UC004.\nSequence mô tả đường gọi tới CustomerServiceImpl.createCustomer().
+    UI->>Socket: sendRequest(new Request(CREATE_CUSTOMER, customerDTO))
     Socket->>Server: ObjectOutputStream.writeObject(request)
     Server->>Router: route(request)
     Router->>Service: createCustomer(customerDTO)
