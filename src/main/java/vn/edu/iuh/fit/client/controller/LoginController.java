@@ -102,7 +102,7 @@ public class LoginController {
 
             DashboardController controller = loader.getController();
             if (responseData instanceof AccountDTO accountDTO) {
-                SessionManager.getInstance().setSession(accountDTO.getEmployeeId(), accountDTO.getUsername());
+                SessionManager.getInstance().setSession(accountDTO.getEmployeeId(), accountDTO.getUsername(), accountDTO.isManager());
                 controller.setLoggedInUsername(accountDTO.getUsername());
             }
 
