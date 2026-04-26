@@ -60,6 +60,7 @@ public class LoginServiceImpl implements LoginService {
                         .username(account.getUsername())
                         .active(account.isActive())
                         .employeeId(employee != null ? employee.getEmployeeId() : null)
+                        .isManager(employee != null && Boolean.TRUE.equals(employee.getIsManager()))
                         .build());
             });
         } catch (Exception e) {
