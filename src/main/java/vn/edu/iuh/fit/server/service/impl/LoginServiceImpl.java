@@ -8,6 +8,7 @@ import vn.edu.iuh.fit.common.dto.LoginRequestDTO;
 import vn.edu.iuh.fit.common.message.LoginMessages;
 import vn.edu.iuh.fit.common.response.Response;
 import vn.edu.iuh.fit.server.model.Account;
+import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.repository.AccountRepository;
 import vn.edu.iuh.fit.server.repository.impl.AccountRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.AbstractGenericRepositoryImpl;
@@ -48,11 +49,17 @@ public class LoginServiceImpl implements LoginService {
                     return Response.error(LoginMessages.INVALID_CREDENTIALS);
                 }
 
+                Employee employee = em.createQuery(
+                        "SELECT e FROM Employee e WHERE e.account.id = :accountId", Employee.class)
+                        .setParameter("accountId", account.getId())
+                        .getResultStream().findFirst().orElse(null);
+
                 log.info("Login successful: username={}", username);
                 return Response.success(LoginMessages.LOGIN_SUCCESS, AccountDTO.builder()
                         .id(account.getId())
                         .username(account.getUsername())
                         .active(account.isActive())
+                        .employeeId(employee != null ? employee.getEmployeeId() : null)
                         .build());
             });
         } catch (Exception e) {
