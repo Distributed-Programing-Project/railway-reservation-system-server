@@ -6,10 +6,12 @@ import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -56,6 +58,7 @@ public class EmployeeManagementController {
     private void initialize() {
         setupStatusFilter();
         setupTable();
+        tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         loadData();
     }
 
@@ -120,12 +123,11 @@ public class EmployeeManagementController {
                 setText(null);
             }
         });
-        colStatus.setCellValueFactory(c -> new ReadOnlyStringWrapper(""));
-
         colActions.setCellFactory(col -> new TableCell<>() {
-            private final Button btnGrant = new Button("Cấp TK");
+            private final Button btnGrant = new Button("Cấp Tài Khoản");
             private final Button btnReset = new Button("Reset MK");
             private final Button btnDelete = new Button("Xoá");
+
 
             {
                 btnGrant.setStyle("-fx-background-color: #0066cc; -fx-text-fill: white; -fx-font-size: 11px; -fx-padding: 5 8; -fx-background-radius: 6; -fx-cursor: hand;");
@@ -154,12 +156,41 @@ public class EmployeeManagementController {
                 btnReset.setVisible(hasAccount);
 
                 HBox box = new HBox(6);
-                if (!hasAccount) box.getChildren().add(btnGrant);
-                if (hasAccount) box.getChildren().add(btnReset);
-                if (currentUserIsManager && !isInactive) box.getChildren().add(btnDelete);
+                box.setAlignment(Pos.CENTER);
+
+                Region spacer1 = new Region();
+                Region spacer2 = new Region();
+                Region spacer3 = new Region();
+
+                double width = 90;
+                spacer1.setPrefWidth(width);
+                spacer2.setPrefWidth(width);
+                spacer3.setPrefWidth(width);
+
+                btnGrant.setPrefWidth(width);
+                btnReset.setPrefWidth(width);
+                btnDelete.setPrefWidth(width);
+
+                box.getChildren().addAll(
+                        (!hasAccount) ? btnGrant : spacer1,
+                        (hasAccount) ? btnReset : spacer2,
+                        (currentUserIsManager && !isInactive) ? btnDelete : spacer3
+                );
+
                 setGraphic(box);
             }
         });
+        colCode.setPrefWidth(100);
+        colName.setPrefWidth(180);
+        colNationalId.setPrefWidth(150);
+        colPhone.setPrefWidth(130);
+        colEmail.setPrefWidth(200);
+        colType.setPrefWidth(120);
+        colStatus.setPrefWidth(150);
+
+        colActions.setMinWidth(300);
+        colActions.setPrefWidth(330);
+        colActions.setMaxWidth(360);
     }
 
     private void loadData() {
