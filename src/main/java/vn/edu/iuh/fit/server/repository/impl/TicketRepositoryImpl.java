@@ -17,7 +17,13 @@ public class TicketRepositoryImpl extends AbstractGenericRepositoryImpl<Ticket, 
   public List<Ticket> findTicketsForExchange(List<String> ticketIds, EntityManager em) {
     String jpql = "SELECT t FROM Ticket t " +
         "JOIN FETCH t.scheduleDetail sd " +
+        "JOIN FETCH sd.seat seat " +
+        "JOIN FETCH seat.carriage carriage " +
         "JOIN FETCH sd.schedule s " +
+        "LEFT JOIN FETCH s.train " +
+        "LEFT JOIN FETCH s.route r " +
+        "LEFT JOIN FETCH r.departureStation " +
+        "LEFT JOIN FETCH r.destinationStation " +
         "JOIN FETCH t.customer c " +
         "WHERE t.id IN :ids " +
         "AND t.isExchanged = false " +
@@ -86,6 +92,26 @@ public class TicketRepositoryImpl extends AbstractGenericRepositoryImpl<Ticket, 
         "JOIN FETCH t.customer c " +
         "JOIN FETCH t.scheduleDetail sd " +
         "JOIN FETCH sd.schedule s " +
+        "WHERE (c.idCard = :idCard OR c.passport = :idCard) AND t.status = :status";
+
+    return em.createQuery(jpql, Ticket.class)
+        .setParameter("idCard", idCard)
+        .setParameter("status", status)
+        .getResultList();
+  }
+
+  @Override
+  public List<Ticket> findTicketsByCustomerIdCardWithStatusForExchange(EntityManager em, String idCard, TicketStatus status) {
+    String jpql = "SELECT t FROM Ticket t " +
+        "JOIN FETCH t.customer c " +
+        "JOIN FETCH t.scheduleDetail sd " +
+        "JOIN FETCH sd.seat seat " +
+        "JOIN FETCH seat.carriage carriage " +
+        "JOIN FETCH sd.schedule s " +
+        "LEFT JOIN FETCH s.train " +
+        "LEFT JOIN FETCH s.route r " +
+        "LEFT JOIN FETCH r.departureStation " +
+        "LEFT JOIN FETCH r.destinationStation " +
         "WHERE (c.idCard = :idCard OR c.passport = :idCard) AND t.status = :status";
 
     return em.createQuery(jpql, Ticket.class)

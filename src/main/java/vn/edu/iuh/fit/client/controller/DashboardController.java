@@ -40,6 +40,12 @@ public class DashboardController {
     private Button btnInvoice;
 
     @FXML
+    private Button btnSellTicket;
+
+    @FXML
+    private Button btnExchangeTicket;
+
+    @FXML
     private Button btnSchedule;
 
     @FXML
@@ -87,6 +93,14 @@ public class DashboardController {
         btnInvoice.setOnAction(event -> {
             setActiveMenu(btnInvoice);
             loadContent("/client/ui/views/invoice-management.fxml");
+        });
+        btnSellTicket.setOnAction(event -> {
+            setActiveMenu(btnSellTicket);
+            loadContent("/client/ui/views/sell-ticket-wizard.fxml");
+        });
+        btnExchangeTicket.setOnAction(event -> {
+            setActiveMenu(btnExchangeTicket);
+            loadContent("/client/ui/views/doi-ve.fxml");
         });
         btnSchedule.setOnAction(event -> {
             setActiveMenu(btnSchedule);
@@ -164,6 +178,8 @@ public class DashboardController {
     private void clearActiveMenu() {
         btnHome.getStyleClass().remove("menu-item-active");
         btnInvoice.getStyleClass().remove("menu-item-active");
+        btnSellTicket.getStyleClass().remove("menu-item-active");
+        btnExchangeTicket.getStyleClass().remove("menu-item-active");
         btnSchedule.getStyleClass().remove("menu-item-active");
         btnRoute.getStyleClass().remove("menu-item-active");
         btnTrain.getStyleClass().remove("menu-item-active");

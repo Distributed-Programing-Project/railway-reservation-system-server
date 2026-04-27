@@ -39,6 +39,12 @@
                 <Button fx:id="btnInvoice" text="Quản Lý Hóa Đơn"
                         styleClass="menu-item" maxWidth="Infinity"/>
 
+                <Button fx:id="btnSellTicket" text="Bán Vé"
+                        styleClass="menu-item" maxWidth="Infinity"/>
+
+                <Button fx:id="btnExchangeTicket" text="Đổi Vé"
+                        styleClass="menu-item" maxWidth="Infinity"/>
+
                 <Button fx:id="btnSchedule" text="Quản Lý Lịch Trình"
                         styleClass="menu-item" maxWidth="Infinity"/>
 

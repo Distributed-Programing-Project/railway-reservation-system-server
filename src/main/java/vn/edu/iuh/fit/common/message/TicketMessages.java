@@ -18,6 +18,11 @@ public final class TicketMessages {
     public static final String CREATE_SUCCESS = "Tạo vé thành công";
     public static final String EXCHANGE_SUCCESS = "Đổi vé thành công. Số tiền thanh toán: %.2f";
     public static final String FIND_SUCCESS = "Lấy thông tin vé thành công";
+
+    public static final String EXCHANGE_SEARCH_SUCCESS = "Tra cứu vé đổi thành công";
+    public static final String EXCHANGE_SEARCH_FAILED_PREFIX = "Lỗi khi tìm kiếm vé đổi: ";
+    public static final String EXCHANGE_PREVIEW_SUCCESS = "Tính phí đổi vé thành công";
+    public static final String EXCHANGE_PREVIEW_FAILED_PREFIX = "Lỗi khi xem trước phí đổi vé: ";
     
     public static final String TICKET_NOT_FOUND = "Không tìm thấy vé: id=%s";
     public static final String CREATE_FAILED = "Lỗi hệ thống: Không thể tạo vé mới.";
@@ -42,10 +47,13 @@ public final class TicketMessages {
     public static final String CUSTOMER_MISMATCH = "Tất cả các vé phải thuộc cùng một khách hàng để thực hiện trả theo lô.";
     public static final String TICKET_IDS_REQUIRED = "Danh sách mã vé không được để trống.";
     public static final String EMPLOYEE_ID_REQUIRED = "Employee ID không được để trống";
+    public static final String INVALID_SESSION = "Phiên làm việc không hợp lệ.";
     public static final String TAX_CODE_TOO_LONG = "Mã số thuế không được vượt quá 20 ký tự";
     public static final String COMPANY_NAME_TOO_LONG = "Tên công ty không được vượt quá 200 ký tự";
     public static final String TICKET_IDS_DUPLICATE = "Danh sách mã vé chứa các giá trị trùng lặp.";
     public static final String SCHEDULE_NOT_FOUND = "Không tìm thấy thông tin lịch trình cho vé này.";
+
+    public static final String SEAT_HELD_BY_OTHER = "Ghế bạn chọn đang được giữ chỗ bởi phiên khác. Vui lòng chọn ghế khác.";
 
     public static String ticketNotFound(String id) {
         return String.format(TICKET_NOT_FOUND, id);

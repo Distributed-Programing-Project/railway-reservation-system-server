@@ -29,8 +29,12 @@ public class ScheduleDetailRepositoryImpl extends AbstractGenericRepositoryImpl<
         if (ids == null || ids.isEmpty()) return List.of();
         String jpql = "SELECT sd FROM ScheduleDetail sd " +
                 "JOIN FETCH sd.seat s " +
+                "JOIN FETCH s.carriage " +
                 "JOIN FETCH sd.schedule sc " +
                 "LEFT JOIN FETCH sc.train " +
+                "LEFT JOIN FETCH sc.route r " +
+                "LEFT JOIN FETCH r.departureStation " +
+                "LEFT JOIN FETCH r.destinationStation " +
                 "WHERE sd.id IN :ids";
         return em.createQuery(jpql, ScheduleDetail.class)
                 .setParameter("ids", ids)

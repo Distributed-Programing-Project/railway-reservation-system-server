@@ -11,6 +11,7 @@
         <class>vn.edu.iuh.fit.server.model.Employee</class>
         <class>vn.edu.iuh.fit.server.model.Invoice</class>
         <class>vn.edu.iuh.fit.server.model.InvoiceDetail</class>
+        <class>vn.edu.iuh.fit.server.entity.InvoiceMetadata</class>
         <class>vn.edu.iuh.fit.server.model.Route</class>
         <class>vn.edu.iuh.fit.server.model.RouteStop</class>
         <class>vn.edu.iuh.fit.server.model.Schedule</class>

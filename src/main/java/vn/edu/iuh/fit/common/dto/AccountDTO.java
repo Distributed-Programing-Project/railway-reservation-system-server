@@ -15,4 +15,5 @@ public class AccountDTO implements Serializable {
     private String id;
     private String username;
     private boolean active;
+    private String employeeId;
 }

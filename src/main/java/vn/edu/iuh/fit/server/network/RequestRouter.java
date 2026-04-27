@@ -4,7 +4,9 @@ import vn.edu.iuh.fit.common.request.Request;
 import vn.edu.iuh.fit.common.response.Response;
 import vn.edu.iuh.fit.common.dto.EmployeeDTO;
 import vn.edu.iuh.fit.common.dto.EmployeeFilterDTO;
+import vn.edu.iuh.fit.common.dto.ExchangeEligibleTicketSearchDTO;
 import vn.edu.iuh.fit.common.dto.ExchangeTicketRequestDTO;
+import vn.edu.iuh.fit.common.dto.ExchangeTicketPreviewRequestDTO;
 import vn.edu.iuh.fit.common.dto.LoginRequestDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketConfirmDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketPreviewRequestDTO;
@@ -22,10 +24,18 @@ import vn.edu.iuh.fit.common.dto.StatisticsRequestDTO;
 import vn.edu.iuh.fit.common.dto.TrainFilterDTO;
 import vn.edu.iuh.fit.common.dto.UpdateTrainCarriagesDTO;
 import vn.edu.iuh.fit.common.dto.UpdateTrainStatusDTO;
+import vn.edu.iuh.fit.common.dto.PaymentCreateRequestDTO;
+import vn.edu.iuh.fit.common.dto.PaymentStatusRequestDTO;
+import vn.edu.iuh.fit.common.dto.SaleCreateRequestDTO;
+import vn.edu.iuh.fit.common.dto.SaleScheduleSearchDTO;
+import vn.edu.iuh.fit.common.dto.SeatHoldRequestDTO;
+import vn.edu.iuh.fit.common.dto.SeatMapRequestDTO;
 import vn.edu.iuh.fit.common.message.CommonMessages;
 import vn.edu.iuh.fit.common.message.ScheduleMessages;
 import vn.edu.iuh.fit.server.service.EmployeeService;
 import vn.edu.iuh.fit.server.service.LoginService;
+import vn.edu.iuh.fit.server.service.PaymentOrderService;
+import vn.edu.iuh.fit.server.service.SaleService;
 import vn.edu.iuh.fit.server.service.ScheduleService;
 import vn.edu.iuh.fit.server.service.StatisticsService;
 import vn.edu.iuh.fit.server.service.TicketService;
@@ -34,6 +44,8 @@ import vn.edu.iuh.fit.server.service.CustomerService;
 import vn.edu.iuh.fit.server.service.impl.CustomerServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.EmployeeServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.LoginServiceImpl;
+import vn.edu.iuh.fit.server.service.impl.PaymentOrderServiceImpl;
+import vn.edu.iuh.fit.server.service.impl.SaleServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.ScheduleServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.StatisticsServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.TicketServiceImpl;
@@ -48,6 +60,8 @@ public class RequestRouter {
     private final TicketService ticketService = new TicketServiceImpl();
     private final TrainService trainService = new TrainServiceImpl();
     private final CustomerService customerService = new CustomerServiceImpl();
+    private final SaleService saleService = new SaleServiceImpl();
+    private final PaymentOrderService paymentOrderService = new PaymentOrderServiceImpl();
 
     public Response route(Request request) {
         if (request == null || request.getAction() == null) {
@@ -75,6 +89,10 @@ public class RequestRouter {
                 ticketService.previewReturnTickets(castData(request, ReturnTicketPreviewRequestDTO.class));
             case CONFIRM_RETURN_TICKETS ->
                 ticketService.confirmReturnTickets(castData(request, ReturnTicketConfirmDTO.class));
+            case SEARCH_TICKETS_FOR_EXCHANGE ->
+                ticketService.searchTicketsForExchange(castData(request, ExchangeEligibleTicketSearchDTO.class));
+            case PREVIEW_EXCHANGE_TICKETS ->
+                ticketService.previewExchangeTickets(castData(request, ExchangeTicketPreviewRequestDTO.class));
             case EXCHANGE_TICKET ->
                 ticketService.exchangeTickets(castData(request, ExchangeTicketRequestDTO.class));
 
@@ -91,6 +109,17 @@ public class RequestRouter {
             case CREATE_CUSTOMER -> customerService.createCustomer(castData(request, CustomerDTO.class));
             case UPDATE_CUSTOMER -> customerService.updateCustomer(castData(request, CustomerDTO.class));
             case DELETE_CUSTOMER -> customerService.deleteCustomer(castData(request, CustomerDeleteRequestDTO.class));
+
+            case FIND_ALL_STATIONS -> saleService.findAllStations();
+            case SEARCH_SCHEDULES_FOR_SALE -> saleService.searchSchedulesForSale(castData(request, SaleScheduleSearchDTO.class));
+            case GET_SEATMAP_FOR_SCHEDULE -> saleService.getSeatMapForSchedule(castData(request, SeatMapRequestDTO.class));
+            case HOLD_SEATS_FOR_SALE -> saleService.holdSeatsForSale(castData(request, SeatHoldRequestDTO.class));
+            case RELEASE_HELD_SEATS_FOR_SALE -> saleService.releaseHeldSeatsForSale(castData(request, SeatHoldRequestDTO.class));
+            case CREATE_PAYMENT_ORDER -> paymentOrderService.createPaymentOrder(castData(request, PaymentCreateRequestDTO.class));
+            case GET_PAYMENT_ORDER_STATUS -> paymentOrderService.getPaymentOrderStatus(castData(request, PaymentStatusRequestDTO.class));
+            case CONFIRM_PAYMENT_ORDER -> paymentOrderService.confirmPaymentOrder(castData(request, PaymentStatusRequestDTO.class));
+            case CONFIRM_INTERNAL_PAYMENT -> paymentOrderService.confirmPaymentOrder(castData(request, PaymentStatusRequestDTO.class));
+            case CREATE_SALE_TRANSACTION -> saleService.createSaleTransaction(castData(request, SaleCreateRequestDTO.class));
 
             case PUBLISH_OR_DISABLE_SCHEDULE -> {
                 ScheduleLifecycleDTO dto = castData(request, ScheduleLifecycleDTO.class);

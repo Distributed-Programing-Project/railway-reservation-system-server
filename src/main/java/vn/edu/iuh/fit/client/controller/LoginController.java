@@ -12,6 +12,7 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import vn.edu.iuh.fit.client.service.LoginClientService;
+import vn.edu.iuh.fit.client.session.ClientSessionContext;
 import vn.edu.iuh.fit.common.dto.AccountDTO;
 import vn.edu.iuh.fit.common.response.Response;
 
@@ -101,6 +102,7 @@ public class LoginController {
 
             DashboardController controller = loader.getController();
             if (responseData instanceof AccountDTO accountDTO) {
+                ClientSessionContext.getInstance().setAccount(accountDTO);
                 controller.setLoggedInUsername(accountDTO.getUsername());
             }
 

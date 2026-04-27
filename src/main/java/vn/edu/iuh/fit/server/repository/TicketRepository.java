@@ -23,6 +23,8 @@ public interface TicketRepository {
 
     List<Ticket> findTicketsByCustomerIdCardWithStatus(EntityManager em, String idCard, TicketStatus status);
 
+    List<Ticket> findTicketsByCustomerIdCardWithStatusForExchange(EntityManager em, String idCard, TicketStatus status);
+
     boolean updateTicket(EntityManager em, Ticket ticket);
 
     boolean updateTickets(EntityManager em, List<Ticket> tickets);

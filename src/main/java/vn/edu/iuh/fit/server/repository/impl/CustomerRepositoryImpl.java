@@ -17,7 +17,7 @@ public class CustomerRepositoryImpl implements CustomerRepository {
     boolean hasKeyword = keyword != null && !keyword.isBlank();
     StringBuilder jpql = new StringBuilder()
         .append("SELECT new vn.edu.iuh.fit.common.dto.CustomerDTO(")
-        .append("c.id, c.name, c.idCard, c.phoneNumber, c.email, c.isActive")
+        .append("c.id, c.name, c.idCard, c.passport, c.phoneNumber, c.email, c.isActive, c.rewardPoints")
         .append(") ")
         .append("FROM Customer c ")
         .append("WHERE c.isActive = true ");
@@ -26,6 +26,7 @@ public class CustomerRepositoryImpl implements CustomerRepository {
       jpql.append("AND (")
           .append("LOWER(c.name) LIKE :kw ")
           .append("OR LOWER(c.idCard) LIKE :kw ")
+          .append("OR LOWER(c.passport) LIKE :kw ")
           .append("OR LOWER(c.phoneNumber) LIKE :kw ")
           .append("OR LOWER(c.email) LIKE :kw")
           .append(") ");
@@ -54,6 +55,7 @@ public class CustomerRepositoryImpl implements CustomerRepository {
       jpql.append("AND (")
           .append("LOWER(c.name) LIKE :kw ")
           .append("OR LOWER(c.idCard) LIKE :kw ")
+          .append("OR LOWER(c.passport) LIKE :kw ")
           .append("OR LOWER(c.phoneNumber) LIKE :kw ")
           .append("OR LOWER(c.email) LIKE :kw")
           .append(") ");

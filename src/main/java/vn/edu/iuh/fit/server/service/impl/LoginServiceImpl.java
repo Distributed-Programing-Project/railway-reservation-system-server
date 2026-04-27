@@ -48,11 +48,20 @@ public class LoginServiceImpl implements LoginService {
                     return Response.error(LoginMessages.INVALID_CREDENTIALS);
                 }
 
+                String employeeId = em.createQuery(
+                        "SELECT e.employeeId FROM Employee e WHERE e.account.id = :accountId",
+                        String.class)
+                    .setParameter("accountId", account.getId())
+                    .getResultStream()
+                    .findFirst()
+                    .orElse(null);
+
                 log.info("Login successful: username={}", username);
                 return Response.success(LoginMessages.LOGIN_SUCCESS, AccountDTO.builder()
                         .id(account.getId())
                         .username(account.getUsername())
                         .active(account.isActive())
+                        .employeeId(employeeId)
                         .build());
             });
         } catch (Exception e) {
