@@ -69,16 +69,7 @@
 .primary-button:hover { -fx-background-color: -primary-hover; }
 .primary-button:pressed { -fx-background-color: -primary-active; }
 
-.add-button {
-    -fx-background-color: -success;
-    -fx-text-fill: white;
-    -fx-font-weight: 700;
-    -fx-font-size: 13px;
-    -fx-padding: 9 14;
-    -fx-background-radius: 10;
-    -fx-cursor: hand;
-}
-.add-button:hover { -fx-background-color: -success-hover; }
+
 
 .secondary-button {
     -fx-background-color: #eef2f6;
