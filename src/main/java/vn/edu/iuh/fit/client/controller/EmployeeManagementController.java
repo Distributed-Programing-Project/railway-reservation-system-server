@@ -59,7 +59,15 @@ public class EmployeeManagementController {
         setupStatusFilter();
         setupTable();
         tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        applyRoleAccess();
         loadData();
+    }
+
+    private void applyRoleAccess() {
+        boolean isManager = SessionManager.getInstance().isManager();
+        btnAdd.setVisible(isManager);
+        btnAdd.setManaged(isManager);
+        colActions.setVisible(isManager);
     }
 
     private void setupStatusFilter() {
