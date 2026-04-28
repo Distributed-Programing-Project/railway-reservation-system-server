@@ -144,15 +144,21 @@ public class StatisticsManagementController {
         FilteredList<EmployeeDTO> filtered = new FilteredList<>(allEmployees, e -> true);
         combo.setItems(filtered);
         combo.setEditable(true);
-        combo.setConverter(new StringConverter<>() {
+        StringConverter<EmployeeDTO> converter = new StringConverter<>() {
             @Override public String toString(EmployeeDTO e) {
                 return e == null ? "Tất cả nhân viên" : e.getEmployeeName() + " (" + e.getEmployeeCode() + ")";
             }
-            @Override public EmployeeDTO fromString(String s) { return null; }
-        });
+            @Override public EmployeeDTO fromString(String s) {
+                if (s == null || s.isBlank() || "Tất cả nhân viên".equals(s)) return null;
+                return allEmployees.stream()
+                    .filter(e -> e != null && toString(e).equals(s))
+                    .findFirst().orElse(null);
+            }
+        };
+        combo.setConverter(converter);
         combo.getEditor().textProperty().addListener((obs, old, text) -> {
             EmployeeDTO selected = combo.getSelectionModel().getSelectedItem();
-            if (selected != null && combo.getConverter().toString(selected).equals(text)) return;
+            if (selected != null && converter.toString(selected).equals(text)) return;
             filtered.setPredicate(e -> {
                 if (e == null) return true;
                 if (text == null || text.isBlank()) return true;
