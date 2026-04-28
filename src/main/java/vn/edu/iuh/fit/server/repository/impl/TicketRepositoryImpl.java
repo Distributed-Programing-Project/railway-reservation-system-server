@@ -91,7 +91,13 @@ public class TicketRepositoryImpl extends AbstractGenericRepositoryImpl<Ticket, 
     String jpql = "SELECT t FROM Ticket t " +
         "JOIN FETCH t.customer c " +
         "JOIN FETCH t.scheduleDetail sd " +
+        "JOIN FETCH sd.seat seat " +
+        "JOIN FETCH seat.carriage carriage " +
         "JOIN FETCH sd.schedule s " +
+        "LEFT JOIN FETCH s.train " +
+        "LEFT JOIN FETCH s.route r " +
+        "LEFT JOIN FETCH r.departureStation " +
+        "LEFT JOIN FETCH r.destinationStation " +
         "WHERE (c.idCard = :idCard OR c.passport = :idCard) AND t.status = :status";
 
     return em.createQuery(jpql, Ticket.class)

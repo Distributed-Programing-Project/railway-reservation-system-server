@@ -543,19 +543,21 @@ public class TicketServiceImpl implements TicketService {
   private Response doConfirmReturnTickets(ReturnTicketConfirmDTO confirmDTO, jakarta.persistence.EntityManager em) {
     ReturnComputation computation = doComputeReturn(em, confirmDTO.getTicketIds());
     if (Math.abs(confirmDTO.getRefundAmount() - computation.totalRefundAmount) > REFUND_TOLERANCE) {
-      return Response.error(TicketMessages.REFUND_AMOUNT_MISMATCH);
+      throw new IllegalStateException(TicketMessages.REFUND_AMOUNT_MISMATCH);
     }
 
     Employee employee = employeeRepository.findEmployeeById(em, confirmDTO.getEmployeeId());
     if (employee == null) {
-      return Response.error(EmployeeMessages.notFoundById(confirmDTO.getEmployeeId()));
+      throw new IllegalArgumentException(EmployeeMessages.notFoundById(confirmDTO.getEmployeeId()));
     }
 
     if (computation.tickets.isEmpty()) {
-      return Response.error(TicketMessages.TICKET_IDS_REQUIRED);
+      throw new IllegalArgumentException(TicketMessages.TICKET_IDS_REQUIRED);
     }
     Response mismatch = validateSameCustomer(computation.tickets);
-    if (mismatch != null) return mismatch;
+    if (mismatch != null) {
+      throw new IllegalArgumentException(mismatch.getMessage());
+    }
 
     Invoice refundInvoice = Invoice.builder()
         .issueDate(LocalDateTime.now())
@@ -643,7 +645,7 @@ public class TicketServiceImpl implements TicketService {
       if (ticket.getStatus() != TicketStatus.PAID) {
         throw new IllegalArgumentException(String.format(TicketMessages.TICKET_NOT_RETURNABLE, ticket.getId()));
       }
-      if (ticket.isExchanged() || ticket.getOriginalTicketId() != null) {
+      if (ticket.isExchanged() || ticket.getStatus() == TicketStatus.EXCHANGED) {
         throw new IllegalArgumentException(String.format(TicketMessages.TICKET_ALREADY_EXCHANGED, ticket.getId()));
       }
       if (ticket.getScheduleDetail() == null || ticket.getScheduleDetail().getSchedule() == null) {
@@ -661,7 +663,7 @@ public class TicketServiceImpl implements TicketService {
       double price = ticket.getScheduleDetail().getPriceSeat() != null
           ? ticket.getScheduleDetail().getPriceSeat().doubleValue()
           : 0.0;
-      double feeRate = minutesToDeparture < MINUTES_24H ? 0.20 : 0.10;
+      double feeRate = ticket.getOriginalTicketId() != null ? 0.30 : (minutesToDeparture < MINUTES_24H ? 0.20 : 0.10);
       double fee = Math.max(price * feeRate, MIN_RETURN_FEE_PER_TICKET);
       if (fee > price) fee = price;
 

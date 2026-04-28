@@ -7,6 +7,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import vn.edu.iuh.fit.common.constant.TicketStatus;
 import vn.edu.iuh.fit.common.dto.CustomerDTO;
+import vn.edu.iuh.fit.common.dto.CustomerHistoryItemDTO;
 import vn.edu.iuh.fit.server.model.Customer;
 import vn.edu.iuh.fit.server.repository.CustomerRepository;
 
@@ -181,4 +182,55 @@ public class CustomerRepositoryImpl implements CustomerRepository {
             .getSingleResult();
         return count != null && count > 0;
     }
+
+  @Override
+  public List<CustomerHistoryItemDTO> findCustomerTicketHistory(EntityManager em, String customerId) {
+    if (customerId == null || customerId.isBlank()) {
+      return List.of();
+    }
+
+    String jpql = "SELECT new vn.edu.iuh.fit.common.dto.CustomerHistoryItemDTO("
+        + "i.issueDate, "
+        + "t.id, "
+        + "tr.trainCode, "
+        + "dep.name, "
+        + "des.name, "
+        + "s.departureTime, "
+        + "s.arrivalTime, "
+        + "car.number, "
+        + "seat.type, "
+        + "seat.number, "
+        + "(COALESCE(d.subTotal, 0.0) - d.discount + d.insurance)"
+        + ") "
+        + "FROM InvoiceDetail d "
+        + "JOIN d.invoice i "
+        + "JOIN d.ticket t "
+        + "LEFT JOIN t.scheduleDetail sd "
+        + "LEFT JOIN sd.schedule s "
+        + "LEFT JOIN s.train tr "
+        + "LEFT JOIN s.route r "
+        + "LEFT JOIN r.departureStation dep "
+        + "LEFT JOIN r.destinationStation des "
+        + "LEFT JOIN sd.seat seat "
+        + "LEFT JOIN seat.carriage car "
+        + "WHERE i.customer.id = :customerId "
+        + "ORDER BY i.issueDate DESC, t.id DESC";
+
+    return em.createQuery(jpql, CustomerHistoryItemDTO.class)
+        .setParameter("customerId", customerId.trim())
+        .getResultList();
+  }
+
+  @Override
+  public double sumCustomerInvoiceTotalAmount(EntityManager em, String customerId) {
+    if (customerId == null || customerId.isBlank()) {
+      return 0.0;
+    }
+
+    String jpql = "SELECT COALESCE(SUM(i.totalAmount), 0.0) FROM Invoice i WHERE i.customer.id = :customerId";
+    Double total = em.createQuery(jpql, Double.class)
+        .setParameter("customerId", customerId.trim())
+        .getSingleResult();
+    return total != null ? total : 0.0;
+  }
 }

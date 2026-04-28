@@ -5,6 +5,7 @@ import java.util.List;
 
 import jakarta.persistence.EntityManager;
 import vn.edu.iuh.fit.common.dto.CustomerDTO;
+import vn.edu.iuh.fit.common.dto.CustomerHistoryItemDTO;
 import vn.edu.iuh.fit.server.model.Customer;
 
 public interface CustomerRepository {
@@ -29,4 +30,8 @@ public interface CustomerRepository {
   boolean hasAnyInvoice(EntityManager em, String customerId);
 
   boolean hasUpcomingPaidTicket(EntityManager em, String customerId, LocalDateTime now);
+
+  List<CustomerHistoryItemDTO> findCustomerTicketHistory(EntityManager em, String customerId);
+
+  double sumCustomerInvoiceTotalAmount(EntityManager em, String customerId);
 }

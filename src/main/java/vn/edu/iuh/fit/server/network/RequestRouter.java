@@ -19,6 +19,7 @@ import vn.edu.iuh.fit.common.dto.CreateCarriageDTO;
 import vn.edu.iuh.fit.common.dto.CreateTrainDTO;
 import vn.edu.iuh.fit.common.dto.CustomerDTO;
 import vn.edu.iuh.fit.common.dto.CustomerDeleteRequestDTO;
+import vn.edu.iuh.fit.common.dto.CustomerHistoryRequestDTO;
 import vn.edu.iuh.fit.common.dto.CustomerSearchDTO;
 import vn.edu.iuh.fit.common.dto.StatisticsRequestDTO;
 import vn.edu.iuh.fit.common.dto.TrainFilterDTO;
@@ -109,6 +110,7 @@ public class RequestRouter {
             case CREATE_CUSTOMER -> customerService.createCustomer(castData(request, CustomerDTO.class));
             case UPDATE_CUSTOMER -> customerService.updateCustomer(castData(request, CustomerDTO.class));
             case DELETE_CUSTOMER -> customerService.deleteCustomer(castData(request, CustomerDeleteRequestDTO.class));
+            case GET_CUSTOMER_HISTORY -> customerService.getCustomerHistory(castData(request, CustomerHistoryRequestDTO.class));
 
             case FIND_ALL_STATIONS -> saleService.findAllStations();
             case SEARCH_SCHEDULES_FOR_SALE -> saleService.searchSchedulesForSale(castData(request, SaleScheduleSearchDTO.class));
