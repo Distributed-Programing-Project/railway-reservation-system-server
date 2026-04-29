@@ -13,7 +13,7 @@ public class AccountRepositoryImpl extends AbstractGenericRepositoryImpl<Account
 
     @Override
     public Account findByUsername(EntityManager em, String username) {
-        return em.createQuery("SELECT a FROM Account a WHERE a.username = :username", Account.class)
+        return em.createQuery("SELECT DISTINCT a FROM Account a LEFT JOIN FETCH a.roles WHERE a.username = :username", Account.class)
                 .setParameter("username", username)
                 .getResultStream()
                 .findFirst()

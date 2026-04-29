@@ -12,6 +12,8 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import vn.edu.iuh.fit.common.constant.RoleCode;
+import vn.edu.iuh.fit.common.dto.AccountDTO;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -77,6 +79,16 @@ public class DashboardController {
             lblUsername.setText(username);
         }
         openHomeView();
+    }
+
+    public void setAccount(AccountDTO accountDTO) {
+        if (accountDTO == null) {
+            return;
+        }
+        setLoggedInUsername(accountDTO.getUsername());
+        if (lblRole != null) {
+            lblRole.setText(accountDTO.hasRole(RoleCode.ADMIN) ? "Vai trò: Admin" : "Vai trò: Nhân viên");
+        }
     }
 
     private void bindEvents() {
