@@ -1,8 +1,10 @@
 package vn.edu.iuh.fit.client.controller;
 
+import javafx.animation.PauseTransition;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -11,6 +13,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
+import org.controlsfx.control.Notifications;
 import vn.edu.iuh.fit.client.service.LoginClientService;
 import vn.edu.iuh.fit.common.constant.RoleCode;
 import vn.edu.iuh.fit.common.dto.AccountDTO;
@@ -60,7 +64,7 @@ public class LoginController {
             setLoading(false);
             Response response = loginTask.getValue();
             if (response != null && response.isSuccess()) {
-                openDashboard(response.getData());
+                showLoginSuccessAndOpenDashboard(response);
             } else {
                 String message = response == null ? "Không nhận được phản hồi từ server." : response.getMessage();
                 showError("Đăng nhập thất bại", message);
@@ -75,6 +79,30 @@ public class LoginController {
         Thread thread = new Thread(loginTask, "login-request-thread");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void showLoginSuccessAndOpenDashboard(Response response) {
+        AccountDTO accountDTO = response.getData() instanceof AccountDTO dto ? dto : null;
+        String username = accountDTO == null ? "" : accountDTO.getUsername();
+        String roleName = accountDTO != null && accountDTO.hasRole(RoleCode.ADMIN) ? "Admin" : "Nhân viên";
+        String title = response.getMessage() == null || response.getMessage().isBlank()
+                ? "Đăng nhập thành công"
+                : response.getMessage();
+        String content = username == null || username.isBlank()
+                ? "Đăng nhập thành công"
+                : "Xin chào " + username + " - " + roleName;
+
+        Notifications.create()
+                .title(title)
+                .text(content)
+                .position(Pos.TOP_RIGHT)
+                .hideAfter(Duration.seconds(1.4))
+                .owner(usernameField.getScene().getWindow())
+                .showInformation();
+
+        PauseTransition delay = new PauseTransition(Duration.millis(800));
+        delay.setOnFinished(event -> openDashboard(response.getData()));
+        delay.play();
     }
 
     @FXML
