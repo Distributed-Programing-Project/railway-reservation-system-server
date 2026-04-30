@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import vn.edu.iuh.fit.common.constant.EmployeeStatus;
 import vn.edu.iuh.fit.server.model.Account;
 import vn.edu.iuh.fit.server.model.Employee;
+import vn.edu.iuh.fit.server.model.Role;
 import vn.edu.iuh.fit.server.repository.EmployeeRepository;
 
 import java.time.LocalDate;
@@ -85,18 +86,41 @@ public class EmployeeRepositoryImpl extends AbstractGenericRepositoryImpl<Employ
     }
 
     @Override
-    public String createAndLinkAccount(EntityManager em, String employeeId, String username, String hashedPassword) {
+    public String createAndLinkAccount(EntityManager em, String employeeId, String username, String hashedPassword, Boolean isManager) {
+        Role role = findOrCreateRole(em,
+                Boolean.TRUE.equals(isManager) ? Role.ADMIN : Role.STAFF,
+                Boolean.TRUE.equals(isManager) ? "Quản trị viên" : "Nhân viên bán vé");
+
         Account account = Account.builder()
                 .username(username)
                 .password(hashedPassword)
                 .active(true)
                 .build();
+        account.getRoles().add(role);
         em.persist(account);
 
         Employee employee = em.find(Employee.class, employeeId);
         employee.setAccount(account);
         employee.setUpdatedAt(LocalDate.now());
         return account.getUsername();
+    }
+
+    private Role findOrCreateRole(EntityManager em, String code, String name) {
+        Role existingRole = em.createQuery("SELECT r FROM Role r WHERE r.code = :code", Role.class)
+                .setParameter("code", code)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
+        if (existingRole != null) {
+            return existingRole;
+        }
+
+        Role role = Role.builder()
+                .code(code)
+                .name(name)
+                .build();
+        em.persist(role);
+        return role;
     }
 
     @Override

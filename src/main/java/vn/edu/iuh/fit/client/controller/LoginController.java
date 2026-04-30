@@ -12,7 +12,6 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import vn.edu.iuh.fit.client.service.LoginClientService;
-import vn.edu.iuh.fit.client.service.SessionManager;
 import vn.edu.iuh.fit.common.dto.AccountDTO;
 import vn.edu.iuh.fit.common.response.Response;
 
@@ -96,19 +95,30 @@ public class LoginController {
     }
 
     private void openDashboard(Object responseData) {
+        AccountDTO accountDTO = responseData instanceof AccountDTO dto ? dto : null;
+        boolean isManager = accountDTO != null && accountDTO.isManager();
+        String dashboardPath = isManager
+                ? "/client/ui/views/dashboard.fxml"
+                : "/client/ui/views/ban-ve.fxml";
+
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/ui/views/dashboard.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(dashboardPath));
             Parent root = loader.load();
 
-            DashboardController controller = loader.getController();
-            if (responseData instanceof AccountDTO accountDTO) {
-                SessionManager.getInstance().setSession(accountDTO.getEmployeeId(), accountDTO.getUsername(), accountDTO.isManager());
-                controller.setLoggedInUsername(accountDTO.getUsername());
+            Object controller = loader.getController();
+            if (accountDTO != null) {
+                if (controller instanceof DashboardController dashboardController) {
+                    dashboardController.setAccount(accountDTO);
+                } else if (controller instanceof SalesDashboardController salesDashboardController) {
+                    salesDashboardController.setAccount(accountDTO);
+                }
             }
 
             Stage stage = (Stage) usernameField.getScene().getWindow();
             stage.setScene(new Scene(root, 1200, 700));
-            stage.setTitle("Train Station - Dashboard");
+            stage.setTitle(isManager
+                    ? "Train Station - Admin Dashboard"
+                    : "Train Station - Ticket Sales Dashboard");
             stage.show();
         } catch (IOException e) {
             showError("Đăng nhập", "Không thể mở dashboard: " + e.getMessage());
