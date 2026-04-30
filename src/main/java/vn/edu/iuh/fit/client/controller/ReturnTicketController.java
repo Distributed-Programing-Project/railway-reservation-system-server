@@ -64,33 +64,56 @@ public class ReturnTicketController {
   private ReturnTicketPreviewDTO lastPreview;
   private String lastSearchIdCard;
 
-  @FXML private TextField txtSearchCCCD;
-  @FXML private Button btnTimKiem;
+  @FXML
+  private TextField txtSearchCCCD;
+  @FXML
+  private Button btnTimKiem;
 
-  @FXML private TableView<ReturnTicketTicketDTO> tblDanhSachVe;
-  @FXML private TableColumn<ReturnTicketTicketDTO, String> colMaVe;
-  @FXML private TableColumn<ReturnTicketTicketDTO, String> colTau;
-  @FXML private TableColumn<ReturnTicketTicketDTO, String> colHanhTrinh;
-  @FXML private TableColumn<ReturnTicketTicketDTO, String> colNgayDi;
-  @FXML private TableColumn<ReturnTicketTicketDTO, String> colGhe;
-  @FXML private TableColumn<ReturnTicketTicketDTO, String> colGiaVe;
-  @FXML private TableColumn<ReturnTicketTicketDTO, String> colTrangThai;
+  @FXML
+  private TableView<ReturnTicketTicketDTO> tblDanhSachVe;
+  @FXML
+  private TableColumn<ReturnTicketTicketDTO, String> colMaVe;
+  @FXML
+  private TableColumn<ReturnTicketTicketDTO, String> colTau;
+  @FXML
+  private TableColumn<ReturnTicketTicketDTO, String> colHanhTrinh;
+  @FXML
+  private TableColumn<ReturnTicketTicketDTO, String> colNgayDi;
+  @FXML
+  private TableColumn<ReturnTicketTicketDTO, String> colGhe;
+  @FXML
+  private TableColumn<ReturnTicketTicketDTO, String> colGiaVe;
+  @FXML
+  private TableColumn<ReturnTicketTicketDTO, String> colTrangThai;
 
-  @FXML private Label lblMaVeChon;
-  @FXML private Label lblTau;
-  @FXML private Label lblHanhTrinh;
-  @FXML private Label lblNgayDi;
-  @FXML private Label lblGhe;
-  @FXML private Label lblThoiGianConLai;
+  @FXML
+  private Label lblMaVeChon;
+  @FXML
+  private Label lblTau;
+  @FXML
+  private Label lblHanhTrinh;
+  @FXML
+  private Label lblNgayDi;
+  @FXML
+  private Label lblGhe;
+  @FXML
+  private Label lblThoiGianConLai;
 
-  @FXML private Label lblThongBaoLoi;
-  @FXML private Label lblDieuKienVe;
-  @FXML private Label lblGiaVeGoc;
-  @FXML private Label lblPhiTraVe;
-  @FXML private Label lblTienHoanLai;
+  @FXML
+  private Label lblThongBaoLoi;
+  @FXML
+  private Label lblDieuKienVe;
+  @FXML
+  private Label lblGiaVeGoc;
+  @FXML
+  private Label lblPhiTraVe;
+  @FXML
+  private Label lblTienHoanLai;
 
-  @FXML private Button btnXacNhanTra;
-  @FXML private Button btnDoiVe;
+  @FXML
+  private Button btnXacNhanTra;
+  @FXML
+  private Button btnDoiVe;
 
   @FXML
   public void initialize() {
@@ -107,17 +130,20 @@ public class ReturnTicketController {
   }
 
   private void setupTable() {
-    if (tblDanhSachVe == null) return;
+    if (tblDanhSachVe == null)
+      return;
     tblDanhSachVe.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
     colMaVe.setCellValueFactory(c -> s(c.getValue() != null ? c.getValue().getId() : null));
     colTau.setCellValueFactory(c -> s(c.getValue() != null ? c.getValue().getTrainCode() : null));
     colHanhTrinh.setCellValueFactory(c -> {
       ReturnTicketTicketDTO dto = c.getValue();
-      if (dto == null) return s(null);
+      if (dto == null)
+        return s(null);
       String from = safe(dto.getDepartureStation());
       String to = safe(dto.getDestinationStation());
-      if ("--".equals(from) && "--".equals(to)) return s("--");
+      if ("--".equals(from) && "--".equals(to))
+        return s("--");
       return s(from + " → " + to);
     });
     colNgayDi.setCellValueFactory(c -> {
@@ -126,10 +152,12 @@ public class ReturnTicketController {
     });
     colGhe.setCellValueFactory(c -> {
       ReturnTicketTicketDTO dto = c.getValue();
-      if (dto == null) return s(null);
+      if (dto == null)
+        return s(null);
       String carriage = safe(dto.getCarriageName());
       String seat = safe(dto.getSeatNumber());
-      if ("--".equals(carriage) && "--".equals(seat)) return s("--");
+      if ("--".equals(carriage) && "--".equals(seat))
+        return s("--");
       return s("Toa " + carriage + " - Ghế " + seat);
     });
     colGiaVe.setCellValueFactory(c -> s(formatMoney(c.getValue() != null ? c.getValue().getTicketPrice() : 0)));
@@ -138,9 +166,10 @@ public class ReturnTicketController {
       return s(dto != null && dto.getStatus() != null ? dto.getStatus().getName() : null);
     });
 
-    tblDanhSachVe.getSelectionModel().getSelectedItems().addListener((ListChangeListener<ReturnTicketTicketDTO>) change -> {
-      handleSelectionChanged();
-    });
+    tblDanhSachVe.getSelectionModel().getSelectedItems()
+        .addListener((ListChangeListener<ReturnTicketTicketDTO>) change -> {
+          handleSelectionChanged();
+        });
     tblDanhSachVe.setItems(FXCollections.observableArrayList());
   }
 
@@ -169,7 +198,8 @@ public class ReturnTicketController {
     };
 
     task.setOnSucceeded(e -> {
-      if (seq != searchSeq.get()) return;
+      if (seq != searchSeq.get())
+        return;
       setBusy(false);
       Response res = task.getValue();
       if (res != null && res.isSuccess() && res.getData() instanceof List<?> list) {
@@ -189,7 +219,8 @@ public class ReturnTicketController {
     });
 
     task.setOnFailed(e -> {
-      if (seq != searchSeq.get()) return;
+      if (seq != searchSeq.get())
+        return;
       setBusy(false);
       setInlineError("Lỗi khi tra cứu vé.");
     });
@@ -223,7 +254,8 @@ public class ReturnTicketController {
     };
 
     task.setOnSucceeded(e -> {
-      if (seq != previewSeq.get()) return;
+      if (seq != previewSeq.get())
+        return;
       setBusy(false);
       Response res = task.getValue();
       if (res != null && res.isSuccess() && res.getData() instanceof ReturnTicketPreviewDTO dto) {
@@ -241,7 +273,8 @@ public class ReturnTicketController {
     });
 
     task.setOnFailed(e -> {
-      if (seq != previewSeq.get()) return;
+      if (seq != previewSeq.get())
+        return;
       setBusy(false);
       lastPreview = null;
       resetPreviewAmounts();
@@ -270,8 +303,10 @@ public class ReturnTicketController {
     Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
     confirm.setTitle("Trả vé");
     confirm.setHeaderText(null);
-    confirm.setContentText("Xác nhận trả " + ticketIds.size() + " vé?\nSố tiền hoàn: " + formatMoney(lastPreview.getRefundAmount()));
-    if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
+    confirm.setContentText(
+        "Xác nhận trả " + ticketIds.size() + " vé?\nSố tiền hoàn: " + formatMoney(lastPreview.getRefundAmount()));
+    if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK)
+      return;
 
     doConfirmAsync(ticketIds, lastPreview.getRefundAmount(), employeeId);
   }
@@ -290,7 +325,8 @@ public class ReturnTicketController {
     };
 
     task.setOnSucceeded(e -> {
-      if (seq != confirmSeq.get()) return;
+      if (seq != confirmSeq.get())
+        return;
       setBusy(false);
       Response res = task.getValue();
       if (res != null && res.isSuccess()) {
@@ -311,7 +347,8 @@ public class ReturnTicketController {
     });
 
     task.setOnFailed(e -> {
-      if (seq != confirmSeq.get()) return;
+      if (seq != confirmSeq.get())
+        return;
       setBusy(false);
       btnXacNhanTra.setDisable(false);
       setInlineError("Lỗi khi xác nhận trả vé.");
@@ -325,7 +362,8 @@ public class ReturnTicketController {
     ask.setTitle("In biên lai");
     ask.setHeaderText(null);
     ask.setContentText("Khách có yêu cầu in biên lai hoàn tiền không?");
-    if (ask.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
+    if (ask.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK)
+      return;
 
     IssuedTicketDTO summary = IssuedTicketDTO.builder()
         .ticketId("REFUND-" + invoiceId)
@@ -357,7 +395,8 @@ public class ReturnTicketController {
           }
         };
         renderTask.setOnSucceeded(e -> pdf.setPages(renderTask.getValue(), title));
-        renderTask.setOnFailed(e -> showError("In", "Không thể render xem trước: " + renderTask.getException().getMessage()));
+        renderTask
+            .setOnFailed(e -> showError("In", "Không thể render xem trước: " + renderTask.getException().getMessage()));
         start(renderTask, "return-ticket-render-preview");
       }
       javafx.stage.Stage stage = new javafx.stage.Stage();
@@ -435,8 +474,10 @@ public class ReturnTicketController {
   }
 
   private String buildConditionText(List<ReturnTicketTicketDTO> selected) {
-    if (selected == null || selected.isEmpty()) return "--";
-    boolean exchanged = selected.stream().anyMatch(t -> t != null && t.getOriginalTicketId() != null && !t.getOriginalTicketId().isBlank());
+    if (selected == null || selected.isEmpty())
+      return "--";
+    boolean exchanged = selected.stream()
+        .anyMatch(t -> t != null && t.getOriginalTicketId() != null && !t.getOriginalTicketId().isBlank());
     if (exchanged) {
       return "Vé đã đổi: phí 30%";
     }
@@ -445,13 +486,15 @@ public class ReturnTicketController {
         .filter(d -> d != null)
         .min(Comparator.naturalOrder())
         .orElse(null);
-    if (nearest == null) return "--";
+    if (nearest == null)
+      return "--";
     long minutes = Duration.between(LocalDateTime.now(), nearest).toMinutes();
     return minutes < MINUTES_24H ? "Phí 20% (dưới 24h)" : "Phí 10% (từ 24h)";
   }
 
   private List<ReturnTicketTicketDTO> getSelectedTickets() {
-    if (tblDanhSachVe == null) return List.of();
+    if (tblDanhSachVe == null)
+      return List.of();
     return List.copyOf(tblDanhSachVe.getSelectionModel().getSelectedItems());
   }
 
@@ -479,23 +522,28 @@ public class ReturnTicketController {
   }
 
   private void setInlineError(String message) {
-    if (lblThongBaoLoi == null) return;
+    if (lblThongBaoLoi == null)
+      return;
     lblThongBaoLoi.setText(message == null ? "" : message);
   }
 
   private void setBusy(boolean busy) {
-    if (btnTimKiem != null) btnTimKiem.setDisable(busy);
-    if (txtSearchCCCD != null) txtSearchCCCD.setDisable(busy);
+    if (btnTimKiem != null)
+      btnTimKiem.setDisable(busy);
+    if (txtSearchCCCD != null)
+      txtSearchCCCD.setDisable(busy);
   }
 
   private void registerCloseCleanupHook() {
-    if (tblDanhSachVe == null) return;
+    if (tblDanhSachVe == null)
+      return;
     tblDanhSachVe.sceneProperty().addListener((obs, oldScene, newScene) -> {
       if (oldScene != null && newScene == null) {
         cleanupOnClose();
         return;
       }
-      if (newScene == null) return;
+      if (newScene == null)
+        return;
 
       Window existing = newScene.getWindow();
       if (existing != null) {
@@ -503,14 +551,16 @@ public class ReturnTicketController {
       }
 
       newScene.windowProperty().addListener((obsWin, oldWin, newWin) -> {
-        if (newWin == null) return;
+        if (newWin == null)
+          return;
         newWin.addEventHandler(WindowEvent.WINDOW_HIDDEN, e -> cleanupOnClose());
       });
     });
   }
 
   private void cleanupOnClose() {
-    if (!cleanupDone.compareAndSet(false, true)) return;
+    if (!cleanupDone.compareAndSet(false, true))
+      return;
     stopCountdown();
     executor.shutdown();
     if (tblDanhSachVe != null) {
@@ -535,7 +585,8 @@ public class ReturnTicketController {
   }
 
   private static String normalize(String value) {
-    if (value == null) return null;
+    if (value == null)
+      return null;
     String trimmed = value.trim();
     return trimmed.isEmpty() ? null : trimmed;
   }

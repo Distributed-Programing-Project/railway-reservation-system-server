@@ -20,24 +20,34 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
-import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Region;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
@@ -74,9 +84,9 @@ import vn.edu.iuh.fit.common.dto.SaleScheduleSearchDTO;
 import vn.edu.iuh.fit.common.dto.SaleScheduleSearchResultDTO;
 import vn.edu.iuh.fit.common.dto.SaleVatDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleSaleCardDTO;
+import vn.edu.iuh.fit.common.dto.SeatHoldResponseDTO;
 import vn.edu.iuh.fit.common.dto.SeatMapResponseDTO;
 import vn.edu.iuh.fit.common.dto.SeatMapSeatDTO;
-import vn.edu.iuh.fit.common.dto.SeatHoldResponseDTO;
 import vn.edu.iuh.fit.common.dto.StationDTO;
 import vn.edu.iuh.fit.common.request.Request;
 import vn.edu.iuh.fit.common.response.Response;
@@ -127,103 +137,186 @@ public class SellTicketWizardController {
   private SaleCreateResponseDTO lastSaleResult;
 
   // STEP indicator
-  @FXML private Label lblStep1;
-  @FXML private Label lblStep2;
-  @FXML private Label lblStep3;
-  @FXML private Label lblStep4;
+  @FXML
+  private Label lblStep1;
+  @FXML
+  private Label lblStep2;
+  @FXML
+  private Label lblStep3;
+  @FXML
+  private Label lblStep4;
 
   // Navigation
-  @FXML private Button btnBack;
-  @FXML private Button btnNext;
-  @FXML private Button btnResetAll;
+  @FXML
+  private Button btnBack;
+  @FXML
+  private Button btnNext;
+  @FXML
+  private Button btnResetAll;
 
   // Overlay
-  @FXML private StackPane loadingOverlay;
+  @FXML
+  private StackPane loadingOverlay;
 
   // STEP 1 controls
-  @FXML private ComboBox<StationDTO> cbDepartureStation;
-  @FXML private ComboBox<StationDTO> cbDestinationStation;
-  @FXML private DatePicker dpDepartureDate;
-  @FXML private DatePicker dpReturnDate;
-  @FXML private RadioButton rbOneWay;
-  @FXML private RadioButton rbRoundTrip;
-  @FXML private Button btnSearchSchedules;
-  @FXML private TilePane outboundCardsPane;
-  @FXML private VBox returnCardsSection;
-  @FXML private TilePane returnCardsPane;
+  @FXML
+  private ComboBox<StationDTO> cbDepartureStation;
+  @FXML
+  private ComboBox<StationDTO> cbDestinationStation;
+  @FXML
+  private DatePicker dpDepartureDate;
+  @FXML
+  private DatePicker dpReturnDate;
+  @FXML
+  private RadioButton rbOneWay;
+  @FXML
+  private RadioButton rbRoundTrip;
+  @FXML
+  private Button btnSearchSchedules;
+  @FXML
+  private TilePane outboundCardsPane;
+  @FXML
+  private VBox returnCardsSection;
+  @FXML
+  private TilePane returnCardsPane;
 
   // STEP 2 controls
-  @FXML private ComboBox<CarriageSeatMapDTO> cbOutboundCarriage;
-  @FXML private ComboBox<CarriageSeatMapDTO> cbReturnCarriage;
-  @FXML private javafx.scene.layout.GridPane gridOutboundSeats;
-  @FXML private javafx.scene.layout.GridPane gridReturnSeats;
-  @FXML private VBox returnSeatSection;
-  @FXML private Label lblOutboundTotal;
-  @FXML private Label lblReturnTotal;
-  @FXML private TableView<CartItem> tblOutboundCart;
-  @FXML private TableView<CartItem> tblReturnCart;
-  @FXML private TableColumn<CartItem, String> colOutboundCartCarriage;
-  @FXML private TableColumn<CartItem, String> colOutboundCartSeat;
-  @FXML private TableColumn<CartItem, String> colOutboundCartPrice;
-  @FXML private TableColumn<CartItem, CartItem> colOutboundCartAction;
-  @FXML private TableColumn<CartItem, String> colReturnCartCarriage;
-  @FXML private TableColumn<CartItem, String> colReturnCartSeat;
-  @FXML private TableColumn<CartItem, String> colReturnCartPrice;
-  @FXML private TableColumn<CartItem, CartItem> colReturnCartAction;
+  @FXML
+  private ComboBox<CarriageSeatMapDTO> cbOutboundCarriage;
+  @FXML
+  private ComboBox<CarriageSeatMapDTO> cbReturnCarriage;
+  @FXML
+  private javafx.scene.layout.GridPane gridOutboundSeats;
+  @FXML
+  private javafx.scene.layout.GridPane gridReturnSeats;
+  @FXML
+  private VBox returnSeatSection;
+  @FXML
+  private Label lblOutboundTotal;
+  @FXML
+  private Label lblReturnTotal;
+  @FXML
+  private TableView<CartItem> tblOutboundCart;
+  @FXML
+  private TableView<CartItem> tblReturnCart;
+  @FXML
+  private TableColumn<CartItem, String> colOutboundCartCarriage;
+  @FXML
+  private TableColumn<CartItem, String> colOutboundCartSeat;
+  @FXML
+  private TableColumn<CartItem, String> colOutboundCartPrice;
+  @FXML
+  private TableColumn<CartItem, CartItem> colOutboundCartAction;
+  @FXML
+  private TableColumn<CartItem, String> colReturnCartCarriage;
+  @FXML
+  private TableColumn<CartItem, String> colReturnCartSeat;
+  @FXML
+  private TableColumn<CartItem, String> colReturnCartPrice;
+  @FXML
+  private TableColumn<CartItem, CartItem> colReturnCartAction;
 
   // STEP 3 controls
-  @FXML private VBox boxOutboundPassengers;
-  @FXML private VBox boxReturnPassengersSection;
-  @FXML private VBox boxReturnPassengers;
-  @FXML private TextField txtBuyerName;
-  @FXML private TextField txtBuyerEmail;
-  @FXML private TextField txtBuyerPhone;
-  @FXML private ComboBox<DocumentType> cbBuyerDocType;
-  @FXML private TextField txtBuyerDocNumber;
-  @FXML private CheckBox chkHasAccount;
-  @FXML private Button btnLookupCustomer;
-  @FXML private Label lblCustomerInfo;
+  @FXML
+  private VBox boxOutboundPassengers;
+  @FXML
+  private VBox boxReturnPassengersSection;
+  @FXML
+  private VBox boxReturnPassengers;
+  @FXML
+  private TextField txtBuyerName;
+  @FXML
+  private TextField txtBuyerEmail;
+  @FXML
+  private TextField txtBuyerPhone;
+  @FXML
+  private ComboBox<DocumentType> cbBuyerDocType;
+  @FXML
+  private TextField txtBuyerDocNumber;
+  @FXML
+  private CheckBox chkHasAccount;
+  @FXML
+  private Button btnLookupCustomer;
+  @FXML
+  private Label lblCustomerInfo;
 
   // STEP 4 controls
-  @FXML private TableView<SummaryRow> tblSummary;
-  @FXML private TableColumn<SummaryRow, String> colSumLeg;
-  @FXML private TableColumn<SummaryRow, String> colSumSeat;
-  @FXML private TableColumn<SummaryRow, String> colSumPassenger;
-  @FXML private TableColumn<SummaryRow, String> colSumType;
-  @FXML private TableColumn<SummaryRow, String> colSumBase;
-  @FXML private TableColumn<SummaryRow, String> colSumDiscount;
-  @FXML private TableColumn<SummaryRow, String> colSumFinal;
-  @FXML private CheckBox chkRedeemPoints;
-  @FXML private Spinner<Integer> spnPointsToRedeem;
-  @FXML private Label lblPointsCap;
-  @FXML private Label lblPointsDiscount;
-  @FXML private TextField txtVatCompany;
-  @FXML private TextField txtVatTaxCode;
-  @FXML private TextField txtVatAddress;
-  @FXML private RadioButton rbPayCash;
-  @FXML private RadioButton rbPayOnline;
-  @FXML private HBox cashBox;
-  @FXML private VBox onlineBox;
-  @FXML private TextField txtAmountPaid;
-  @FXML private Label lblChangeAmount;
-  @FXML private Button btnCreatePayment;
-  @FXML private Button btnConfirmPayment;
-  @FXML private Label lblPaymentStatus;
-  @FXML private ImageView imgQr;
-  @FXML private Label lblPaymentRef;
-  @FXML private Label lblPaymentExpire;
-  @FXML private Label lblPaymentOrderId;
-  @FXML private Label lblTotalAmount;
-  @FXML private Button btnFinishSale;
-  @FXML private Button btnPrintTickets;
-  @FXML private Button btnPrintInvoice;
-  @FXML private Button btnPrintChildVouchers;
+  @FXML
+  private TableView<SummaryRow> tblSummary;
+  @FXML
+  private TableColumn<SummaryRow, String> colSumLeg;
+  @FXML
+  private TableColumn<SummaryRow, String> colSumSeat;
+  @FXML
+  private TableColumn<SummaryRow, String> colSumPassenger;
+  @FXML
+  private TableColumn<SummaryRow, String> colSumType;
+  @FXML
+  private TableColumn<SummaryRow, String> colSumBase;
+  @FXML
+  private TableColumn<SummaryRow, String> colSumDiscount;
+  @FXML
+  private TableColumn<SummaryRow, String> colSumFinal;
+  @FXML
+  private CheckBox chkRedeemPoints;
+  @FXML
+  private Spinner<Integer> spnPointsToRedeem;
+  @FXML
+  private Label lblPointsCap;
+  @FXML
+  private Label lblPointsDiscount;
+  @FXML
+  private TextField txtVatCompany;
+  @FXML
+  private TextField txtVatTaxCode;
+  @FXML
+  private TextField txtVatAddress;
+  @FXML
+  private RadioButton rbPayCash;
+  @FXML
+  private RadioButton rbPayOnline;
+  @FXML
+  private HBox cashBox;
+  @FXML
+  private VBox onlineBox;
+  @FXML
+  private TextField txtAmountPaid;
+  @FXML
+  private Label lblChangeAmount;
+  @FXML
+  private Button btnCreatePayment;
+  @FXML
+  private Button btnConfirmPayment;
+  @FXML
+  private Label lblPaymentStatus;
+  @FXML
+  private ImageView imgQr;
+  @FXML
+  private Label lblPaymentRef;
+  @FXML
+  private Label lblPaymentExpire;
+  @FXML
+  private Label lblPaymentOrderId;
+  @FXML
+  private Label lblTotalAmount;
+  @FXML
+  private Button btnFinishSale;
+  @FXML
+  private Button btnPrintTickets;
+  @FXML
+  private Button btnPrintInvoice;
+  @FXML
+  private Button btnPrintChildVouchers;
 
   // Step panes
-  @FXML private VBox step1Pane;
-  @FXML private VBox step2Pane;
-  @FXML private VBox step3Pane;
-  @FXML private VBox step4Pane;
+  @FXML
+  private VBox step1Pane;
+  @FXML
+  private VBox step2Pane;
+  @FXML
+  private VBox step3Pane;
+  @FXML
+  private VBox step4Pane;
 
   @FXML
   public void initialize() {
@@ -257,9 +350,11 @@ public class SellTicketWizardController {
   }
 
   private void registerCloseCleanupHook() {
-    if (step1Pane == null) return;
+    if (step1Pane == null)
+      return;
     step1Pane.sceneProperty().addListener((obs, oldScene, newScene) -> {
-      if (newScene == null) return;
+      if (newScene == null)
+        return;
 
       Window existing = newScene.getWindow();
       if (existing != null) {
@@ -267,14 +362,16 @@ public class SellTicketWizardController {
       }
 
       newScene.windowProperty().addListener((obsWin, oldWin, newWin) -> {
-        if (newWin == null) return;
+        if (newWin == null)
+          return;
         newWin.addEventHandler(WindowEvent.WINDOW_HIDDEN, e -> cleanupOnClose());
       });
     });
   }
 
   private void cleanupOnClose() {
-    if (!cleanupDone.compareAndSet(false, true)) return;
+    if (!cleanupDone.compareAndSet(false, true))
+      return;
     stopSeatMapPolling();
     stopHoldKeepAlive();
     releaseAllHeldSeats();
@@ -323,7 +420,9 @@ public class SellTicketWizardController {
           }
         });
       }
-      @Override protected void updateItem(CartItem item, boolean empty) {
+
+      @Override
+      protected void updateItem(CartItem item, boolean empty) {
         super.updateItem(item, empty);
         setGraphic(empty ? null : btn);
       }
@@ -351,7 +450,9 @@ public class SellTicketWizardController {
           }
         });
       }
-      @Override protected void updateItem(CartItem item, boolean empty) {
+
+      @Override
+      protected void updateItem(CartItem item, boolean empty) {
         super.updateItem(item, empty);
         setGraphic(empty ? null : btn);
       }
@@ -373,7 +474,8 @@ public class SellTicketWizardController {
     spnPointsToRedeem.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 0, 0));
     spnPointsToRedeem.setEditable(true);
     TextField editor = spnPointsToRedeem.getEditor();
-    editor.setTextFormatter(new TextFormatter<>(new IntegerStringConverter(), 0, c -> c.getControlNewText().matches("\\d*") ? c : null));
+    editor.setTextFormatter(
+        new TextFormatter<>(new IntegerStringConverter(), 0, c -> c.getControlNewText().matches("\\d*") ? c : null));
 
     chkRedeemPoints.selectedProperty().addListener((obs, old, value) -> refreshTotals());
     spnPointsToRedeem.valueProperty().addListener((obs, old, value) -> refreshTotals());
@@ -403,7 +505,8 @@ public class SellTicketWizardController {
   private void loadStationsAsync() {
     setLoading(true);
     Task<Response> task = new Task<>() {
-      @Override protected Response call() {
+      @Override
+      protected Response call() {
         return saleClientService.findAllStations();
       }
     };
@@ -466,7 +569,8 @@ public class SellTicketWizardController {
         .build();
 
     Task<Response> task = new Task<>() {
-      @Override protected Response call() {
+      @Override
+      protected Response call() {
         return saleClientService.searchSchedulesForSale(dto);
       }
     };
@@ -506,7 +610,8 @@ public class SellTicketWizardController {
 
   private VBox buildCardNode(ScheduleSaleCardDTO card, TripDirection dir) {
     VBox box = new VBox(6);
-    box.setStyle("-fx-background-color: white; -fx-border-color: #d5dde6; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 12;");
+    box.setStyle(
+        "-fx-background-color: white; -fx-border-color: #d5dde6; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 12;");
     Label title = new Label("Tàu " + safe(card.getTrainCode()) + " • " + safe(card.getScheduleId()));
     title.setStyle("-fx-font-weight: 800;");
     Label route = new Label(safe(card.getDepartureStationName()) + " → " + safe(card.getDestinationStationName()));
@@ -528,19 +633,23 @@ public class SellTicketWizardController {
   }
 
   private void highlightSelected(TilePane pane, VBox selectedNode) {
-    pane.getChildren().forEach(n -> n.setStyle("-fx-background-color: white; -fx-border-color: #d5dde6; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 12;"));
-    selectedNode.setStyle("-fx-background-color: #f6fbff; -fx-border-color: #0066cc; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 12;");
+    pane.getChildren().forEach(n -> n.setStyle(
+        "-fx-background-color: white; -fx-border-color: #d5dde6; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 12;"));
+    selectedNode.setStyle(
+        "-fx-background-color: #f6fbff; -fx-border-color: #0066cc; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 12;");
   }
 
   @FXML
   public void handleNext() {
     if (currentStep == 1) {
-      if (!validateStep1Selection()) return;
+      if (!validateStep1Selection())
+        return;
       loadSeatMapsForSelectedSchedules();
       return;
     }
     if (currentStep == 2) {
-      if (!validateStep2Selection()) return;
+      if (!validateStep2Selection())
+        return;
       stopSeatMapPolling();
       renewHeldSeats();
       buildPassengerForms();
@@ -549,7 +658,8 @@ public class SellTicketWizardController {
       return;
     }
     if (currentStep == 3) {
-      if (!validateStep3Inputs()) return;
+      if (!validateStep3Inputs())
+        return;
       buildSummary();
       currentStep = 4;
       updateStepUI();
@@ -559,7 +669,8 @@ public class SellTicketWizardController {
 
   @FXML
   public void handleBack() {
-    if (currentStep <= 1) return;
+    if (currentStep <= 1)
+      return;
     if (currentStep == 2) {
       releaseAllHeldSeats();
       outboundCart.clear();
@@ -620,7 +731,8 @@ public class SellTicketWizardController {
   private void loadSeatMapsForSelectedSchedules() {
     setLoading(true);
     Task<Response> outboundTask = new Task<>() {
-      @Override protected Response call() {
+      @Override
+      protected Response call() {
         return saleClientService.getSeatMap(selectedOutbound.getScheduleId(), clientSessionId);
       }
     };
@@ -648,7 +760,8 @@ public class SellTicketWizardController {
 
     if (rbRoundTrip.isSelected()) {
       Task<Response> returnTask = new Task<>() {
-        @Override protected Response call() {
+        @Override
+        protected Response call() {
           return saleClientService.getSeatMap(selectedReturn.getScheduleId(), clientSessionId);
         }
       };
@@ -674,7 +787,8 @@ public class SellTicketWizardController {
   }
 
   private void startSeatMapPolling() {
-    if (seatMapPoller != null) return;
+    if (seatMapPoller != null)
+      return;
     seatMapPoller = new Timeline(new KeyFrame(Duration.seconds(5), e -> pollSeatMapsOnce()));
     seatMapPoller.setCycleCount(Timeline.INDEFINITE);
     seatMapPoller.play();
@@ -689,13 +803,16 @@ public class SellTicketWizardController {
   }
 
   private void pollSeatMapsOnce() {
-    if (currentStep != 2) return;
-    if (seatMapRefreshInFlight) return;
-    if (selectedOutbound == null) return;
+    if (currentStep != 2)
+      return;
+    if (seatMapRefreshInFlight)
+      return;
+    if (selectedOutbound == null)
+      return;
 
     seatMapRefreshInFlight = true;
     int totalTasks = rbRoundTrip.isSelected() ? 2 : 1;
-    int[] remaining = {totalTasks};
+    int[] remaining = { totalTasks };
 
     refreshSeatMap(selectedOutbound.getScheduleId(), true, () -> {
       remaining[0]--;
@@ -716,7 +833,8 @@ public class SellTicketWizardController {
 
   private void refreshSeatMap(String scheduleId, boolean outbound, Runnable done) {
     Task<Response> task = new Task<>() {
-      @Override protected Response call() {
+      @Override
+      protected Response call() {
         return saleClientService.getSeatMap(scheduleId, clientSessionId);
       }
     };
@@ -737,17 +855,20 @@ public class SellTicketWizardController {
           refreshTotals();
         }
       } finally {
-        if (done != null) done.run();
+        if (done != null)
+          done.run();
       }
     });
     task.setOnFailed(e -> {
-      if (done != null) done.run();
+      if (done != null)
+        done.run();
     });
     start(task, outbound ? "poll-seatmap-outbound" : "poll-seatmap-return");
   }
 
   private void updateCarriageCombo(ComboBox<CarriageSeatMapDTO> combo, SeatMapResponseDTO sm) {
-    if (combo == null || sm == null || sm.getCarriages() == null) return;
+    if (combo == null || sm == null || sm.getCarriages() == null)
+      return;
     CarriageSeatMapDTO selected = combo.getValue();
     String selectedId = selected != null ? selected.getCarriageId() : null;
     combo.setItems(FXCollections.observableArrayList(sm.getCarriages()));
@@ -762,10 +883,12 @@ public class SellTicketWizardController {
   }
 
   private void reconcileCartWithSeatMap(SeatMapResponseDTO sm, ObservableList<CartItem> cart) {
-    if (sm == null || sm.getCarriages() == null || cart == null || cart.isEmpty()) return;
+    if (sm == null || sm.getCarriages() == null || cart == null || cart.isEmpty())
+      return;
     Map<String, SeatMapSeatDTO> bySdId = new HashMap<>();
     for (CarriageSeatMapDTO c : sm.getCarriages()) {
-      if (c.getSeats() == null) continue;
+      if (c.getSeats() == null)
+        continue;
       for (SeatMapSeatDTO s : c.getSeats()) {
         bySdId.put(s.getScheduleDetailId(), s);
       }
@@ -778,7 +901,8 @@ public class SellTicketWizardController {
         toRemove.add(item);
         continue;
       }
-      SeatAvailabilityStatus status = seat.getSeatStatus() != null ? seat.getSeatStatus() : SeatAvailabilityStatus.AVAILABLE;
+      SeatAvailabilityStatus status = seat.getSeatStatus() != null ? seat.getSeatStatus()
+          : SeatAvailabilityStatus.AVAILABLE;
       if (status != SeatAvailabilityStatus.HELD || !seat.isHeldByMe()) {
         toRemove.add(item);
       }
@@ -791,7 +915,8 @@ public class SellTicketWizardController {
   }
 
   private void startHoldKeepAlive() {
-    if (holdKeepAlive != null) return;
+    if (holdKeepAlive != null)
+      return;
     holdKeepAlive = new Timeline(new KeyFrame(Duration.minutes(2), e -> renewHeldSeats()));
     holdKeepAlive.setCycleCount(Timeline.INDEFINITE);
     holdKeepAlive.play();
@@ -805,13 +930,16 @@ public class SellTicketWizardController {
   }
 
   private void renewHeldSeats() {
-    if (selectedOutbound == null) return;
-    if (outboundCart.isEmpty() && (!rbRoundTrip.isSelected() || returnCart.isEmpty())) return;
+    if (selectedOutbound == null)
+      return;
+    if (outboundCart.isEmpty() && (!rbRoundTrip.isSelected() || returnCart.isEmpty()))
+      return;
 
     List<String> outboundIds = outboundCart.stream().map(ci -> ci.scheduleDetailId).toList();
     if (!outboundIds.isEmpty()) {
       Task<Response> outboundKeepAliveTask = new Task<>() {
-        @Override protected Response call() {
+        @Override
+        protected Response call() {
           return saleClientService.holdSeats(selectedOutbound.getScheduleId(), outboundIds, clientSessionId);
         }
       };
@@ -822,7 +950,8 @@ public class SellTicketWizardController {
       List<String> returnIds = returnCart.stream().map(ci -> ci.scheduleDetailId).toList();
       if (!returnIds.isEmpty()) {
         Task<Response> returnKeepAliveTask = new Task<>() {
-          @Override protected Response call() {
+          @Override
+          protected Response call() {
             return saleClientService.holdSeats(selectedReturn.getScheduleId(), returnIds, clientSessionId);
           }
         };
@@ -838,7 +967,8 @@ public class SellTicketWizardController {
     if (selectedOutbound != null && !outboundCart.isEmpty()) {
       List<String> ids = outboundCart.stream().map(ci -> ci.scheduleDetailId).toList();
       Task<Response> releaseOutboundTask = new Task<>() {
-        @Override protected Response call() {
+        @Override
+        protected Response call() {
           return saleClientService.releaseHeldSeats(selectedOutbound.getScheduleId(), ids, clientSessionId);
         }
       };
@@ -848,7 +978,8 @@ public class SellTicketWizardController {
     if (selectedReturn != null && !returnCart.isEmpty()) {
       List<String> ids = returnCart.stream().map(ci -> ci.scheduleDetailId).toList();
       Task<Response> releaseReturnTask = new Task<>() {
-        @Override protected Response call() {
+        @Override
+        protected Response call() {
           return saleClientService.releaseHeldSeats(selectedReturn.getScheduleId(), ids, clientSessionId);
         }
       };
@@ -867,9 +998,11 @@ public class SellTicketWizardController {
     }
   }
 
-  private void renderSeatGrid(javafx.scene.layout.GridPane grid, CarriageSeatMapDTO carriage, ObservableList<CartItem> cart, String scheduleId) {
+  private void renderSeatGrid(javafx.scene.layout.GridPane grid, CarriageSeatMapDTO carriage,
+      ObservableList<CartItem> cart, String scheduleId) {
     grid.getChildren().clear();
-    if (carriage == null || carriage.getSeats() == null) return;
+    if (carriage == null || carriage.getSeats() == null)
+      return;
 
     int cols = 8;
     int row = 0;
@@ -879,8 +1012,10 @@ public class SellTicketWizardController {
       btn.setMinSize(46, 34);
       btn.setMaxSize(46, 34);
 
-      boolean isSelected = cart.stream().anyMatch(ci -> Objects.equals(ci.scheduleDetailId, seat.getScheduleDetailId()));
-      SeatAvailabilityStatus status = seat.getSeatStatus() != null ? seat.getSeatStatus() : SeatAvailabilityStatus.AVAILABLE;
+      boolean isSelected = cart.stream()
+          .anyMatch(ci -> Objects.equals(ci.scheduleDetailId, seat.getScheduleDetailId()));
+      SeatAvailabilityStatus status = seat.getSeatStatus() != null ? seat.getSeatStatus()
+          : SeatAvailabilityStatus.AVAILABLE;
       boolean heldByMe = seat.isHeldByMe();
 
       if (status == SeatAvailabilityStatus.SOLD) {
@@ -896,10 +1031,14 @@ public class SellTicketWizardController {
       }
 
       btn.setOnAction(e -> {
-        if (scheduleId == null) return;
-        SeatAvailabilityStatus current = seat.getSeatStatus() != null ? seat.getSeatStatus() : SeatAvailabilityStatus.AVAILABLE;
-        if (current == SeatAvailabilityStatus.SOLD) return;
-        if (current == SeatAvailabilityStatus.HELD && !seat.isHeldByMe()) return;
+        if (scheduleId == null)
+          return;
+        SeatAvailabilityStatus current = seat.getSeatStatus() != null ? seat.getSeatStatus()
+            : SeatAvailabilityStatus.AVAILABLE;
+        if (current == SeatAvailabilityStatus.SOLD)
+          return;
+        if (current == SeatAvailabilityStatus.HELD && !seat.isHeldByMe())
+          return;
 
         Optional<CartItem> existing = cart.stream()
             .filter(ci -> Objects.equals(ci.scheduleDetailId, seat.getScheduleDetailId()))
@@ -926,11 +1065,13 @@ public class SellTicketWizardController {
 
   private void holdSeat(String scheduleId, SeatMapSeatDTO seat, int carriageNumber, ObservableList<CartItem> cart) {
     String sdId = seat != null ? seat.getScheduleDetailId() : null;
-    if (scheduleId == null || sdId == null) return;
+    if (scheduleId == null || sdId == null)
+      return;
 
     setLoading(true);
     Task<Response> task = new Task<>() {
-      @Override protected Response call() {
+      @Override
+      protected Response call() {
         return saleClientService.holdSeats(scheduleId, List.of(sdId), clientSessionId);
       }
     };
@@ -958,12 +1099,15 @@ public class SellTicketWizardController {
     start(task, "hold-seat");
   }
 
-  private void releaseSeatHold(String scheduleId, String scheduleDetailId, ObservableList<CartItem> cart, CartItem item) {
-    if (scheduleId == null || scheduleDetailId == null) return;
+  private void releaseSeatHold(String scheduleId, String scheduleDetailId, ObservableList<CartItem> cart,
+      CartItem item) {
+    if (scheduleId == null || scheduleDetailId == null)
+      return;
 
     setLoading(true);
     Task<Response> task = new Task<>() {
-      @Override protected Response call() {
+      @Override
+      protected Response call() {
         return saleClientService.releaseHeldSeats(scheduleId, List.of(scheduleDetailId), clientSessionId);
       }
     };
@@ -1141,7 +1285,8 @@ public class SellTicketWizardController {
     int maxPointsByBalance = chkHasAccount.isSelected() ? customerPoints : 0;
     int cap = (hasDiscountType || paymentLocked) ? 0 : Math.max(0, Math.min(maxPointsByRate, maxPointsByBalance));
     ((SpinnerValueFactory.IntegerSpinnerValueFactory) spnPointsToRedeem.getValueFactory()).setMax(cap);
-    if (spnPointsToRedeem.getValue() > cap) spnPointsToRedeem.getValueFactory().setValue(cap);
+    if (spnPointsToRedeem.getValue() > cap)
+      spnPointsToRedeem.getValueFactory().setValue(cap);
     lblPointsCap.setText("Tối đa: " + cap + " điểm");
 
     int redeem = (chkRedeemPoints.isSelected() && cap > 0) ? spnPointsToRedeem.getValue() : 0;
@@ -1182,10 +1327,12 @@ public class SellTicketWizardController {
     double discount = 0.0;
     if (type == TicketType.CHILD) {
       int age = ageAt(form.dobPicker.getValue(), departureTime);
-      if (age >= 6 && age < 10) discount = base * 0.25;
+      if (age >= 6 && age < 10)
+        discount = base * 0.25;
     } else if (type == TicketType.SENIOR) {
       int age = ageAt(form.dobPicker.getValue(), departureTime);
-      if (age >= 60) discount = base * 0.15;
+      if (age >= 60)
+        discount = base * 0.15;
     } else if (type == TicketType.STUDENT) {
       discount = base * 0.10;
     }
@@ -1207,14 +1354,16 @@ public class SellTicketWizardController {
     setLoading(true);
     CustomerSearchDTO dto = CustomerSearchDTO.builder().keyword(keyword).page(0).size(20).build();
     Task<Response> task = new Task<>() {
-      @Override protected Response call() {
+      @Override
+      protected Response call() {
         return socketRequestService.send(new Request(ActionType.SEARCH_CUSTOMERS, dto));
       }
     };
     task.setOnSucceeded(e -> {
       setLoading(false);
       Response res = task.getValue();
-      if (res != null && res.isSuccess() && res.getData() instanceof CustomerPageDTO page && page.getCustomers() != null) {
+      if (res != null && res.isSuccess() && res.getData() instanceof CustomerPageDTO page
+          && page.getCustomers() != null) {
         if (page.getCustomers().isEmpty()) {
           showWarning("Tích điểm", "Không tìm thấy khách hàng phù hợp.");
           selectedCustomerId = null;
@@ -1256,7 +1405,8 @@ public class SellTicketWizardController {
     }
     setLoading(true);
     Task<Response> task = new Task<>() {
-      @Override protected Response call() {
+      @Override
+      protected Response call() {
         return saleClientService.createPaymentOrder(total, "Thanh toán vé tàu", clientSessionId);
       }
     };
@@ -1268,7 +1418,8 @@ public class SellTicketWizardController {
         lblPaymentStatus.setText("Trạng thái: " + dto.getStatus());
         lblPaymentRef.setText("REF: " + dto.getReferenceCode());
         lblPaymentOrderId.setText("Order: " + dto.getPaymentOrderId());
-        lblPaymentExpire.setText("Hết hạn: " + (dto.getExpiresAt() == null ? "--" : dto.getExpiresAt().format(DATE_TIME)));
+        lblPaymentExpire
+            .setText("Hết hạn: " + (dto.getExpiresAt() == null ? "--" : dto.getExpiresAt().format(DATE_TIME)));
         imgQr.setImage(toImage(dto.getQrPng()));
         chkRedeemPoints.setDisable(true);
         spnPointsToRedeem.setDisable(true);
@@ -1285,7 +1436,8 @@ public class SellTicketWizardController {
   }
 
   private void openInternalPaymentDialog(PaymentCreateResponseDTO dto, double totalAmount) {
-    if (dto == null) return;
+    if (dto == null)
+      return;
     try {
       FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/ui/views/internal-payment-dialog.fxml"));
       Parent root = loader.load();
@@ -1307,10 +1459,12 @@ public class SellTicketWizardController {
   }
 
   private void simulateInternalTransferSuccess(Stage dialogStage) {
-    if (currentPayment == null) return;
+    if (currentPayment == null)
+      return;
     setLoading(true);
     Task<Response> task = new Task<>() {
-      @Override protected Response call() {
+      @Override
+      protected Response call() {
         return saleClientService.confirmInternalPayment(currentPayment.getPaymentOrderId(), clientSessionId);
       }
     };
@@ -1323,7 +1477,8 @@ public class SellTicketWizardController {
         if (status == PaymentStatus.SUCCESS) {
           SaleCreateRequestDTO request = buildSaleRequestForOnline();
           submitSaleAsync(request, () -> {
-            if (dialogStage != null) dialogStage.close();
+            if (dialogStage != null)
+              dialogStage.close();
           });
         }
       } else {
@@ -1346,20 +1501,24 @@ public class SellTicketWizardController {
         .outboundScheduleId(selectedOutbound.getScheduleId())
         .returnScheduleId(rbRoundTrip.isSelected() ? selectedReturn.getScheduleId() : null)
         .outboundScheduleDetailIds(outboundCart.stream().map(ci -> ci.scheduleDetailId).toList())
-        .returnScheduleDetailIds(rbRoundTrip.isSelected() ? returnCart.stream().map(ci -> ci.scheduleDetailId).toList() : List.of())
+        .returnScheduleDetailIds(
+            rbRoundTrip.isSelected() ? returnCart.stream().map(ci -> ci.scheduleDetailId).toList() : List.of())
         .outboundPassengers(outboundPassengerForms.stream().map(PassengerForm::toDTO).toList())
-        .returnPassengers(rbRoundTrip.isSelected() ? returnPassengerForms.stream().map(PassengerForm::toDTO).toList() : List.of())
+        .returnPassengers(
+            rbRoundTrip.isSelected() ? returnPassengerForms.stream().map(PassengerForm::toDTO).toList() : List.of())
         .childrenUnder6(buildChildrenDTOs())
         .buyer(buildBuyerDTO())
         .vat(buildVatDTO())
-        .redeemPoints(SaleRedeemPointsDTO.builder().redeemRequested(chkRedeemPoints.isSelected()).pointsToRedeem(redeem).build())
+        .redeemPoints(
+            SaleRedeemPointsDTO.builder().redeemRequested(chkRedeemPoints.isSelected()).pointsToRedeem(redeem).build())
         .paymentMethod(PaymentMethod.ONLINE)
         .paymentOrderId(currentPayment != null ? currentPayment.getPaymentOrderId() : null)
         .build();
   }
 
   private Image toImage(byte[] pngBytes) {
-    if (pngBytes == null || pngBytes.length == 0) return null;
+    if (pngBytes == null || pngBytes.length == 0)
+      return null;
     try {
       return new Image(new ByteArrayInputStream(pngBytes));
     } catch (Exception e) {
@@ -1368,9 +1527,11 @@ public class SellTicketWizardController {
   }
 
   private void pollPaymentStatusOnce() {
-    if (currentPayment == null) return;
+    if (currentPayment == null)
+      return;
     Task<Response> task = new Task<>() {
-      @Override protected Response call() {
+      @Override
+      protected Response call() {
         return saleClientService.getPaymentOrderStatus(currentPayment.getPaymentOrderId());
       }
     };
@@ -1396,7 +1557,8 @@ public class SellTicketWizardController {
     }
     setLoading(true);
     Task<Response> task = new Task<>() {
-      @Override protected Response call() {
+      @Override
+      protected Response call() {
         return saleClientService.confirmInternalPayment(currentPayment.getPaymentOrderId(), clientSessionId);
       }
     };
@@ -1419,7 +1581,8 @@ public class SellTicketWizardController {
 
   @FXML
   public void handleFinishSale() {
-    if (currentStep != 4) return;
+    if (currentStep != 4)
+      return;
 
     double subtotal = computeSubtotalAfterTypeDiscount();
     int cap = ((SpinnerValueFactory.IntegerSpinnerValueFactory) spnPointsToRedeem.getValueFactory()).getMax();
@@ -1454,13 +1617,16 @@ public class SellTicketWizardController {
         .outboundScheduleId(selectedOutbound.getScheduleId())
         .returnScheduleId(rbRoundTrip.isSelected() ? selectedReturn.getScheduleId() : null)
         .outboundScheduleDetailIds(outboundCart.stream().map(ci -> ci.scheduleDetailId).toList())
-        .returnScheduleDetailIds(rbRoundTrip.isSelected() ? returnCart.stream().map(ci -> ci.scheduleDetailId).toList() : List.of())
+        .returnScheduleDetailIds(
+            rbRoundTrip.isSelected() ? returnCart.stream().map(ci -> ci.scheduleDetailId).toList() : List.of())
         .outboundPassengers(outboundPassengerForms.stream().map(PassengerForm::toDTO).toList())
-        .returnPassengers(rbRoundTrip.isSelected() ? returnPassengerForms.stream().map(PassengerForm::toDTO).toList() : List.of())
+        .returnPassengers(
+            rbRoundTrip.isSelected() ? returnPassengerForms.stream().map(PassengerForm::toDTO).toList() : List.of())
         .childrenUnder6(buildChildrenDTOs())
         .buyer(buildBuyerDTO())
         .vat(buildVatDTO())
-        .redeemPoints(SaleRedeemPointsDTO.builder().redeemRequested(chkRedeemPoints.isSelected()).pointsToRedeem(redeem).build())
+        .redeemPoints(
+            SaleRedeemPointsDTO.builder().redeemRequested(chkRedeemPoints.isSelected()).pointsToRedeem(redeem).build())
         .paymentMethod(pm)
         .amountPaid(amountPaid)
         .paymentOrderId(paymentOrderId)
@@ -1472,7 +1638,8 @@ public class SellTicketWizardController {
   private void submitSaleAsync(SaleCreateRequestDTO request, Runnable afterSuccess) {
     setLoading(true);
     Task<Response> task = new Task<>() {
-      @Override protected Response call() {
+      @Override
+      protected Response call() {
         return saleClientService.createSaleTransaction(request);
       }
     };
@@ -1516,7 +1683,8 @@ public class SellTicketWizardController {
     String company = normalize(txtVatCompany.getText());
     String tax = normalize(txtVatTaxCode.getText());
     String addr = normalize(txtVatAddress.getText());
-    if (company == null && tax == null && addr == null) return null;
+    if (company == null && tax == null && addr == null)
+      return null;
     return SaleVatDTO.builder().companyName(company).taxCode(tax).address(addr).build();
   }
 
@@ -1551,14 +1719,17 @@ public class SellTicketWizardController {
 
   @FXML
   public void handlePrintTickets() {
-    if (lastSaleResult == null || lastSaleResult.getTickets() == null) return;
+    if (lastSaleResult == null || lastSaleResult.getTickets() == null)
+      return;
     openPreview("In vé", lastSaleResult.getTickets());
   }
 
   @FXML
   public void handlePrintInvoice() {
-    if (lastSaleResult == null) return;
-    // Invoice preview hiện tại dùng 1 trang tóm tắt (không bám sát mẫu VAT ảnh), sẽ nâng cấp sau nếu cần.
+    if (lastSaleResult == null)
+      return;
+    // Invoice preview hiện tại dùng 1 trang tóm tắt (không bám sát mẫu VAT ảnh), sẽ
+    // nâng cấp sau nếu cần.
     IssuedTicketDTO summary = IssuedTicketDTO.builder()
         .ticketId("INVOICE-" + lastSaleResult.getInvoiceId())
         .passengerName(normalize(txtBuyerName.getText()))
@@ -1578,7 +1749,8 @@ public class SellTicketWizardController {
 
   @FXML
   public void handlePrintChildVouchers() {
-    if (lastSaleResult == null || lastSaleResult.getChildVouchers() == null) return;
+    if (lastSaleResult == null || lastSaleResult.getChildVouchers() == null)
+      return;
     openPreview("In phiếu trẻ <6", lastSaleResult.getChildVouchers());
   }
 
@@ -1595,7 +1767,8 @@ public class SellTicketWizardController {
           }
         };
         renderTask.setOnSucceeded(e -> pdf.setPages(renderTask.getValue(), title));
-        renderTask.setOnFailed(e -> showError("In", "KhÃ´ng thá»ƒ render xem trÆ°á»›c: " + renderTask.getException().getMessage()));
+        renderTask.setOnFailed(
+            e -> showError("In", "KhÃ´ng thá»ƒ render xem trÆ°á»›c: " + renderTask.getException().getMessage()));
         start(renderTask, "render-preview");
       }
       Stage stage = new Stage();
@@ -1633,9 +1806,11 @@ public class SellTicketWizardController {
 
   private void styleStep(Label label, boolean active) {
     if (active) {
-      label.setStyle("-fx-background-color: #0066cc; -fx-text-fill: white; -fx-padding: 6 10; -fx-background-radius: 10;");
+      label.setStyle(
+          "-fx-background-color: #0066cc; -fx-text-fill: white; -fx-padding: 6 10; -fx-background-radius: 10;");
     } else {
-      label.setStyle("-fx-background-color: #ecf0f1; -fx-text-fill: #1f2d3d; -fx-padding: 6 10; -fx-background-radius: 10;");
+      label.setStyle(
+          "-fx-background-color: #ecf0f1; -fx-text-fill: #1f2d3d; -fx-padding: 6 10; -fx-background-radius: 10;");
     }
   }
 
@@ -1671,9 +1846,11 @@ public class SellTicketWizardController {
   }
 
   private double parseMoney(String text) {
-    if (text == null) return 0;
+    if (text == null)
+      return 0;
     String cleaned = text.replaceAll("[^0-9]", "");
-    if (cleaned.isEmpty()) return 0;
+    if (cleaned.isEmpty())
+      return 0;
     try {
       return Double.parseDouble(cleaned);
     } catch (Exception e) {
@@ -1682,12 +1859,14 @@ public class SellTicketWizardController {
   }
 
   private int ageAt(LocalDate dob, LocalDateTime departureTime) {
-    if (dob == null || departureTime == null) return 0;
+    if (dob == null || departureTime == null)
+      return 0;
     return Period.between(dob, departureTime.toLocalDate()).getYears();
   }
 
   private String normalize(String value) {
-    if (value == null) return null;
+    if (value == null)
+      return null;
     String trimmed = value.trim();
     return trimmed.isEmpty() ? null : trimmed;
   }
@@ -1717,8 +1896,13 @@ public class SellTicketWizardController {
   }
 
   private record CartItem(String scheduleDetailId, int carriageNumber, int seatNumber, double price) {
-    String carriageLabel() { return "Toa " + carriageNumber; }
-    String seatLabel() { return String.valueOf(seatNumber); }
+    String carriageLabel() {
+      return "Toa " + carriageNumber;
+    }
+
+    String seatLabel() {
+      return String.valueOf(seatNumber);
+    }
   }
 
   private record Pricing(double discount, double finalPrice) {
@@ -1769,8 +1953,10 @@ public class SellTicketWizardController {
     final VBox childrenBox;
     final List<ChildForm> children = new ArrayList<>();
 
-    PassengerForm(VBox root, CartItem item, TextField nameField, ComboBox<DocumentType> docTypeBox, TextField docNumberField,
-                  ComboBox<TicketType> typeBox, DatePicker dobPicker, CheckBox chkStudentVerified, Button btnAddChild, VBox childrenBox) {
+    PassengerForm(VBox root, CartItem item, TextField nameField, ComboBox<DocumentType> docTypeBox,
+        TextField docNumberField,
+        ComboBox<TicketType> typeBox, DatePicker dobPicker, CheckBox chkStudentVerified, Button btnAddChild,
+        VBox childrenBox) {
       this.root = root;
       this.item = item;
       this.nameField = nameField;
@@ -1785,7 +1971,8 @@ public class SellTicketWizardController {
 
     static PassengerForm create(String leg, int index, CartItem item) {
       VBox root = new VBox(8);
-      root.setStyle("-fx-background-color: white; -fx-border-color: #d5dde6; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 12;");
+      root.setStyle(
+          "-fx-background-color: white; -fx-border-color: #d5dde6; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 12;");
 
       Label title = new Label(leg + " • " + item.carriageLabel() + " - Ghế " + item.seatLabel());
       title.setStyle("-fx-font-weight: 800;");
@@ -1795,10 +1982,12 @@ public class SellTicketWizardController {
       grid.setVgap(10);
 
       TextField nameField = new TextField();
-      ComboBox<DocumentType> docType = new ComboBox<>(FXCollections.observableArrayList(DocumentType.ID_CARD, DocumentType.PASSPORT));
+      ComboBox<DocumentType> docType = new ComboBox<>(
+          FXCollections.observableArrayList(DocumentType.ID_CARD, DocumentType.PASSPORT));
       docType.getSelectionModel().select(DocumentType.ID_CARD);
       TextField docNumber = new TextField();
-      ComboBox<TicketType> typeBox = new ComboBox<>(FXCollections.observableArrayList(TicketType.NORMAL, TicketType.CHILD, TicketType.SENIOR, TicketType.STUDENT));
+      ComboBox<TicketType> typeBox = new ComboBox<>(FXCollections.observableArrayList(TicketType.NORMAL,
+          TicketType.CHILD, TicketType.SENIOR, TicketType.STUDENT));
       typeBox.getSelectionModel().select(TicketType.NORMAL);
       DatePicker dob = new DatePicker();
       dob.setDisable(true);
@@ -1834,14 +2023,16 @@ public class SellTicketWizardController {
 
       root.getChildren().addAll(title, grid, btnAddChild, childrenBox);
 
-      PassengerForm form = new PassengerForm(root, item, nameField, docType, docNumber, typeBox, dob, chkStudent, btnAddChild, childrenBox);
+      PassengerForm form = new PassengerForm(root, item, nameField, docType, docNumber, typeBox, dob, chkStudent,
+          btnAddChild, childrenBox);
       btnAddChild.setOnAction(e -> form.addChildRow());
       return form;
     }
 
     void addChildRow() {
       VBox row = new VBox(6);
-      row.setStyle("-fx-background-color: #f6f8fb; -fx-border-color: #d5dde6; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 10;");
+      row.setStyle(
+          "-fx-background-color: #f6f8fb; -fx-border-color: #d5dde6; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 10;");
       TextField name = new TextField();
       DatePicker dob = new DatePicker();
       Button remove = new Button("Xóa");
@@ -1859,12 +2050,16 @@ public class SellTicketWizardController {
 
     String validate(LocalDateTime departureTime) {
       String name = normalize(nameField.getText());
-      if (name == null) return "Vui lòng nhập họ tên hành khách.";
+      if (name == null)
+        return "Vui lòng nhập họ tên hành khách.";
       DocumentType docType = docTypeBox.getValue();
       String doc = normalize(docNumberField.getText());
-      if (docType == null || doc == null) return "Vui lòng nhập giấy tờ hành khách.";
-      if (docType == DocumentType.ID_CARD && !doc.matches("^\\d{9}$|^\\d{12}$")) return "CMND 9 số hoặc CCCD 12 số.";
-      if (docType == DocumentType.PASSPORT && !doc.matches("^[A-Za-z0-9]{1,9}$")) return "Hộ chiếu tối đa 9 ký tự, chữ + số.";
+      if (docType == null || doc == null)
+        return "Vui lòng nhập giấy tờ hành khách.";
+      if (docType == DocumentType.ID_CARD && !doc.matches("^\\d{9}$|^\\d{12}$"))
+        return "CMND 9 số hoặc CCCD 12 số.";
+      if (docType == DocumentType.PASSPORT && !doc.matches("^[A-Za-z0-9]{1,9}$"))
+        return "Hộ chiếu tối đa 9 ký tự, chữ + số.";
 
       TicketType type = typeBox.getValue() != null ? typeBox.getValue() : TicketType.NORMAL;
       if ((type == TicketType.CHILD || type == TicketType.SENIOR) && dobPicker.getValue() == null) {
@@ -1872,12 +2067,15 @@ public class SellTicketWizardController {
       }
       if (type == TicketType.CHILD) {
         int age = Period.between(dobPicker.getValue(), departureTime.toLocalDate()).getYears();
-        if (age < 6) return "Trẻ <6 tuổi không được chọn ghế. Vui lòng thêm vào mục trẻ đi kèm.";
-        if (age >= 10) return "Tuổi không hợp lệ cho vé trẻ em (6 đến <10).";
+        if (age < 6)
+          return "Trẻ <6 tuổi không được chọn ghế. Vui lòng thêm vào mục trẻ đi kèm.";
+        if (age >= 10)
+          return "Tuổi không hợp lệ cho vé trẻ em (6 đến <10).";
       }
       if (type == TicketType.SENIOR) {
         int age = Period.between(dobPicker.getValue(), departureTime.toLocalDate()).getYears();
-        if (age < 60) return "Tuổi không hợp lệ cho vé người cao tuổi (>=60).";
+        if (age < 60)
+          return "Tuổi không hợp lệ cho vé người cao tuổi (>=60).";
       }
       if (type == TicketType.STUDENT && !chkStudentVerified.isSelected()) {
         return "Vui lòng xác nhận đã kiểm tra thẻ HSSV còn hạn.";
@@ -1885,10 +2083,13 @@ public class SellTicketWizardController {
 
       for (ChildForm child : children) {
         String cn = normalize(child.nameField.getText());
-        if (cn == null) return "Vui lòng nhập họ tên trẻ <6 đi kèm.";
-        if (child.dobPicker.getValue() == null) return "Vui lòng chọn ngày sinh trẻ <6 đi kèm.";
+        if (cn == null)
+          return "Vui lòng nhập họ tên trẻ <6 đi kèm.";
+        if (child.dobPicker.getValue() == null)
+          return "Vui lòng chọn ngày sinh trẻ <6 đi kèm.";
         int age = Period.between(child.dobPicker.getValue(), departureTime.toLocalDate()).getYears();
-        if (age >= 6) return "Trẻ đi kèm phải <6 tuổi.";
+        if (age >= 6)
+          return "Trẻ đi kèm phải <6 tuổi.";
       }
       return null;
     }
@@ -1905,7 +2106,8 @@ public class SellTicketWizardController {
     }
 
     private static String normalize(String value) {
-      if (value == null) return null;
+      if (value == null)
+        return null;
       String trimmed = value.trim();
       return trimmed.isEmpty() ? null : trimmed;
     }

@@ -18,7 +18,8 @@ public class ExchangeTicketClientService {
         ExchangeEligibleTicketSearchDTO.builder().idCard(idCard).build()));
   }
 
-  public Response previewExchangeTickets(List<String> oldTicketIds, List<String> newScheduleDetailIds, String clientSessionId) {
+  public Response previewExchangeTickets(List<String> oldTicketIds, List<String> newScheduleDetailIds,
+      String clientSessionId) {
     return socketRequestService.send(new Request(ActionType.PREVIEW_EXCHANGE_TICKETS,
         ExchangeTicketPreviewRequestDTO.builder()
             .oldTicketIds(oldTicketIds)
@@ -31,4 +32,3 @@ public class ExchangeTicketClientService {
     return socketRequestService.send(new Request(ActionType.EXCHANGE_TICKET, dto));
   }
 }
-
