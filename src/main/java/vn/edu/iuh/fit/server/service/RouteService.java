@@ -1,10 +1,14 @@
 package vn.edu.iuh.fit.server.service;
 
+import vn.edu.iuh.fit.common.response.Response;
 import vn.edu.iuh.fit.server.model.Route;
 
 import java.util.List;
 
 public interface RouteService {
+
+    Response getAllRoutes();
+    
     boolean createRoute(Route route);
 
     boolean updateRoute(Route route);

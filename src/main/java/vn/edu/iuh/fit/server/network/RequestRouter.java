@@ -31,7 +31,11 @@ import vn.edu.iuh.fit.server.service.StatisticsService;
 import vn.edu.iuh.fit.server.service.TicketService;
 import vn.edu.iuh.fit.server.service.TrainService;
 import vn.edu.iuh.fit.server.service.CustomerService;
+import vn.edu.iuh.fit.server.service.RouteService;
+import vn.edu.iuh.fit.server.service.StationService;
 import vn.edu.iuh.fit.server.service.impl.CustomerServiceImpl;
+import vn.edu.iuh.fit.server.service.impl.RouteServiceImpl;
+import vn.edu.iuh.fit.server.service.impl.StationServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.EmployeeServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.LoginServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.ScheduleServiceImpl;
@@ -48,6 +52,8 @@ public class RequestRouter {
     private final TicketService ticketService = new TicketServiceImpl();
     private final TrainService trainService = new TrainServiceImpl();
     private final CustomerService customerService = new CustomerServiceImpl();
+    private final StationService stationService = new StationServiceImpl();
+    private final RouteService routeService = new RouteServiceImpl();
 
     public Response route(Request request) {
         if (request == null || request.getAction() == null) {
@@ -77,6 +83,9 @@ public class RequestRouter {
                 ticketService.confirmReturnTickets(castData(request, ReturnTicketConfirmDTO.class));
             case EXCHANGE_TICKET ->
                 ticketService.exchangeTickets(castData(request, ExchangeTicketRequestDTO.class));
+
+            case FIND_ALL_STATIONS -> stationService.getAllStations();
+            case FIND_ALL_ROUTES -> routeService.getAllRoutes();
 
             case FIND_ALL_TRAINS -> trainService.findAllTrains(castData(request, TrainFilterDTO.class));
             case FIND_TRAIN_BY_CODE -> trainService.findTrainsByCode(castData(request, String.class));
