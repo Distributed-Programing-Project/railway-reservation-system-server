@@ -10,15 +10,11 @@ import vn.edu.iuh.fit.common.dto.LoginRequestDTO;
 import vn.edu.iuh.fit.common.message.LoginMessages;
 import vn.edu.iuh.fit.common.response.Response;
 import vn.edu.iuh.fit.server.model.Account;
-import vn.edu.iuh.fit.server.model.Role;
+import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.repository.AccountRepository;
 import vn.edu.iuh.fit.server.repository.impl.AbstractGenericRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.AccountRepositoryImpl;
 import vn.edu.iuh.fit.server.service.LoginService;
-
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class LoginServiceImpl implements LoginService {
 
@@ -54,12 +50,14 @@ public class LoginServiceImpl implements LoginService {
                     return Response.error(LoginMessages.INVALID_CREDENTIALS);
                 }
 
+                Employee employee = findEmployeeByAccountId(em, account.getId());
                 log.info("Login successful: username={}", username);
                 return Response.success(LoginMessages.LOGIN_SUCCESS, AccountDTO.builder()
                         .id(account.getId())
                         .username(account.getUsername())
                         .active(account.isActive())
-                        .roleCodes(resolveRoleCodes(em, account))
+                        .employeeId(employee == null ? null : employee.getEmployeeId())
+                        .isManager(employee != null && Boolean.TRUE.equals(employee.getIsManager()))
                         .build());
             });
         } catch (Exception e) {
@@ -89,26 +87,14 @@ public class LoginServiceImpl implements LoginService {
         return false;
     }
 
-    private List<String> resolveRoleCodes(EntityManager em, Account account) {
-        Set<String> roleCodes = account.getRoles() == null
-                ? Set.of()
-                : account.getRoles().stream()
-                .map(Role::getCode)
-                .filter(code -> code != null && !code.isBlank())
-                .collect(Collectors.toSet());
-
-        if (!roleCodes.isEmpty()) {
-            return roleCodes.stream().sorted().toList();
-        }
-
-        Boolean isManager = em.createQuery(
-                        "SELECT e.isManager FROM Employee e WHERE e.account.id = :accountId",
-                        Boolean.class)
-                .setParameter("accountId", account.getId())
+    private Employee findEmployeeByAccountId(EntityManager em, String accountId) {
+        return em.createQuery(
+                "SELECT e FROM Employee e WHERE e.account.id = :accountId",
+                        Employee.class)
+                .setParameter("accountId", accountId)
                 .getResultStream()
                 .findFirst()
-                .orElse(Boolean.FALSE);
-        return List.of(Boolean.TRUE.equals(isManager) ? Role.ADMIN : Role.STAFF);
+                .orElse(null);
     }
 
     private boolean isBCryptHash(String value) {

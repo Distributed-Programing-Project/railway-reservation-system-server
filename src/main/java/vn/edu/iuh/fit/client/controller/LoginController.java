@@ -12,7 +12,6 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import vn.edu.iuh.fit.client.service.LoginClientService;
-import vn.edu.iuh.fit.common.constant.RoleCode;
 import vn.edu.iuh.fit.common.dto.AccountDTO;
 import vn.edu.iuh.fit.common.response.Response;
 
@@ -97,7 +96,8 @@ public class LoginController {
 
     private void openDashboard(Object responseData) {
         AccountDTO accountDTO = responseData instanceof AccountDTO dto ? dto : null;
-        String dashboardPath = accountDTO != null && accountDTO.hasRole(RoleCode.ADMIN)
+        boolean isManager = accountDTO != null && accountDTO.isManager();
+        String dashboardPath = isManager
                 ? "/client/ui/views/dashboard.fxml"
                 : "/client/ui/views/ban-ve.fxml";
 
@@ -116,7 +116,7 @@ public class LoginController {
 
             Stage stage = (Stage) usernameField.getScene().getWindow();
             stage.setScene(new Scene(root, 1200, 700));
-            stage.setTitle(accountDTO != null && accountDTO.hasRole(RoleCode.ADMIN)
+            stage.setTitle(isManager
                     ? "Train Station - Admin Dashboard"
                     : "Train Station - Ticket Sales Dashboard");
             stage.show();
