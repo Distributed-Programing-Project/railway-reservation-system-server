@@ -105,6 +105,9 @@ public class LoginController {
             );
         }
         boolean isManager = accountDTO != null && accountDTO.isManager();
+        if (accountDTO != null) {
+            SessionManager.getInstance().setSession(accountDTO.getEmployeeId(), accountDTO.getUsername());
+        }
         String dashboardPath = isManager
                 ? "/client/ui/views/dashboard.fxml"
                 : "/client/ui/views/ban-ve.fxml";

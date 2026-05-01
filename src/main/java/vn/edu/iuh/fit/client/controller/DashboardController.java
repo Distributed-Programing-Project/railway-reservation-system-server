@@ -12,6 +12,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import vn.edu.iuh.fit.client.service.SessionManager;
 import vn.edu.iuh.fit.common.dto.AccountDTO;
 
 import java.io.IOException;
@@ -187,6 +188,7 @@ public class DashboardController {
             if (clockTimeline != null) {
                 clockTimeline.stop();
             }
+            SessionManager.getInstance().clear();
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/ui/views/login.fxml"));
             Parent root = loader.load();
 

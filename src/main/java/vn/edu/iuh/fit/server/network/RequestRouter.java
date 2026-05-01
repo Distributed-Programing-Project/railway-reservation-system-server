@@ -9,8 +9,14 @@ import vn.edu.iuh.fit.common.dto.LoginRequestDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketConfirmDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketPreviewRequestDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketSearchDTO;
+import vn.edu.iuh.fit.common.dto.RouteActionDTO;
+import vn.edu.iuh.fit.common.dto.RouteDTO;
+import vn.edu.iuh.fit.common.dto.RouteFilterDTO;
+import vn.edu.iuh.fit.common.dto.RouteStopDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleCreateDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleDetailPriceUpdateDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleFilterDTO;
+import vn.edu.iuh.fit.common.dto.ScheduleGenerateDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleLifecycleDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleUpdateDTO;
 import vn.edu.iuh.fit.common.dto.CreateCarriageDTO;
@@ -32,9 +38,11 @@ import vn.edu.iuh.fit.server.service.TicketService;
 import vn.edu.iuh.fit.server.service.TrainService;
 import vn.edu.iuh.fit.server.service.CustomerService;
 import vn.edu.iuh.fit.server.service.RouteService;
+import vn.edu.iuh.fit.server.service.RouteStopService;
 import vn.edu.iuh.fit.server.service.StationService;
 import vn.edu.iuh.fit.server.service.impl.CustomerServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.RouteServiceImpl;
+import vn.edu.iuh.fit.server.service.impl.RouteStopServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.StationServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.EmployeeServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.LoginServiceImpl;
@@ -54,6 +62,7 @@ public class RequestRouter {
     private final CustomerService customerService = new CustomerServiceImpl();
     private final StationService stationService = new StationServiceImpl();
     private final RouteService routeService = new RouteServiceImpl();
+    private final RouteStopService routeStopService = new RouteStopServiceImpl();
 
     public Response route(Request request) {
         if (request == null || request.getAction() == null) {
@@ -66,6 +75,11 @@ public class RequestRouter {
             case FILTER_SCHEDULE -> scheduleService.filterSchedules(castData(request, ScheduleFilterDTO.class));
             case CREATE_SCHEDULE -> scheduleService.createSchedule(castData(request, ScheduleCreateDTO.class));
             case UPDATE_SCHEDULE -> scheduleService.updateSchedule(castData(request, ScheduleUpdateDTO.class));
+            case GENERATE_SCHEDULES -> scheduleService.generateSchedules(castData(request, ScheduleGenerateDTO.class));
+            case FIND_SCHEDULE_DETAILS ->
+                scheduleService.findScheduleDetails(castData(request, ScheduleDetailPriceUpdateDTO.class));
+            case UPDATE_SCHEDULE_DETAIL_PRICES ->
+                scheduleService.updateScheduleDetailPrices(castData(request, ScheduleDetailPriceUpdateDTO.class));
 
             case CREATE_EMPLOYEE -> employeeService.createEmployee(castData(request, EmployeeDTO.class));
             case CREATE_EMPLOYEE_ACCOUNT -> employeeService.createEmployeeAccount(castData(request, String.class));
@@ -86,6 +100,17 @@ public class RequestRouter {
 
             case FIND_ALL_STATIONS -> stationService.getAllStations();
             case FIND_ALL_ROUTES -> routeService.getAllRoutes();
+            case SEARCH_ROUTES -> routeService.searchRoutes(castData(request, RouteFilterDTO.class));
+            case FIND_ROUTE_BY_ID -> routeService.findRouteById(castData(request, String.class));
+            case CREATE_ROUTE -> routeService.createRoute(castData(request, RouteDTO.class));
+            case UPDATE_ROUTE -> routeService.updateRoute(castData(request, RouteDTO.class));
+            case DELETE_ROUTE -> routeService.deleteRoute(castData(request, RouteActionDTO.class));
+            case PROMOTE_ROUTE -> routeService.promoteRoute(castData(request, RouteActionDTO.class));
+            case DISABLE_ROUTE -> routeService.disableRoute(castData(request, RouteActionDTO.class));
+            case FIND_ROUTE_STOPS_BY_ROUTE -> routeStopService.findRouteStopsByRouteId(castData(request, RouteActionDTO.class));
+            case CREATE_ROUTE_STOP -> routeStopService.createRouteStop(castData(request, RouteStopDTO.class));
+            case UPDATE_ROUTE_STOP -> routeStopService.updateRouteStop(castData(request, RouteStopDTO.class));
+            case DELETE_ROUTE_STOP -> routeStopService.deleteRouteStop(castData(request, RouteStopDTO.class));
 
             case FIND_ALL_TRAINS -> trainService.findAllTrains(castData(request, TrainFilterDTO.class));
             case FIND_TRAIN_BY_CODE -> trainService.findTrainsByCode(castData(request, String.class));

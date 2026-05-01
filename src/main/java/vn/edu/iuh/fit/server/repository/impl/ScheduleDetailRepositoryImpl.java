@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.server.repository.impl;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import jakarta.persistence.EntityManager;
@@ -38,6 +39,36 @@ public class ScheduleDetailRepositoryImpl extends AbstractGenericRepositoryImpl<
     }
 
     @Override
+    public List<ScheduleDetail> findByScheduleIdWithSeat(EntityManager em, String scheduleId) {
+        String jpql = "SELECT sd FROM ScheduleDetail sd " +
+                "JOIN FETCH sd.seat s " +
+                "JOIN FETCH s.carriage c " +
+                "LEFT JOIN FETCH sd.routeStop rs " +
+                "LEFT JOIN FETCH sd.segmentDepartureStation sdep " +
+                "LEFT JOIN FETCH sd.segmentDestinationStation sdest " +
+                "WHERE sd.schedule.id = :scheduleId " +
+                "ORDER BY sd.segmentDepartureOrder, sd.segmentDestinationOrder, c.number, s.number";
+        return em.createQuery(jpql, ScheduleDetail.class)
+                .setParameter("scheduleId", scheduleId)
+                .getResultList();
+    }
+
+    @Override
+    public Set<String> findDetailIdsInSchedule(EntityManager em, String scheduleId, Set<String> detailIds) {
+        if (detailIds == null || detailIds.isEmpty()) {
+            return Set.of();
+        }
+        List<String> ids = em.createQuery(
+                        "SELECT sd.id FROM ScheduleDetail sd " +
+                                "WHERE sd.schedule.id = :scheduleId AND sd.id IN :detailIds",
+                        String.class)
+                .setParameter("scheduleId", scheduleId)
+                .setParameter("detailIds", detailIds)
+                .getResultList();
+        return new HashSet<>(ids);
+    }
+
+    @Override
     public ScheduleDetail updateScheduleDetail(EntityManager em, ScheduleDetail scheduleDetail) {
         return em.merge(scheduleDetail);
     }
@@ -55,6 +86,21 @@ public class ScheduleDetailRepositoryImpl extends AbstractGenericRepositoryImpl<
             .getResultList();
 
         return new HashSet<>(seatIds);
+    }
+
+    @Override
+    public Set<String> getSoldScheduleDetailIds(EntityManager em, String scheduleId) {
+        List<String> detailIds = em.createQuery(
+                        "SELECT sd.id FROM Ticket t JOIN t.scheduleDetail sd " +
+                                "WHERE sd.schedule.id = :scheduleId " +
+                                "AND t.status NOT IN (:cancelledStatus, :exchangedStatus, :returnedStatus)",
+                        String.class)
+                .setParameter("scheduleId", scheduleId)
+                .setParameter("cancelledStatus", TicketStatus.CANCELLED)
+                .setParameter("exchangedStatus", TicketStatus.EXCHANGED)
+                .setParameter("returnedStatus", TicketStatus.RETURNED)
+                .getResultList();
+        return new HashSet<>(detailIds);
     }
 
     @Override
@@ -86,5 +132,13 @@ public class ScheduleDetailRepositoryImpl extends AbstractGenericRepositoryImpl<
                 .setParameter("zero", BigDecimal.ZERO)
                 .getSingleResult();
         return count != null && count > 0;
+    }
+
+    @Override
+    public void updatePrices(EntityManager em, Map<String, BigDecimal> pricesByScheduleDetailId) {
+        for (Map.Entry<String, BigDecimal> entry : pricesByScheduleDetailId.entrySet()) {
+            ScheduleDetail detail = em.find(ScheduleDetail.class, entry.getKey());
+            detail.setPriceSeat(entry.getValue());
+        }
     }
 }

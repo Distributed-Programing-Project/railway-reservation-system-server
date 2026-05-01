@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Setter
 @Getter
-@ToString(exclude = {"seat", "schedule", "routeStop"})
+@ToString(exclude = {"seat", "schedule", "routeStop", "segmentDepartureStation", "segmentDestinationStation"})
 @Builder
 @Entity
 @Table(name = "schedule_details")
@@ -35,6 +35,19 @@ public class ScheduleDetail {
     @JoinColumn(name = "route_stop_id")
     private RouteStop routeStop;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "segment_departure_station_id")
+    private Station segmentDepartureStation;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "segment_destination_station_id")
+    private Station segmentDestinationStation;
+
+    @Column(name = "segment_departure_order")
+    private Integer segmentDepartureOrder;
+
+    @Column(name = "segment_destination_order")
+    private Integer segmentDestinationOrder;
 
     @Version
     private int version;

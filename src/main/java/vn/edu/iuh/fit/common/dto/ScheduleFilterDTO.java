@@ -1,6 +1,7 @@
 package vn.edu.iuh.fit.common.dto;
 
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotBlank;
 import java.io.Serializable;
 import java.time.LocalDate;
 
@@ -18,6 +19,8 @@ import vn.edu.iuh.fit.common.message.ScheduleMessages;
 public class ScheduleFilterDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    @NotBlank(message = ScheduleMessages.EMPLOYEE_ID_REQUIRED)
+    private String requestEmployeeId;
     private String departureStationId;
     private String destinationStationId;
     private String trainId;
