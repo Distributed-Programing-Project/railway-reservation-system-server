@@ -25,8 +25,14 @@
         <!-- Filter bar -->
         <HBox styleClass="filter-bar" spacing="12" alignment="CENTER_LEFT">
             <padding><Insets top="4" bottom="4"/></padding>
+            <TextField fx:id="txtSearch"
+                       promptText="Tìm theo mã NV hoặc tên NV..."
+                       styleClass="text-field"
+                       prefWidth="280"/>
             <Label text="Trạng thái:" styleClass="field-label"/>
-            <ComboBox fx:id="statusFilter" styleClass="filter-combo"/>
+            <ComboBox fx:id="statusFilter" styleClass="filter-combo" prefWidth="130"/>
+            <Label text="Tài khoản:" styleClass="field-label"/>
+            <ComboBox fx:id="accountFilter" styleClass="filter-combo" prefWidth="150"/>
             <Button text="Làm mới" styleClass="secondary-button" onAction="#handleRefresh"/>
         </HBox>
 

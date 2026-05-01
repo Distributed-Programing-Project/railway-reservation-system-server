@@ -28,6 +28,8 @@ import vn.edu.iuh.fit.common.request.Request;
 import vn.edu.iuh.fit.common.response.Response;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -44,19 +46,24 @@ public class EmployeeManagementController {
     @FXML private TableColumn<EmployeeDTO, Void> colActions;
 
     @FXML private ComboBox<EmployeeStatus> statusFilter;
+    @FXML private ComboBox<String> accountFilter;
+    @FXML private TextField txtSearch;
     @FXML private Button btnAdd;
     @FXML private Button btnPrev;
     @FXML private Button btnNext;
     @FXML private Label pageLabel;
     @FXML private StackPane loadingOverlay;
 
-    private int currentPage = 0;
-    private int totalPages = 1;
+    private int clientPage = 0;
+    private int clientTotalPages = 1;
     private static final int PAGE_SIZE = 20;
+    private List<EmployeeDTO> allLoadedEmployees = new ArrayList<>();
 
     @FXML
     private void initialize() {
         setupStatusFilter();
+        setupAccountFilter();
+        setupSearchField();
         setupTable();
         tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         applyRoleAccess();
@@ -88,10 +95,24 @@ public class EmployeeManagementController {
         statusFilter.getSelectionModel().selectFirst();
 
         statusFilter.getSelectionModel().selectedItemProperty()
+                .addListener((obs, old, selected) -> loadData());
+    }
+
+    private void setupAccountFilter() {
+        accountFilter.getItems().addAll("Tất cả", "Đã có tài khoản", "Chưa có tài khoản");
+        accountFilter.getSelectionModel().selectFirst();
+        accountFilter.getSelectionModel().selectedItemProperty()
                 .addListener((obs, old, selected) -> {
-                    currentPage = 0;
-                    loadData();
+                    clientPage = 0;
+                    applyClientFilters();
                 });
+    }
+
+    private void setupSearchField() {
+        txtSearch.textProperty().addListener((obs, old, text) -> {
+            clientPage = 0;
+            applyClientFilters();
+        });
     }
 
     private void setupTable() {
@@ -133,7 +154,7 @@ public class EmployeeManagementController {
         });
         colActions.setCellFactory(col -> new TableCell<>() {
             private final Button btnGrant = new Button("Cấp Tài Khoản");
-            private final Button btnReset = new Button("Reset MK");
+            private final Button btnReset = new Button("Đặt lại MK");
             private final Button btnDelete = new Button("Xoá");
 
 
@@ -202,11 +223,12 @@ public class EmployeeManagementController {
     }
 
     private void loadData() {
+        clientPage = 0;
         executeAsync(
                 () -> {
                     EmployeeFilterDTO filter = EmployeeFilterDTO.builder()
-                            .page(currentPage)
-                            .size(PAGE_SIZE)
+                            .page(0)
+                            .size(1000)
                             .statusFilter(statusFilter.getValue())
                             .build();
                     return new SocketRequestService().send(new Request(ActionType.FIND_ALL_EMPLOYEES, filter));
@@ -214,14 +236,46 @@ public class EmployeeManagementController {
                 res -> {
                     if (res.isSuccess() && res.getData() != null) {
                         EmployeePageDTO page = (EmployeePageDTO) res.getData();
-                        tableView.getItems().setAll(page.getContent());
-                        totalPages = Math.max(1, page.getTotalPages());
-                        updatePaginationControls();
+                        allLoadedEmployees = new ArrayList<>(page.getContent());
+                        applyClientFilters();
                     } else {
+                        allLoadedEmployees = new ArrayList<>();
+                        tableView.getItems().clear();
                         showAlert(Alert.AlertType.WARNING, "Không có dữ liệu", res.getMessage());
                     }
                 }
         );
+    }
+
+    private void applyClientFilters() {
+        String keyword = txtSearch.getText() == null ? "" : txtSearch.getText().trim().toLowerCase();
+        String accountFilterValue = accountFilter.getValue();
+
+        List<EmployeeDTO> filtered = allLoadedEmployees.stream()
+                .filter(emp -> {
+                    if (!keyword.isEmpty()) {
+                        String code = nullSafe(emp.getEmployeeCode()).toLowerCase();
+                        String name = nullSafe(emp.getEmployeeName()).toLowerCase();
+                        if (!code.contains(keyword) && !name.contains(keyword)) return false;
+                    }
+                    if ("Đã có tài khoản".equals(accountFilterValue)) {
+                        return emp.getAccountId() != null;
+                    }
+                    if ("Chưa có tài khoản".equals(accountFilterValue)) {
+                        return emp.getAccountId() == null;
+                    }
+                    return true;
+                })
+                .toList();
+
+        clientTotalPages = Math.max(1, (int) Math.ceil((double) filtered.size() / PAGE_SIZE));
+        clientPage = Math.min(clientPage, clientTotalPages - 1);
+
+        int from = clientPage * PAGE_SIZE;
+        int to = Math.min(from + PAGE_SIZE, filtered.size());
+
+        tableView.getItems().setAll(filtered.subList(from, to));
+        updatePaginationControls();
     }
 
     @FXML
@@ -308,31 +362,32 @@ public class EmployeeManagementController {
 
     @FXML
     private void handleRefresh() {
-        currentPage = 0;
+        txtSearch.clear();
+        accountFilter.getSelectionModel().selectFirst();
         statusFilter.getSelectionModel().selectFirst();
         loadData();
     }
 
     @FXML
     private void handlePrevPage() {
-        if (currentPage > 0) {
-            currentPage--;
-            loadData();
+        if (clientPage > 0) {
+            clientPage--;
+            applyClientFilters();
         }
     }
 
     @FXML
     private void handleNextPage() {
-        if (currentPage < totalPages - 1) {
-            currentPage++;
-            loadData();
+        if (clientPage < clientTotalPages - 1) {
+            clientPage++;
+            applyClientFilters();
         }
     }
 
     private void updatePaginationControls() {
-        pageLabel.setText((currentPage + 1) + " / " + totalPages);
-        btnPrev.setDisable(currentPage == 0);
-        btnNext.setDisable(currentPage >= totalPages - 1);
+        pageLabel.setText((clientPage + 1) + " / " + clientTotalPages);
+        btnPrev.setDisable(clientPage == 0);
+        btnNext.setDisable(clientPage >= clientTotalPages - 1);
     }
 
     private void openDialog(String fxmlPath, String title, Object data) {
