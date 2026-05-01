@@ -9,7 +9,6 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.StackPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
@@ -64,8 +63,11 @@ public class ScheduleController {
     @FXML private Label lblResultCount;
     @FXML private Button prevButton;
     @FXML private Button nextButton;
+    @FXML private Button btnEditSchedule;
+    @FXML private Button btnPublishSchedule;
+    @FXML private Button btnDisableSchedule;
+    @FXML private Button btnViewSeatsDetail;
     @FXML private Label pageLabel;
-    @FXML private StackPane loadingOverlay;
 
     // State
     private int currentPage = 0;
@@ -76,6 +78,7 @@ public class ScheduleController {
         setupTable();
         setupStatusCombo();
         setupComboConverters();
+        setupSelectionActions();
         loadStationsAsync();
         loadTrainsAsync();
         loadData();
@@ -125,6 +128,12 @@ public class ScheduleController {
                 }
             }
         });
+    }
+
+    private void setupSelectionActions() {
+        scheduleTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, selected) ->
+            updateActionButtons(selected));
+        updateActionButtons(null);
     }
 
     private void setupStatusCombo() {
@@ -225,6 +234,12 @@ public class ScheduleController {
     // === Data loading ===
 
     private void loadData() {
+        String employeeId = getCurrentEmployeeId();
+        if (employeeId == null) {
+            showAlert(Alert.AlertType.ERROR, "Lỗi phiên làm việc",
+                "Không xác định được nhân viên. Vui lòng đăng nhập lại.");
+            return;
+        }
         ScheduleFilterDTO filter = buildFilter();
         executeAsync(
             () -> new SocketRequestService().send(new Request(ActionType.FILTER_SCHEDULE, filter)),
@@ -257,6 +272,7 @@ public class ScheduleController {
         StationDTO dest = endStationCombo.getValue();
         TrainDTO train = trainCombo.getValue();
         return ScheduleFilterDTO.builder()
+            .requestEmployeeId(getCurrentEmployeeId())
             .departureStationId(dep != null ? dep.getId() : null)
             .destinationStationId(dest != null ? dest.getId() : null)
             .trainId(train != null ? train.getId() : null)
@@ -468,13 +484,26 @@ public class ScheduleController {
             showAlert(Alert.AlertType.WARNING, "Chi tiết lịch trình", "Vui lòng chọn một lịch trình.");
             return;
         }
-        showAlert(Alert.AlertType.INFORMATION, "Chưa hỗ trợ", "Chức năng chi tiết ghế sẽ được thêm sau.");
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/ui/views/schedule-detail-price-dialog.fxml"));
+            Parent root = loader.load();
+            ScheduleDetailPriceDialogController ctrl = loader.getController();
+            ctrl.init(selected);
+            Stage stage = new Stage();
+            stage.setTitle("Chi tiết giá ghế");
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setScene(new Scene(root));
+            stage.showAndWait();
+            loadData();
+        } catch (IOException e) {
+            showAlert(Alert.AlertType.ERROR, "Không thể mở giao diện",
+                "Lỗi khi load dialog chi tiết: " + e.getMessage());
+        }
     }
 
     // === Async execution ===
 
     private void executeAsync(Supplier<Response> action, Consumer<Response> onDone) {
-        setLoading(true);
         Task<Response> task = new Task<>() {
             @Override
             protected Response call() {
@@ -482,11 +511,9 @@ public class ScheduleController {
             }
         };
         task.setOnSucceeded(e -> Platform.runLater(() -> {
-            setLoading(false);
             onDone.accept(task.getValue());
         }));
         task.setOnFailed(e -> Platform.runLater(() -> {
-            setLoading(false);
             showAlert(Alert.AlertType.ERROR, "Lỗi kết nối",
                 "Không thể kết nối đến server: " + task.getException().getMessage());
         }));
@@ -495,12 +522,23 @@ public class ScheduleController {
         thread.start();
     }
 
-    private void setLoading(boolean loading) {
-        loadingOverlay.setVisible(loading);
-        if (loading) loadingOverlay.toFront();
+    // === Helpers ===
+
+    private String getCurrentEmployeeId() {
+        String employeeId = SessionManager.getInstance().getEmployeeId();
+        return employeeId == null || employeeId.isBlank() ? null : employeeId;
     }
 
-    // === Helpers ===
+    private void updateActionButtons(ScheduleDTO selected) {
+        boolean none = selected == null;
+        boolean draft = selected != null && selected.getStatus() == StatusSchedule.DRAFT;
+        boolean notStarted = selected != null && selected.getStatus() == StatusSchedule.NOT_STARTED;
+
+        if (btnViewSeatsDetail != null) btnViewSeatsDetail.setDisable(none);
+        if (btnEditSchedule != null) btnEditSchedule.setDisable(!draft);
+        if (btnPublishSchedule != null) btnPublishSchedule.setDisable(!draft);
+        if (btnDisableSchedule != null) btnDisableSchedule.setDisable(!(draft || notStarted));
+    }
 
     private String formatDateTime(LocalDateTime dt) {
         return dt == null ? "" : dt.format(DATE_TIME_FORMATTER);

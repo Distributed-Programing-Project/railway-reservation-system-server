@@ -12,6 +12,7 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import vn.edu.iuh.fit.client.service.LoginClientService;
+import vn.edu.iuh.fit.client.service.SessionManager;
 import vn.edu.iuh.fit.common.dto.AccountDTO;
 import vn.edu.iuh.fit.common.response.Response;
 
@@ -97,6 +98,9 @@ public class LoginController {
     private void openDashboard(Object responseData) {
         AccountDTO accountDTO = responseData instanceof AccountDTO dto ? dto : null;
         boolean isManager = accountDTO != null && accountDTO.isManager();
+        if (accountDTO != null) {
+            SessionManager.getInstance().setSession(accountDTO.getEmployeeId(), accountDTO.getUsername());
+        }
         String dashboardPath = isManager
                 ? "/client/ui/views/dashboard.fxml"
                 : "/client/ui/views/ban-ve.fxml";

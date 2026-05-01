@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.server.repository;
 import jakarta.persistence.EntityManager;
 import vn.edu.iuh.fit.common.dto.ScheduleFilterDTO;
 import vn.edu.iuh.fit.common.constant.StatusSchedule;
+import vn.edu.iuh.fit.server.model.Route;
 import vn.edu.iuh.fit.server.model.Schedule;
 
 import java.time.LocalDateTime;
@@ -30,5 +31,7 @@ public interface ScheduleRepository {
     List<Schedule> filterSchedules(EntityManager em, ScheduleFilterDTO filter);
 
     long countFutureActiveSchedulesByTrainId(EntityManager em, String trainId);
+
+    Route findActiveReverseRoute(EntityManager em, String routeId);
 }
 

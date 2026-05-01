@@ -1,6 +1,7 @@
 package vn.edu.iuh.fit.server.repository.impl;
 
 import jakarta.persistence.EntityManager;
+import vn.edu.iuh.fit.common.constant.RouteStatus;
 import vn.edu.iuh.fit.server.model.Route;
 import vn.edu.iuh.fit.server.repository.RouteRepository;
 
@@ -56,6 +57,9 @@ public class RouteRepositoryImpl extends AbstractGenericRepositoryImpl<Route, St
     public boolean deleteRoute(EntityManager em, String routeId) {
         Route route = em.find(Route.class, routeId);
         if (route != null) {
+            em.createQuery("DELETE FROM RouteStop rs WHERE rs.route.id = :routeId")
+                    .setParameter("routeId", routeId)
+                    .executeUpdate();
             em.remove(route);
             return true;
         }
@@ -65,7 +69,12 @@ public class RouteRepositoryImpl extends AbstractGenericRepositoryImpl<Route, St
     @Override
     public Route findRouteById(EntityManager em, String routeId) {
         return em.createQuery(
-                        "SELECT r FROM Route r LEFT JOIN FETCH r.departureStation LEFT JOIN FETCH r.destinationStation WHERE r.id = :id",
+                        "SELECT DISTINCT r FROM Route r " +
+                                "LEFT JOIN FETCH r.departureStation " +
+                                "LEFT JOIN FETCH r.destinationStation " +
+                                "LEFT JOIN FETCH r.routeStops rs " +
+                                "LEFT JOIN FETCH rs.stationStop " +
+                                "WHERE r.id = :id",
                         Route.class)
                 .setParameter("id", routeId)
                 .getResultStream()
@@ -76,24 +85,35 @@ public class RouteRepositoryImpl extends AbstractGenericRepositoryImpl<Route, St
     @Override
     public List<Route> findAllRoutes(EntityManager em) {
         return em.createQuery(
-                        "SELECT r FROM Route r LEFT JOIN FETCH r.departureStation LEFT JOIN FETCH r.destinationStation",
+                        "SELECT DISTINCT r FROM Route r " +
+                                "LEFT JOIN FETCH r.departureStation " +
+                                "LEFT JOIN FETCH r.destinationStation " +
+                                "LEFT JOIN FETCH r.routeStops rs " +
+                                "LEFT JOIN FETCH rs.stationStop " +
+                                "ORDER BY r.routeCode",
                         Route.class)
                 .getResultList();
     }
 
     @Override
-    public List<Route> searchRoutes(EntityManager em, String departureStationId, String destinationStationId, String status) {
+    public List<Route> searchRoutes(EntityManager em, String departureStationId, String destinationStationId, RouteStatus status) {
         StringBuilder jpql = new StringBuilder(
-                "SELECT r FROM Route r LEFT JOIN FETCH r.departureStation LEFT JOIN FETCH r.destinationStation WHERE 1=1 ");
+                "SELECT DISTINCT r FROM Route r " +
+                        "LEFT JOIN FETCH r.departureStation " +
+                        "LEFT JOIN FETCH r.destinationStation " +
+                        "LEFT JOIN FETCH r.routeStops rs " +
+                        "LEFT JOIN FETCH rs.stationStop " +
+                        "WHERE 1=1 ");
         if (departureStationId != null && !departureStationId.isEmpty()) {
             jpql.append("AND r.departureStation.id = :depId ");
         }
         if (destinationStationId != null && !destinationStationId.isEmpty()) {
             jpql.append("AND r.destinationStation.id = :destId ");
         }
-        if (status != null && !status.isEmpty()) {
+        if (status != null) {
             jpql.append("AND r.status = :status ");
         }
+        jpql.append("ORDER BY r.routeCode");
 
         var query = em.createQuery(jpql.toString(), Route.class);
         if (departureStationId != null && !departureStationId.isEmpty()) {
@@ -102,7 +122,7 @@ public class RouteRepositoryImpl extends AbstractGenericRepositoryImpl<Route, St
         if (destinationStationId != null && !destinationStationId.isEmpty()) {
             query.setParameter("destId", destinationStationId);
         }
-        if (status != null && !status.isEmpty()) {
+        if (status != null) {
             query.setParameter("status", status);
         }
 

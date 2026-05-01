@@ -1,18 +1,23 @@
 package vn.edu.iuh.fit.server.repository.impl;
 
 import jakarta.persistence.EntityManager;
+import vn.edu.iuh.fit.common.constant.RouteStatus;
 import vn.edu.iuh.fit.common.constant.StatusSchedule;
 import vn.edu.iuh.fit.common.constant.TicketStatus;
 import vn.edu.iuh.fit.common.dto.ScheduleFilterDTO;
 import vn.edu.iuh.fit.server.model.Route;
+import vn.edu.iuh.fit.server.model.RouteStop;
 import vn.edu.iuh.fit.server.model.Schedule;
 import vn.edu.iuh.fit.server.model.ScheduleDetail;
 import vn.edu.iuh.fit.server.model.Seat;
+import vn.edu.iuh.fit.server.model.Station;
 import vn.edu.iuh.fit.server.model.Train;
 import vn.edu.iuh.fit.server.repository.ScheduleRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -29,7 +34,7 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
         schedule.setTrain(em.getReference(Train.class, schedule.getTrain().getId()));
         schedule.setRoute(em.getReference(Route.class, schedule.getRoute().getId()));
         em.persist(schedule);
-        createScheduleDetails(em, schedule.getId(), trainId);
+        createScheduleDetails(em, schedule.getId(), trainId, schedule.getRoute().getId());
         return em.getReference(Schedule.class, schedule.getId());
     }
 
@@ -56,7 +61,7 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
 
         if (trainChanged || routeChanged) {
             deleteScheduleDetailsByScheduleId(em, existingSchedule.getId());
-            createScheduleDetails(em, existingSchedule.getId(), incomingTrainId);
+            createScheduleDetails(em, existingSchedule.getId(), incomingTrainId, schedule.getRoute().getId());
         }
 
         return true;
@@ -151,31 +156,32 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
 
     @Override
     public List<Schedule> findSchedulesByStationIds(EntityManager em, String departureStationId, String destinationStationId) {
-        return em.createQuery(
-                        "SELECT s FROM Schedule s " +
+        List<Schedule> schedules = em.createQuery(
+                        "SELECT DISTINCT s FROM Schedule s " +
                                 "JOIN FETCH s.route r " +
                                 "JOIN FETCH r.departureStation dep " +
                                 "JOIN FETCH r.destinationStation dest " +
+                                "LEFT JOIN FETCH r.routeStops rs " +
+                                "LEFT JOIN FETCH rs.stationStop " +
                                 "JOIN FETCH s.train " +
-                                "WHERE dep.id = :departureStationId " +
-                                "AND dest.id = :destinationStationId " +
                                 "ORDER BY s.departureTime DESC",
                         Schedule.class)
-                .setParameter("departureStationId", departureStationId)
-                .setParameter("destinationStationId", destinationStationId)
                 .getResultList();
+        return schedules.stream()
+                .filter(schedule -> routeContainsOrderedStations(schedule.getRoute(), departureStationId, destinationStationId))
+                .toList();
     }
 
     @Override
     public List<Schedule> filterSchedules(EntityManager em, ScheduleFilterDTO filter) {
         StringBuilder jpql = new StringBuilder(
-                "SELECT s FROM Schedule s JOIN FETCH s.route r JOIN FETCH r.departureStation JOIN FETCH r.destinationStation JOIN FETCH s.train t WHERE 1=1 ");
-        if (filter.getDepartureStationId() != null && !filter.getDepartureStationId().isEmpty()) {
-            jpql.append("AND r.departureStation.id = :depId ");
-        }
-        if (filter.getDestinationStationId() != null && !filter.getDestinationStationId().isEmpty()) {
-            jpql.append("AND r.destinationStation.id = :destId ");
-        }
+                "SELECT DISTINCT s FROM Schedule s " +
+                        "JOIN FETCH s.route r " +
+                        "JOIN FETCH r.departureStation " +
+                        "JOIN FETCH r.destinationStation " +
+                        "LEFT JOIN FETCH r.routeStops rs " +
+                        "LEFT JOIN FETCH rs.stationStop " +
+                        "JOIN FETCH s.train t WHERE 1=1 ");
         if (filter.getTrainId() != null && !filter.getTrainId().isEmpty()) {
             jpql.append("AND t.id = :trainId ");
         }
@@ -192,12 +198,6 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
 
         var query = em.createQuery(jpql.toString(), Schedule.class);
 
-        if (filter.getDepartureStationId() != null && !filter.getDepartureStationId().isEmpty()) {
-            query.setParameter("depId", filter.getDepartureStationId());
-        }
-        if (filter.getDestinationStationId() != null && !filter.getDestinationStationId().isEmpty()) {
-            query.setParameter("destId", filter.getDestinationStationId());
-        }
         if (filter.getTrainId() != null && !filter.getTrainId().isEmpty()) {
             query.setParameter("trainId", filter.getTrainId());
         }
@@ -211,10 +211,13 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
             query.setParameter("toDate", filter.getToDate().plusDays(1).atStartOfDay().minusSeconds(1));
         }
 
-        query.setFirstResult(filter.getPage() * filter.getSize());
-        query.setMaxResults(filter.getSize());
-
-        return query.getResultList();
+        List<Schedule> schedules = query.getResultList().stream()
+                .filter(schedule -> routeContainsOrderedStations(schedule.getRoute(),
+                        filter.getDepartureStationId(), filter.getDestinationStationId()))
+                .toList();
+        int fromIndex = Math.min(filter.getPage() * filter.getSize(), schedules.size());
+        int toIndex = Math.min(fromIndex + filter.getSize(), schedules.size());
+        return schedules.subList(fromIndex, toIndex);
     }
 
     private void deleteScheduleDetailsByScheduleId(EntityManager em, String scheduleId) {
@@ -223,26 +226,106 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
                 .executeUpdate();
     }
 
-    private void createScheduleDetails(EntityManager em, String scheduleId, String trainId) {
+    private void createScheduleDetails(EntityManager em, String scheduleId, String trainId, String routeId) {
         List<String> seatIds = em.createQuery(
                         "SELECT s.id FROM Seat s WHERE s.carriage.train.id = :trainId", String.class)
                 .setParameter("trainId", trainId)
                 .getResultList();
 
-        for (int i = 0; i < seatIds.size(); i++) {
-            ScheduleDetail detail = ScheduleDetail.builder()
-                    .schedule(em.getReference(Schedule.class, scheduleId))
-                    .seat(em.getReference(Seat.class, seatIds.get(i)))
-                    .priceSeat(BigDecimal.ZERO)
-                    .routeStop(null)
-                    .build();
-            em.persist(detail);
+        List<RoutePathStation> path = buildRoutePath(em, routeId);
+        int persisted = 0;
+        for (String seatId : seatIds) {
+            for (int departureIndex = 0; departureIndex < path.size() - 1; departureIndex++) {
+                for (int destinationIndex = departureIndex + 1; destinationIndex < path.size(); destinationIndex++) {
+                    RoutePathStation departure = path.get(departureIndex);
+                    RoutePathStation destination = path.get(destinationIndex);
+                    ScheduleDetail detail = ScheduleDetail.builder()
+                            .schedule(em.getReference(Schedule.class, scheduleId))
+                            .seat(em.getReference(Seat.class, seatId))
+                            .priceSeat(BigDecimal.ZERO)
+                            .routeStop(null)
+                            .segmentDepartureStation(em.getReference(Station.class, departure.stationId()))
+                            .segmentDestinationStation(em.getReference(Station.class, destination.stationId()))
+                            .segmentDepartureOrder(departure.order())
+                            .segmentDestinationOrder(destination.order())
+                            .build();
+                    em.persist(detail);
+                    persisted++;
 
-            if ((i + 1) % BATCH_SIZE == 0) {
-                em.flush();
-                em.clear();
+                    if (persisted % BATCH_SIZE == 0) {
+                        em.flush();
+                        em.clear();
+                    }
+                }
             }
         }
+    }
+
+    private List<RoutePathStation> buildRoutePath(EntityManager em, String routeId) {
+        Route route = em.createQuery(
+                        "SELECT DISTINCT r FROM Route r " +
+                                "JOIN FETCH r.departureStation " +
+                                "JOIN FETCH r.destinationStation " +
+                                "LEFT JOIN FETCH r.routeStops rs " +
+                                "LEFT JOIN FETCH rs.stationStop " +
+                                "WHERE r.id = :routeId",
+                        Route.class)
+                .setParameter("routeId", routeId)
+                .getResultStream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tuyến: id=" + routeId));
+
+        List<RoutePathStation> path = new ArrayList<>();
+        path.add(new RoutePathStation(route.getDepartureStation().getId(), 0));
+        if (route.getRouteStops() != null) {
+            route.getRouteStops().stream()
+                    .sorted(Comparator.comparingInt(RouteStop::getOrderStop))
+                    .map(RouteStop::getStationStop)
+                    .filter(Objects::nonNull)
+                    .forEach(station -> path.add(new RoutePathStation(station.getId(), path.size())));
+        }
+        path.add(new RoutePathStation(route.getDestinationStation().getId(), path.size()));
+        return path;
+    }
+
+    private record RoutePathStation(String stationId, int order) {}
+
+    private boolean routeContainsOrderedStations(Route route, String departureStationId, String destinationStationId) {
+        List<String> path = routePathStationIds(route);
+        if ((departureStationId == null || departureStationId.isBlank())
+                && (destinationStationId == null || destinationStationId.isBlank())) {
+            return true;
+        }
+        if (departureStationId != null && !departureStationId.isBlank()
+                && (destinationStationId == null || destinationStationId.isBlank())) {
+            return path.contains(departureStationId);
+        }
+        if ((departureStationId == null || departureStationId.isBlank())
+                && destinationStationId != null && !destinationStationId.isBlank()) {
+            return path.contains(destinationStationId);
+        }
+        int departureIndex = path.indexOf(departureStationId);
+        int destinationIndex = path.indexOf(destinationStationId);
+        return departureIndex >= 0 && destinationIndex >= 0 && departureIndex < destinationIndex;
+    }
+
+    private List<String> routePathStationIds(Route route) {
+        List<String> path = new ArrayList<>();
+        if (route.getDepartureStation() != null) {
+            path.add(route.getDepartureStation().getId());
+        }
+        if (route.getRouteStops() != null) {
+            route.getRouteStops().stream()
+                    .sorted(Comparator.comparingInt(RouteStop::getOrderStop))
+                    .map(RouteStop::getStationStop)
+                    .filter(Objects::nonNull)
+                    .map(Station::getId)
+                    .forEach(path::add);
+        }
+        if (route.getDestinationStation() != null) {
+            path.add(route.getDestinationStation().getId());
+        }
+        return path;
     }
 
     @Override
@@ -283,5 +366,36 @@ public class ScheduleRepositoryImpl extends AbstractGenericRepositoryImpl<Schedu
                 .setParameter("returned", TicketStatus.RETURNED)
                 .getSingleResult();
         return count != null ? count : 0L;
+    }
+
+    @Override
+    public Route findActiveReverseRoute(EntityManager em, String routeId) {
+        Route route = em.createQuery(
+                        "SELECT r FROM Route r " +
+                                "JOIN FETCH r.departureStation dep " +
+                                "JOIN FETCH r.destinationStation dest " +
+                                "WHERE r.id = :routeId",
+                        Route.class)
+                .setParameter("routeId", routeId)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
+        if (route == null) {
+            return null;
+        }
+        return em.createQuery(
+                        "SELECT r FROM Route r " +
+                                "JOIN FETCH r.departureStation dep " +
+                                "JOIN FETCH r.destinationStation dest " +
+                                "WHERE dep.id = :reverseDepartureId " +
+                                "AND dest.id = :reverseDestinationId " +
+                                "AND r.status = :activeStatus",
+                        Route.class)
+                .setParameter("reverseDepartureId", route.getDestinationStation().getId())
+                .setParameter("reverseDestinationId", route.getDepartureStation().getId())
+                .setParameter("activeStatus", RouteStatus.ACTIVE)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
     }
 }
