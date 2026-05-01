@@ -6,6 +6,7 @@ public class SessionManager {
 
     private String employeeId;
     private String username;
+    private boolean isManager;
 
     private SessionManager() {}
 
@@ -13,9 +14,10 @@ public class SessionManager {
         return INSTANCE;
     }
 
-    public void setSession(String employeeId, String username) {
+    public void setSession(String employeeId, String username, boolean isManager) {
         this.employeeId = employeeId;
         this.username = username;
+        this.isManager = isManager;
     }
 
     public String getEmployeeId() {
@@ -26,8 +28,13 @@ public class SessionManager {
         return username;
     }
 
+    public boolean isManager() {
+        return isManager;
+    }
+
     public void clear() {
         this.employeeId = null;
         this.username = null;
+        this.isManager = false;
     }
 }
