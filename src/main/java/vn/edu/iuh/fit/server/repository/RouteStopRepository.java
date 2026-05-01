@@ -17,5 +17,7 @@ public interface RouteStopRepository {
     boolean updateRouteStop(EntityManager em, RouteStop routeStop);
 
     boolean deleteRouteStop(EntityManager em, String routeStopId);
+
+    int deleteRouteStopsByRouteId(EntityManager em, String routeId);
 }
 

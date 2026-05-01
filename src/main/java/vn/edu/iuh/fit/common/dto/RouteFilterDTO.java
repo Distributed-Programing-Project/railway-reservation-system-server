@@ -7,18 +7,18 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import vn.edu.iuh.fit.common.constant.RouteStatus;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AccountDTO implements Serializable {
+public class RouteFilterDTO implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private String id;
-    private String username;
-    private boolean active;
-    private String employeeId;
-    private boolean isManager;
+    private String requestEmployeeId;
+    private String departureStationId;
+    private String destinationStationId;
+    private RouteStatus status;
 }

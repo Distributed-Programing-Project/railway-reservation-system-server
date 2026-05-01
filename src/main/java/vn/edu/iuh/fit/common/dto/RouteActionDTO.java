@@ -12,13 +12,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AccountDTO implements Serializable {
+public class RouteActionDTO implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private String id;
-    private String username;
-    private boolean active;
-    private String employeeId;
-    private boolean isManager;
+    private String requestEmployeeId;
+    private String routeId;
 }

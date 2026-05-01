@@ -12,6 +12,8 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import vn.edu.iuh.fit.client.service.SessionManager;
+import vn.edu.iuh.fit.common.dto.AccountDTO;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -77,6 +79,16 @@ public class DashboardController {
             lblUsername.setText(username);
         }
         openHomeView();
+    }
+
+    public void setAccount(AccountDTO accountDTO) {
+        if (accountDTO == null) {
+            return;
+        }
+        setLoggedInUsername(accountDTO.getUsername());
+        if (lblRole != null) {
+            lblRole.setText(accountDTO.isManager() ? "Vai trò: Quản lí" : "Vai trò: Nhân viên");
+        }
     }
 
     private void bindEvents() {
@@ -176,6 +188,7 @@ public class DashboardController {
             if (clockTimeline != null) {
                 clockTimeline.stop();
             }
+            SessionManager.getInstance().clear();
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/ui/views/login.fxml"));
             Parent root = loader.load();
 

@@ -10,6 +10,8 @@ import javafx.util.StringConverter;
 import vn.edu.iuh.fit.client.service.SessionManager;
 import vn.edu.iuh.fit.client.service.SocketRequestService;
 import vn.edu.iuh.fit.common.command.ActionType;
+import vn.edu.iuh.fit.common.constant.RouteStatus;
+import vn.edu.iuh.fit.common.constant.TrainStatus;
 import vn.edu.iuh.fit.common.dto.RouteDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleCreateDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleDTO;
@@ -71,6 +73,8 @@ public class AddScheduleDialogController {
             arrivalHourCombo.getSelectionModel().select(dto.getArrivalTime().getHour());
             selectNearestMinute(arrivalMinuteCombo, dto.getArrivalTime().getMinute());
         }
+        selectPreselectedRoute();
+        selectPreselectedTrain();
     }
 
     private void selectNearestMinute(ComboBox<Integer> combo, int minute) {
@@ -127,14 +131,11 @@ public class AddScheduleDialogController {
                 List<RouteDTO> routes = raw.stream()
                         .filter(RouteDTO.class::isInstance)
                         .map(RouteDTO.class::cast)
+                        .filter(route -> route.getStatus() == RouteStatus.ACTIVE
+                                || (preSelectedRouteId != null && preSelectedRouteId.equals(route.getId())))
                         .toList();
                 routeCombo.setItems(FXCollections.observableArrayList(routes));
-                if (preSelectedRouteId != null) {
-                    routes.stream()
-                            .filter(r -> preSelectedRouteId.equals(r.getId()))
-                            .findFirst()
-                            .ifPresent(routeCombo.getSelectionModel()::select);
-                }
+                selectPreselectedRoute();
             }
         }));
         task.setOnFailed(e -> System.err.println("ERROR: Failed to load routes: " + task.getException().getMessage()));
@@ -156,14 +157,11 @@ public class AddScheduleDialogController {
                 List<TrainDTO> trains = raw.stream()
                         .filter(TrainDTO.class::isInstance)
                         .map(TrainDTO.class::cast)
+                        .filter(train -> train.getStatus() == TrainStatus.ACTIVE
+                                || (preSelectedTrainId != null && preSelectedTrainId.equals(train.getId())))
                         .toList();
                 trainCombo.setItems(FXCollections.observableArrayList(trains));
-                if (preSelectedTrainId != null) {
-                    trains.stream()
-                            .filter(t -> preSelectedTrainId.equals(t.getId()))
-                            .findFirst()
-                            .ifPresent(trainCombo.getSelectionModel()::select);
-                }
+                selectPreselectedTrain();
             }
         }));
         task.setOnFailed(e -> System.err.println("ERROR: Failed to load trains: " + task.getException().getMessage()));
@@ -294,6 +292,26 @@ public class AddScheduleDialogController {
     private void closeDialog() {
         Stage stage = (Stage) btnCancel.getScene().getWindow();
         stage.close();
+    }
+
+    private void selectPreselectedRoute() {
+        if (preSelectedRouteId == null || routeCombo.getItems() == null) {
+            return;
+        }
+        routeCombo.getItems().stream()
+                .filter(route -> preSelectedRouteId.equals(route.getId()))
+                .findFirst()
+                .ifPresent(routeCombo.getSelectionModel()::select);
+    }
+
+    private void selectPreselectedTrain() {
+        if (preSelectedTrainId == null || trainCombo.getItems() == null) {
+            return;
+        }
+        trainCombo.getItems().stream()
+                .filter(train -> preSelectedTrainId.equals(train.getId()))
+                .findFirst()
+                .ifPresent(trainCombo.getSelectionModel()::select);
     }
 
     private void showAlert(Alert.AlertType type, String title, String content) {

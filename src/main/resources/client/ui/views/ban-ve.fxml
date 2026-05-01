@@ -15,7 +15,8 @@
 <BorderPane prefHeight="700.0" prefWidth="1200.0" 
             stylesheets="@../css/ban-ve.css" 
             xmlns="http://javafx.com/javafx/21" 
-            xmlns:fx="http://javafx.com/fxml/1">
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="vn.edu.iuh.fit.client.controller.SalesDashboardController">
    <left>
       <VBox styleClass="sidebar" prefWidth="220.0" BorderPane.alignment="CENTER">
          <children>

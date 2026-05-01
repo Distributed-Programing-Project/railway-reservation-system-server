@@ -93,7 +93,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
 
                 String username = repository.createAndLinkAccount(em, employeeId, employee.getEmployeeCode(),
-                        hashedPassword);
+                        hashedPassword, employee.getIsManager());
                 log.info("Account created for employee: employeeId={}, username={}", employeeId, username);
                 return buildAccountCreatedResponse(EmployeeMessages.ACCOUNT_CREATE_SUCCESS, username, rawPassword);
             });

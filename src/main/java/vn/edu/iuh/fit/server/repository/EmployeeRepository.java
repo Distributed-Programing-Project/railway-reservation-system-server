@@ -15,7 +15,7 @@ public interface EmployeeRepository {
     boolean existsByNationalId(EntityManager em, String nationalId);
     boolean existsByEmail(EntityManager em, String email);
     String generateEmployeeCode(EntityManager em, Boolean isManager);
-    String createAndLinkAccount(EntityManager em, String employeeId, String username, String hashedPassword);
+    String createAndLinkAccount(EntityManager em, String employeeId, String username, String hashedPassword, Boolean isManager);
     Employee softDeleteEmployee(EntityManager em, String employeeId);
     String resetAccountPassword(EntityManager em, String employeeId, String hashedPassword);
 }
