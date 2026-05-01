@@ -97,16 +97,13 @@ public class LoginController {
 
     private void openDashboard(Object responseData) {
         AccountDTO accountDTO = responseData instanceof AccountDTO dto ? dto : null;
+        boolean isManager = accountDTO != null && accountDTO.isManager();
         if (accountDTO != null) {
             SessionManager.getInstance().setSession(
                     accountDTO.getEmployeeId(),
                     accountDTO.getUsername(),
                     accountDTO.isManager()
             );
-        }
-        boolean isManager = accountDTO != null && accountDTO.isManager();
-        if (accountDTO != null) {
-            SessionManager.getInstance().setSession(accountDTO.getEmployeeId(), accountDTO.getUsername());
         }
         String dashboardPath = isManager
                 ? "/client/ui/views/dashboard.fxml"
