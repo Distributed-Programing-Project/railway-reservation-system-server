@@ -97,7 +97,7 @@ public class TrainManagementController {
 
         colActions.setCellFactory(col -> new TableCell<>() {
             private final Button btnCfg = new Button("Cấu hình");
-            private final Button btnSts = new Button("Đổi TT");
+            private final Button btnSts = new Button("Đổi thông tin");
             {
                 btnCfg.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 11px; -fx-padding: 4 8; -fx-background-radius: 5; -fx-cursor: hand;");
                 btnSts.setStyle("-fx-background-color: #8e44ad; -fx-text-fill: white; -fx-font-size: 11px; -fx-padding: 4 8; -fx-background-radius: 5; -fx-cursor: hand;");
