@@ -18,10 +18,18 @@ public final class ClientSessionContext {
   }
 
   public void setAccount(AccountDTO dto) {
-    if (dto == null) return;
+    if (dto == null)
+      return;
     this.accountId = dto.getId();
     this.username = dto.getUsername();
+
     this.employeeId = dto.getEmployeeId();
+
+    // Fallback thực dụng: nếu server chưa trả employeeId,
+    // dùng username như employee_code, ví dụ QL001.
+    if (this.employeeId == null || this.employeeId.isBlank()) {
+      this.employeeId = dto.getUsername();
+    }
   }
 
   public String getAccountId() {
@@ -36,4 +44,3 @@ public final class ClientSessionContext {
     return employeeId;
   }
 }
-

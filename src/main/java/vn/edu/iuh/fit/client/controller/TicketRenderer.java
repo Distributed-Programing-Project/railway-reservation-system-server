@@ -1,20 +1,28 @@
 package vn.edu.iuh.fit.client.controller;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.text.NumberFormat;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
-import javafx.scene.SnapshotParameters;
-import javafx.scene.control.Label;
 import javafx.scene.image.Image;
-import javafx.scene.image.WritableImage;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JREmptyDataSource;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.JasperExportManager;
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
+import org.apache.pdfbox.io.MemoryUsageSetting;
+import vn.edu.iuh.fit.common.constant.TicketType;
 import vn.edu.iuh.fit.common.dto.IssuedTicketDTO;
 
 final class TicketRenderer {
@@ -22,109 +30,125 @@ final class TicketRenderer {
   private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
   private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
   private static final NumberFormat MONEY = NumberFormat.getInstance(new Locale("vi", "VN"));
+  private static volatile JasperReport cachedReport;
 
   private TicketRenderer() {
   }
 
-  static Image renderToImage(IssuedTicketDTO dto, String title) {
-    VBox root = buildTicketNode(dto);
-    SnapshotParameters params = new SnapshotParameters();
-    params.setFill(Color.TRANSPARENT);
-    WritableImage img = root.snapshot(params, null);
-    return img;
+  static File renderPreviewPdf(List<IssuedTicketDTO> tickets, String title) {
+    List<IssuedTicketDTO> previewTickets = tickets == null ? List.of() : tickets;
+    if (previewTickets.isEmpty()) {
+      throw new IllegalArgumentException("tickets must not be empty");
+    }
+    try {
+      List<File> pages = new ArrayList<>();
+      for (IssuedTicketDTO ticket : previewTickets) {
+        pages.add(renderSingleTicketPdf(ticket));
+      }
+      File merged = Files.createTempFile("ticket-preview-", ".pdf").toFile();
+      merged.deleteOnExit();
+      PDFMergerUtility merger = new PDFMergerUtility();
+      merger.setDestinationFileName(merged.getAbsolutePath());
+      for (File page : pages) {
+        merger.addSource(page);
+      }
+      merger.mergeDocuments(MemoryUsageSetting.setupTempFileOnly());
+      System.err.println("[UC001] ticket pdf generated title=" + safe(title) + ", pages=" + pages.size()
+          + ", file=" + merged.getAbsolutePath());
+      return merged;
+    } catch (Exception e) {
+      throw new IllegalStateException("Unable to render ticket preview PDF", e);
+    }
   }
 
-  private static VBox buildTicketNode(IssuedTicketDTO dto) {
-    VBox root = new VBox(10);
-    root.setStyle("-fx-background-color: white; -fx-padding: 18; -fx-border-color: #d5dde6; -fx-border-radius: 12; -fx-background-radius: 12;");
-    root.setPrefWidth(420);
+  static Image renderToImage(IssuedTicketDTO dto, String title) {
+    File pdf = renderPreviewPdf(List.of(dto), title);
+    return PdfPreviewSupport.firstPageToImage(pdf);
+  }
 
-    Label h1 = new Label("THẺ LÊN TÀU HỎA");
-    h1.setStyle("-fx-font-size: 20px; -fx-font-weight: 800; -fx-alignment: center;");
-    Label h2 = new Label("BOARDING PASS");
-    h2.setStyle("-fx-font-size: 11px; -fx-text-fill: #4a5568; -fx-alignment: center;");
-    VBox header = new VBox(2, h1, h2);
-    header.setStyle("-fx-alignment: center;");
+  private static File renderSingleTicketPdf(IssuedTicketDTO dto) throws IOException, JRException {
+    JasperReport report = compileReport();
+    Map<String, Object> params = toParams(dto);
+    JasperPrint print = JasperFillManager.fillReport(report, params, new JREmptyDataSource());
+    File pdf = Files.createTempFile("ticket-", ".pdf").toFile();
+    pdf.deleteOnExit();
+    JasperExportManager.exportReportToPdfFile(print, pdf.getAbsolutePath());
+    return pdf;
+  }
 
-    StackPane qrBox = new StackPane();
-    Rectangle rect = new Rectangle(120, 120);
-    rect.setFill(Color.WHITE);
-    rect.setStroke(Color.web("#d5dde6"));
-    rect.setArcWidth(10);
-    rect.setArcHeight(10);
-    Label qr = new Label(dto != null ? safe(dto.getQrCode()) : "--");
-    qr.setWrapText(true);
-    qr.setMaxWidth(110);
-    qr.setStyle("-fx-font-size: 10px; -fx-text-fill: #1f2d3d; -fx-alignment: center;");
-    qrBox.getChildren().addAll(rect, qr);
-    qrBox.setStyle("-fx-alignment: center;");
+  private static JasperReport compileReport() throws IOException, JRException {
+    JasperReport local = cachedReport;
+    if (local != null) {
+      return local;
+    }
+    synchronized (TicketRenderer.class) {
+      if (cachedReport != null) {
+        return cachedReport;
+      }
+      try (InputStream in = TicketRenderer.class.getResourceAsStream("/client/print/ticket_template.xml")) {
+        if (in == null) {
+          throw new IOException("Missing JRXML resource: /client/print/ticket_template.xml");
+        }
+        cachedReport = JasperCompileManager.compileReport(in);
+        return cachedReport;
+      }
+    }
+  }
 
-    Label ticketId = new Label("Mã vé/TicketID: " + safe(dto.getTicketId()));
-    ticketId.setStyle("-fx-font-size: 13px; -fx-font-weight: 700; -fx-alignment: center;");
-
-    HBox fromTo = new HBox(10,
-        kv("Ga đi / From", safe(dto.getDepartureStation()), true),
-        spacer(),
-        kv("Ga đến / To", safe(dto.getDestinationStation()), true));
-    fromTo.setStyle("-fx-alignment: center;");
-
-    LocalDateTime departure = dto != null ? dto.getDepartureTime() : null;
-    String ngay = departure == null ? "--" : departure.format(DATE);
-    String gio = departure == null ? "--" : departure.format(TIME);
-
-    VBox info = new VBox(6,
-        line("Tàu/Train: ", safe(dto.getTrainCode())),
-        line("Ngày đi/Date: ", ngay),
-        line("Giờ đi/Time: ", gio),
-        line("Toa/Coach: ", safe(dto.getCarriageName())),
-        line("Chỗ/Seat: ", safe(dto.getSeatNumber())),
-        line("Loại chỗ/Class: ", dto != null && dto.getSeatType() != null ? dto.getSeatType().getName() : "--"),
-        line("Loại vé/Type: ", dto != null && dto.getTicketType() != null ? dto.getTicketType().name() : "--"),
-        line("Họ tên/Name: ", safe(dto.getPassengerName())),
-        line("Giấy tờ/Passport: ", safe(dto.getPassengerDocument()))
-    );
-
-    if (dto != null && dto.isChildUnder6()) {
-      info.getChildren().add(line("Đi kèm vé người lớn: ", safe(dto.getAccompanyAdultTicketId())));
-      info.getChildren().add(line("Ghi chú: ", "Trẻ <6 miễn phí, không chiếm ghế"));
+  private static Map<String, Object> toParams(IssuedTicketDTO dto) {
+    Map<String, Object> params = new HashMap<>();
+    String ticketId = safe(dto == null ? null : dto.getTicketId());
+    String qrPayload = safe(dto == null ? null : dto.getQrCode());
+    if ("--".equals(qrPayload)) {
+      qrPayload = ticketId;
     }
 
-    Label price = new Label("Giá/Price: " + formatMoney(dto != null ? dto.getPrice() : 0));
-    price.setStyle("-fx-font-size: 18px; -fx-font-weight: 800; -fx-text-fill: #c0392b;");
-
-    Label note = new Label("Vui lòng mang theo giấy tờ tùy thân khi lên tàu.");
-    note.setStyle("-fx-font-size: 11px; -fx-text-fill: #4a5568; -fx-font-style: italic;");
-    note.setWrapText(true);
-
-    root.getChildren().addAll(header, qrBox, ticketId, fromTo, info, price, note);
-    return root;
+    params.put("maVe", ticketId);
+    params.put("gaDi", safe(dto == null ? null : dto.getDepartureStation()));
+    params.put("gaDen", safe(dto == null ? null : dto.getDestinationStation()));
+    params.put("macTau", safe(dto == null ? null : dto.getTrainCode()));
+    params.put("ngayDi", dto != null && dto.getDepartureTime() != null ? dto.getDepartureTime().format(DATE) : "--");
+    params.put("gioDi", dto != null && dto.getDepartureTime() != null ? dto.getDepartureTime().format(TIME) : "--");
+    params.put("toa", safe(dto == null ? null : dto.getCarriageName()));
+    params.put("cho", safe(dto == null ? null : dto.getSeatNumber()));
+    params.put("loaiCho", dto != null && dto.getSeatType() != null ? dto.getSeatType().getName() : "--");
+    params.put("loaiVe", ticketTypeLabel(dto));
+    params.put("hoTen", safe(dto == null ? null : dto.getPassengerName()));
+    params.put("giayTo", ticketDocument(dto));
+    params.put("giaVe", formatMoney(dto == null ? 0d : dto.getPrice()));
+    params.put("qrCodeData", qrPayload);
+    return params;
   }
 
-  private static VBox kv(String k, String v, boolean boldValue) {
-    Label kLbl = new Label(k);
-    kLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: #4a5568;");
-    Label vLbl = new Label(v);
-    vLbl.setStyle("-fx-font-size: 16px; -fx-font-weight: " + (boldValue ? "800" : "400") + ";");
-    return new VBox(2, kLbl, vLbl);
+  private static String ticketTypeLabel(IssuedTicketDTO dto) {
+    if (dto == null) {
+      return "--";
+    }
+    if (dto.isChildUnder6()) {
+      return "Trẻ <6";
+    }
+    TicketType type = dto.getTicketType();
+    if (type == null) {
+      return "--";
+    }
+    return type.getName();
   }
 
-  private static Label line(String label, String value) {
-    Label l = new Label(label + value);
-    l.setStyle("-fx-font-size: 12px;");
-    return l;
+  private static String ticketDocument(IssuedTicketDTO dto) {
+    if (dto == null) {
+      return "--";
+    }
+    if (dto.isChildUnder6()) {
+      return safe(dto.getAccompanyAdultTicketId());
+    }
+    return safe(dto.getPassengerDocument());
   }
 
-  private static Region spacer() {
-    Region r = new Region();
-    HBox.setHgrow(r, javafx.scene.layout.Priority.ALWAYS);
-    return r;
+  private static String formatMoney(double value) {
+    return MONEY.format(Math.round(value)) + " đ";
   }
 
-  private static String safe(String v) {
-    return v == null || v.isBlank() ? "--" : v;
-  }
-
-  private static String formatMoney(double v) {
-    return MONEY.format(Math.round(v)) + " đ";
+  private static String safe(String value) {
+    return value == null || value.isBlank() ? "--" : value;
   }
 }

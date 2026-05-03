@@ -3,14 +3,15 @@ package vn.edu.iuh.fit.server.service.impl;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import vn.edu.iuh.fit.common.dto.AccountDTO;
 import vn.edu.iuh.fit.common.dto.LoginRequestDTO;
 import vn.edu.iuh.fit.common.message.LoginMessages;
 import vn.edu.iuh.fit.common.response.Response;
 import vn.edu.iuh.fit.server.model.Account;
 import vn.edu.iuh.fit.server.repository.AccountRepository;
-import vn.edu.iuh.fit.server.repository.impl.AccountRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.AbstractGenericRepositoryImpl;
+import vn.edu.iuh.fit.server.repository.impl.AccountRepositoryImpl;
 import vn.edu.iuh.fit.server.service.LoginService;
 
 public class LoginServiceImpl implements LoginService {
@@ -51,10 +52,22 @@ public class LoginServiceImpl implements LoginService {
                 String employeeId = em.createQuery(
                         "SELECT e.employeeId FROM Employee e WHERE e.account.id = :accountId",
                         String.class)
-                    .setParameter("accountId", account.getId())
-                    .getResultStream()
-                    .findFirst()
-                    .orElse(null);
+                        .setParameter("accountId", account.getId())
+                        .getResultStream()
+                        .findFirst()
+                        .orElse(null);
+
+                // Fallback cho trường hợp data account_id chưa link đúng,
+                // nhưng username chính là employee_code như QL001.
+                if (employeeId == null || employeeId.isBlank()) {
+                    employeeId = em.createQuery(
+                            "SELECT e.employeeId FROM Employee e WHERE e.employeeCode = :employeeCode",
+                            String.class)
+                            .setParameter("employeeCode", account.getUsername())
+                            .getResultStream()
+                            .findFirst()
+                            .orElse(null);
+                }
 
                 log.info("Login successful: username={}", username);
                 return Response.success(LoginMessages.LOGIN_SUCCESS, AccountDTO.builder()

@@ -1,13 +1,19 @@
 package vn.edu.iuh.fit.client.controller;
 
+import java.awt.image.BufferedImage;
+import java.io.InputStream;
 import java.text.NumberFormat;
+import java.text.Normalizer;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,27 +25,40 @@ import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.concurrent.Task;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
+import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
-import javafx.stage.Modality;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
+import net.sf.jasperreports.engine.JREmptyDataSource;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperPrintManager;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.design.JasperDesign;
+import net.sf.jasperreports.engine.xml.JRXmlLoader;
 import vn.edu.iuh.fit.client.service.ReturnTicketClientService;
 import vn.edu.iuh.fit.client.session.ClientSessionContext;
-import vn.edu.iuh.fit.common.dto.IssuedTicketDTO;
+import vn.edu.iuh.fit.common.dto.RefundReceiptDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketPreviewDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketTicketDTO;
+import vn.edu.iuh.fit.common.dto.StationDTO;
 import vn.edu.iuh.fit.common.response.Response;
 
 public class ReturnTicketController {
@@ -47,6 +66,8 @@ public class ReturnTicketController {
   private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
   private static final NumberFormat MONEY = NumberFormat.getInstance(new Locale("vi", "VN"));
   private static final long MINUTES_24H = 24 * 60;
+
+  private BanVeController mainController;
 
   private final ReturnTicketClientService returnTicketClientService = new ReturnTicketClientService();
 
@@ -87,6 +108,8 @@ public class ReturnTicketController {
   private TableColumn<ReturnTicketTicketDTO, String> colTrangThai;
 
   @FXML
+  private Label lblTieuDe;
+  @FXML
   private Label lblMaVeChon;
   @FXML
   private Label lblTau;
@@ -116,6 +139,96 @@ public class ReturnTicketController {
   private Button btnDoiVe;
 
   @FXML
+  private VBox boxTinhTien;
+
+  public void setMainController(BanVeController mainController) {
+    this.mainController = mainController;
+
+    // NẾU CÓ MAIN CONTROLLER TRUYỀN VÀO => CHẮC CHẮN ĐANG Ở LUỒNG ĐỔI VÉ
+    if (this.mainController != null) {
+
+      if (btnDoiVe != null) {
+        btnDoiVe.setVisible(true);
+        btnDoiVe.setManaged(true);
+      }
+
+      if (btnXacNhanTra != null) {
+        btnXacNhanTra.setVisible(false);
+        btnXacNhanTra.setManaged(false);
+      }
+
+      if (lblTieuDe != null) {
+        lblTieuDe.setText("TRA CỨU VÉ ĐỂ ĐỔI");
+      }
+
+      // --- THÊM ĐOẠN NÀY ĐỂ ẨN KHUNG TÍNH TIỀN TRẢ VÉ ---
+      if (boxTinhTien != null) {
+        boxTinhTien.setVisible(false);
+        boxTinhTien.setManaged(false);
+      }
+
+    }
+  }
+
+  @FXML
+  private void handleDoiVe() {
+    if (mainController == null) {
+      showError("Lỗi hệ thống", "Không tìm thấy luồng xử lý chính. Không thể đổi vé.");
+      return;
+    }
+
+    List<ReturnTicketTicketDTO> oldTickets = getSelectedTickets();
+    if (oldTickets.isEmpty()) {
+      showWarning("Đổi vé", "Vui lòng chọn vé cần đổi từ danh sách.");
+      return;
+    }
+
+    // 1. NGHIỆP VỤ: Kiểm tra trước 24h & Chưa từng được đổi
+    LocalDateTime now = LocalDateTime.now();
+    for (ReturnTicketTicketDTO t : oldTickets) {
+      if (t.getOriginalTicketId() != null && !t.getOriginalTicketId().isBlank()) {
+        showError("Lỗi", "Vé " + t.getId() + " là vé đã đổi, không được phép đổi thêm lần nào nữa.");
+        return;
+      }
+      if (t.getDepartureTime() == null) {
+        showError("Lỗi", "Vé " + t.getId() + " bị lỗi ngày khởi hành.");
+        return;
+      }
+      long hoursDiff = Duration.between(now, t.getDepartureTime()).toHours();
+      if (hoursDiff < 24) {
+        showError("Lỗi",
+            "Vé " + t.getId() + " không đủ điều kiện (Phải đổi trước 24h). Thời gian còn lại: " + hoursDiff + "h");
+        return;
+      }
+    }
+
+    // 2. LƯU THÔNG TIN VÀO SESSION CHUNG
+    vn.edu.iuh.fit.client.session.SaleWizardState state = mainController.getState();
+    state.setExchangeMode(true);
+    state.setExchangeOldTickets(oldTickets);
+
+    // Lấy thông tin ga từ vé đầu tiên (quy định là cùng ga đi - ga đến)
+    ReturnTicketTicketDTO firstTicket = oldTickets.get(0);
+    state.setDepartureStation(StationDTO.builder()
+        .name(normalizeStationName(firstTicket.getDepartureStation()))
+        .build());
+    state.setDestinationStation(StationDTO.builder()
+        .name(normalizeStationName(firstTicket.getDestinationStation()))
+        .build());
+    if (firstTicket.getDepartureTime() != null) {
+      LocalDate oldDate = firstTicket.getDepartureTime().toLocalDate();
+      LocalDate nowDate = LocalDate.now();
+      state.setDepartureDate(oldDate.isBefore(nowDate) ? nowDate : oldDate);
+    }
+
+    // Đổi vé theo quy định: xử lý như vé đơn (One Way)
+    state.setTicketCategory(vn.edu.iuh.fit.common.constant.TicketCategory.ONE_WAY);
+
+    // 3. CHUYỂN TRANG VỀ STEP 1 CỦA BÁN VÉ
+    mainController.showStep1();
+  }
+
+  @FXML
   public void initialize() {
     setupTable();
     registerCloseCleanupHook();
@@ -127,6 +240,7 @@ public class ReturnTicketController {
     resetDetail();
     resetPreview();
     setBusy(false);
+    doSearchAsync("");
   }
 
   private void setupTable() {
@@ -174,16 +288,15 @@ public class ReturnTicketController {
   }
 
   private void handleSearch() {
-    String idCard = normalize(txtSearchCCCD != null ? txtSearchCCCD.getText() : null);
-    if (idCard == null) {
-      showWarning("Trả vé", "Vui lòng nhập CCCD/Hộ chiếu.");
-      return;
-    }
-    lastSearchIdCard = idCard;
-    doSearchAsync(idCard);
+    String query = txtSearchCCCD != null ? txtSearchCCCD.getText() : "";
+    query = query == null ? "" : query.trim();
+
+    // Cho phép rỗng để reload toàn bộ vé PAID/có thể xét trả.
+    lastSearchIdCard = query;
+    doSearchAsync(query);
   }
 
-  private void doSearchAsync(String idCard) {
+  private void doSearchAsync(String query) {
     final long seq = searchSeq.incrementAndGet();
     setBusy(true);
     setInlineError(null);
@@ -193,7 +306,7 @@ public class ReturnTicketController {
     Task<Response> task = new Task<>() {
       @Override
       protected Response call() {
-        return returnTicketClientService.searchTicketsForReturn(idCard);
+        return returnTicketClientService.searchTicketsForReturn(query);
       }
     };
 
@@ -211,7 +324,9 @@ public class ReturnTicketController {
         }
         tblDanhSachVe.getItems().setAll(items);
         if (items.isEmpty()) {
-          setInlineError("Không tìm thấy lịch sử mua vé cho giấy tờ này.");
+          setInlineError(query == null || query.isBlank()
+              ? "Không có vé nào đang có thể trả."
+              : "Không tìm thấy vé phù hợp với thông tin đã nhập.");
         }
       } else {
         setInlineError(res == null ? "Không nhận được phản hồi." : res.getMessage());
@@ -237,6 +352,11 @@ public class ReturnTicketController {
       resetPreview();
       return;
     }
+
+    if (mainController != null) {
+      return;
+    }
+
     doPreviewAsync(selected.stream().map(ReturnTicketTicketDTO::getId).toList(), selected);
   }
 
@@ -325,24 +445,64 @@ public class ReturnTicketController {
     };
 
     task.setOnSucceeded(e -> {
-      if (seq != confirmSeq.get())
+      if (seq != confirmSeq.get()) {
         return;
+      }
+
       setBusy(false);
       Response res = task.getValue();
-      if (res != null && res.isSuccess()) {
-        String invoiceId = res.getData() != null ? String.valueOf(res.getData()) : null;
-        showInfo("Trả vé", res.getMessage() + (invoiceId != null ? ("\nMã biên lai: " + invoiceId) : ""));
-        resetDetail();
-        resetPreview();
-        if (lastSearchIdCard != null) {
-          doSearchAsync(lastSearchIdCard);
-        }
-        if (invoiceId != null) {
-          askAndPrintRefundReceipt(invoiceId, refundAmount);
-        }
-      } else {
+
+      if (res == null || !res.isSuccess()) {
         btnXacNhanTra.setDisable(false);
         setInlineError(res == null ? "Không nhận được phản hồi." : res.getMessage());
+        return;
+      }
+
+      String refundInvoiceId = res.getData() != null ? String.valueOf(res.getData()) : null;
+
+      // 1. Xóa vé vừa trả khỏi bảng và ép giao diện cập nhật ngay lập tức
+      if (tblDanhSachVe != null && tblDanhSachVe.getItems() != null) {
+        tblDanhSachVe.getItems().removeIf(t -> t != null && ticketIds.contains(t.getId()));
+        tblDanhSachVe.getSelectionModel().clearSelection();
+        tblDanhSachVe.refresh();
+      }
+
+      // 2. Reset toàn bộ panel detail và preview
+      resetDetail();
+      resetPreview();
+      lastPreview = null;
+      btnXacNhanTra.setDisable(true);
+      setInlineError(null);
+
+      // 3. Clear ô search và kích hoạt ngầm luồng gọi danh sách vé mới
+      // (Việc này chạy bất đồng bộ nên không lo bị đơ màn hình)
+      if (txtSearchCCCD != null) {
+        txtSearchCCCD.clear();
+      }
+      lastSearchIdCard = "";
+      doSearchAsync("");
+
+      // 4. HIỆN DIALOG THÀNH CÔNG VÀ HỎI IN BIÊN LAI (Nó sẽ block UI ở bước này)
+      Alert done = new Alert(Alert.AlertType.CONFIRMATION);
+      done.setTitle("Trả vé thành công");
+      done.setHeaderText(null);
+      done.setContentText(
+          "Trả vé thành công.\n"
+              + "Số tiền hoàn: " + formatMoney(refundAmount) + "\n\n"
+              + "Bạn có muốn in biên lai hoàn tiền không?");
+
+      ButtonType btnPrint = new ButtonType("In biên lai");
+      ButtonType btnSkip = new ButtonType("Không in", ButtonBar.ButtonData.CANCEL_CLOSE);
+      done.getButtonTypes().setAll(btnPrint, btnSkip);
+
+      ButtonType choice = done.showAndWait().orElse(btnSkip);
+
+      if (choice == btnPrint) {
+        if (refundInvoiceId == null || refundInvoiceId.isBlank()) {
+          showError("In biên lai", "Trả vé thành công nhưng server không trả mã biên lai hoàn tiền.");
+        } else {
+          doLoadAndPreviewRefundReceipt(refundInvoiceId); // Gọi hàm in biên lai
+        }
       }
     });
 
@@ -357,55 +517,130 @@ public class ReturnTicketController {
     start(task, "return-ticket-confirm");
   }
 
-  private void askAndPrintRefundReceipt(String invoiceId, double refundAmount) {
-    Alert ask = new Alert(Alert.AlertType.CONFIRMATION);
-    ask.setTitle("In biên lai");
-    ask.setHeaderText(null);
-    ask.setContentText("Khách có yêu cầu in biên lai hoàn tiền không?");
-    if (ask.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK)
+  private void doLoadAndPreviewRefundReceipt(String invoiceId) {
+    if (invoiceId == null || invoiceId.isBlank()) {
+      showError("In biên lai", "Không tìm thấy mã biên lai hoàn tiền.");
       return;
+    }
 
-    IssuedTicketDTO summary = IssuedTicketDTO.builder()
-        .ticketId("REFUND-" + invoiceId)
-        .passengerName(ClientSessionContext.getInstance().getUsername())
-        .passengerDocument("")
-        .trainCode("REFUND")
-        .departureStation("")
-        .destinationStation("")
-        .departureTime(LocalDateTime.now())
-        .carriageName("")
-        .seatNumber("")
-        .ticketType(vn.edu.iuh.fit.common.constant.TicketType.NORMAL)
-        .price(refundAmount)
-        .qrCode(invoiceId)
-        .build();
-    openPreview("Biên lai hoàn tiền (tóm tắt)", List.of(summary));
+    setBusy(true);
+
+    Task<Response> task = new Task<>() {
+      @Override
+      protected Response call() {
+        return returnTicketClientService.getRefundReceipt(invoiceId);
+      }
+    };
+
+    task.setOnSucceeded(e -> {
+      setBusy(false);
+      Response res = task.getValue();
+
+      if (res == null || !res.isSuccess()) {
+        showError("In biên lai", res == null ? "Không nhận được phản hồi." : res.getMessage());
+        return;
+      }
+
+      if (!(res.getData() instanceof RefundReceiptDTO dto)) {
+        showError("In biên lai", "Dữ liệu biên lai trả về không hợp lệ.");
+        return;
+      }
+
+      JasperPrint jasperPrint = createRefundReceiptReport(dto);
+      if (jasperPrint == null) {
+        showError("In biên lai", "Không thể tạo biên lai hoàn tiền.");
+        return;
+      }
+
+      showRefundReceiptPreview(jasperPrint);
+    });
+
+    task.setOnFailed(e -> {
+      setBusy(false);
+      Throwable ex = task.getException();
+      showError("In biên lai", "Không thể lấy dữ liệu biên lai: " + (ex == null ? "" : ex.getMessage()));
+    });
+
+    start(task, "return-ticket-load-refund-receipt");
   }
 
-  private void openPreview(String title, List<IssuedTicketDTO> tickets) {
+  private JasperPrint createRefundReceiptReport(RefundReceiptDTO dto) {
     try {
-      FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/ui/views/pdf-viewer.fxml"));
-      Parent root = loader.load();
-      Object controller = loader.getController();
-      if (controller instanceof PdfViewerController pdf) {
-        Task<List<Image>> renderTask = new Task<>() {
-          @Override
-          protected List<Image> call() {
-            return tickets.stream().map(t -> TicketRenderer.renderToImage(t, title)).toList();
-          }
-        };
-        renderTask.setOnSucceeded(e -> pdf.setPages(renderTask.getValue(), title));
-        renderTask
-            .setOnFailed(e -> showError("In", "Không thể render xem trước: " + renderTask.getException().getMessage()));
-        start(renderTask, "return-ticket-render-preview");
+      InputStream reportStream = getClass().getResourceAsStream("/client/print/bien-lai-tra-ve.xml");
+      if (reportStream == null) {
+        showError("In biên lai", "Không tìm thấy template: /client/print/bien-lai-tra-ve.xml");
+        return null;
       }
-      javafx.stage.Stage stage = new javafx.stage.Stage();
-      stage.setTitle(title);
-      stage.initModality(Modality.APPLICATION_MODAL);
-      stage.setScene(new Scene(root, 1000, 800));
-      stage.show();
-    } catch (Exception e) {
-      showError("In", "Không thể mở xem trước: " + e.getMessage());
+
+      JasperDesign jasperDesign = JRXmlLoader.load(reportStream);
+      JasperReport jasperReport = JasperCompileManager.compileReport(jasperDesign);
+
+      Map<String, Object> parameters = new HashMap<>();
+      parameters.put("p_MaGiaoDich", safe(dto.getTransactionCode()));
+      parameters.put("p_NgayTra", dto.getRefundDate() == null ? "--" : DATE_TIME.format(dto.getRefundDate()));
+      parameters.put("p_NhanVien", safe(dto.getEmployeeName()));
+
+      parameters.put("p_MaVe", safe(dto.getTicketId()));
+      parameters.put("p_KhachHang", safe(dto.getCustomerName()));
+      parameters.put("p_SoGiayTo", safe(dto.getCustomerDocument()));
+
+      parameters.put("p_Tau", safe(dto.getTrainCode()));
+      parameters.put("p_GaDi", safe(dto.getDepartureStation()));
+      parameters.put("p_GaDen", safe(dto.getDestinationStation()));
+      parameters.put("p_NgayDi", dto.getDepartureTime() == null ? "--" : DATE_TIME.format(dto.getDepartureTime()));
+
+      parameters.put("p_Toa", safe(dto.getCarriageName()));
+      parameters.put("p_Ghe", safe(dto.getSeatNumber()));
+
+      parameters.put("p_GiaVeGoc", dto.getOriginalAmount());
+      parameters.put("p_LePhi", dto.getRefundFee());
+      parameters.put("p_ThucNhan", dto.getRefundAmount());
+
+      return JasperFillManager.fillReport(jasperReport, parameters, new JREmptyDataSource());
+    } catch (JRException e) {
+      e.printStackTrace();
+      showError("In biên lai", "Lỗi tạo biên lai: " + e.getMessage());
+      return null;
+    }
+  }
+
+  private void showRefundReceiptPreview(JasperPrint jasperPrint) {
+    try {
+      BufferedImage bufferedImage = (BufferedImage) JasperPrintManager.printPageToImage(jasperPrint, 0, 1.6f);
+      Image fxImage = SwingFXUtils.toFXImage(bufferedImage, null);
+
+      ImageView imageView = new ImageView(fxImage);
+      imageView.setPreserveRatio(true);
+      imageView.setFitHeight(650);
+
+      Dialog<ButtonType> dialog = new Dialog<>();
+      dialog.setTitle("Xem trước biên lai hoàn tiền");
+      dialog.setHeaderText("Kiểm tra biên lai trước khi in.");
+
+      VBox content = new VBox(imageView);
+      content.setPadding(new Insets(10));
+      content.setStyle("-fx-alignment: center; -fx-background-color: #eeeeee;");
+      dialog.getDialogPane().setContent(content);
+
+      ButtonType btnTypePrint = new ButtonType("In biên lai", ButtonData.OTHER);
+      ButtonType btnTypeClose = new ButtonType("Đóng", ButtonData.OK_DONE);
+      dialog.getDialogPane().getButtonTypes().addAll(btnTypePrint, btnTypeClose);
+
+      Button btnPrint = (Button) dialog.getDialogPane().lookupButton(btnTypePrint);
+      btnPrint.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+        event.consume();
+        try {
+          JasperPrintManager.printReport(jasperPrint, true);
+          showInfo("In biên lai", "Đã gửi lệnh in.");
+        } catch (JRException e) {
+          showError("In biên lai", "Lỗi máy in: " + e.getMessage());
+        }
+      });
+
+      dialog.showAndWait();
+    } catch (JRException e) {
+      e.printStackTrace();
+      showError("In biên lai", "Không thể hiển thị preview biên lai: " + e.getMessage());
     }
   }
 
@@ -597,6 +832,18 @@ public class ReturnTicketController {
 
   private static String formatMoney(double v) {
     return MONEY.format(Math.round(v)) + " đ";
+  }
+
+  private static String normalizeStationName(String value) {
+    if (value == null) {
+      return null;
+    }
+    String trimmed = value.trim();
+    if (trimmed.isEmpty()) {
+      return null;
+    }
+    String lowered = trimmed.toLowerCase();
+    return Normalizer.normalize(lowered, Normalizer.Form.NFC);
   }
 
   private void showInfo(String title, String content) {

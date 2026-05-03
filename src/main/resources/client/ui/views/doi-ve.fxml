@@ -147,7 +147,7 @@
                     <!-- STEP 3 -->
                     <VBox fx:id="step3Pane" spacing="12" visible="false" managed="false" VBox.vgrow="ALWAYS">
                         <HBox alignment="CENTER_LEFT" spacing="12">
-                            <Label text="Tính phí & xác nhận" style="-fx-font-weight: bold;"/>
+                            <Label text="Tính phí &amp; xác nhận" style="-fx-font-weight: bold;"/>
                             <Region HBox.hgrow="ALWAYS"/>
                             <Button fx:id="btnPreviewFee" text="Tính phí" styleClass="secondary-button"/>
                         </HBox>

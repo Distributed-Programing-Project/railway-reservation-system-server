@@ -99,7 +99,7 @@
                 <textElement>
                     <font fontName="Arial" size="9"/>
                 </textElement>
-                <textFieldExpression><![CDATA["Tàu/Train: " + $P{macTau}]]></textFieldExpression>
+                <textFieldExpression><![CDATA["Mác tàu/Train: " + $P{macTau}]]></textFieldExpression>
             </textField>
 
             <textField>

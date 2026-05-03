@@ -280,7 +280,7 @@
                                 <HBox spacing="10">
                                     <Button fx:id="btnPrintTickets" text="In vé" styleClass="secondary-button" onAction="#handlePrintTickets" disable="true"/>
                                     <Button fx:id="btnPrintInvoice" text="In hóa đơn" styleClass="secondary-button" onAction="#handlePrintInvoice" disable="true"/>
-                                    <Button fx:id="btnPrintChildVouchers" text="In phiếu trẻ <6" styleClass="secondary-button" onAction="#handlePrintChildVouchers" disable="true"/>
+                                    <Button fx:id="btnPrintChildVouchers" text="In phiếu trẻ &lt;6" styleClass="secondary-button" onAction="#handlePrintChildVouchers" disable="true"/>
                                 </HBox>
                             </VBox>
                         </HBox>

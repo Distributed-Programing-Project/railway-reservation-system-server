@@ -9,13 +9,14 @@
 <?import javafx.scene.control.Button?>
 
 
-<HBox fx:id="rowContainer" alignment="CENTER_LEFT" spacing="10.0" styleClass="passenger-row" stylesheets="@../css/ban-ve.css" 
-      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<HBox fx:id="rowContainer" alignment="CENTER_LEFT" spacing="10.0" styleClass="passenger-row" stylesheets="/client/ui/css/ban-ve.css" 
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="vn.edu.iuh.fit.client.controller.HanhKhachRowController">
    <padding>
       <Insets bottom="15.0" left="10.0" right="10.0" top="15.0" />
    </padding>
    <children>
-        <VBox fx:id="columnHanhKhach" prefWidth="320.0" spacing="5.0" style="-fx-padding: 0 10 0 0;" xmlns="..." xmlns:fx="...">
+        <VBox fx:id="columnHanhKhach" prefWidth="320.0" spacing="5.0" style="-fx-padding: 0 10 0 0;">
             <children>
                 <Label text="Họ tên:" styleClass="field-label"/>
                 <TextField fx:id="txtHoTen" promptText="Nhập họ tên" />
@@ -29,7 +30,8 @@
                     <children>
                         <ComboBox fx:id="comboDoiTuong" prefWidth="140.0" />
 
-                        <Button fx:id="btnChonNgaySinh" text="Ngày sinh"
+                        <Button fx:id="btnChonNgaySinh" text="📅 Ngày sinh"
+                                onAction="#handleChonNgaySinh"
                                 style="-fx-background-color: #0066CC; -fx-text-fill: white; -fx-font-size: 11px; -fx-cursor: hand;"
                                 visible="false" managed="false"/>
                     </children>
@@ -39,6 +41,11 @@
                      <Label text="Vé người lớn đi cùng:" style="-fx-font-size: 11px;"/>
                      <TextField fx:id="txtMaVeNguoiLon" prefWidth="120.0" promptText="Mã vé..."/>
                 </HBox>
+
+                <Label fx:id="lblNoSeatStatus"
+                       text="Trẻ dưới 6 tuổi - miễn vé, không chiếm ghế"
+                       style="-fx-font-size: 11px; -fx-text-fill: #2ecc71; -fx-font-weight: bold;"
+                       visible="false" managed="false" wrapText="true"/>
 
             </children>
         </VBox>

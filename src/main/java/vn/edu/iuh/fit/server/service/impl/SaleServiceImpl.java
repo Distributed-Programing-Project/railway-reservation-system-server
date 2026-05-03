@@ -402,6 +402,26 @@ public class SaleServiceImpl implements SaleService {
     if (dto.getTicketCategory() == TicketCategory.ONE_WAY && !returnSdIds.isEmpty()) {
       return Response.error(SaleMessages.INVALID_REQUEST);
     }
+    if (dto.getTicketCategory() == TicketCategory.ROUND_TRIP) {
+      // Defensive: outbound/return scheduleDetailIds must not overlap, and must be unique per leg.
+      java.util.Set<String> outSet = new java.util.HashSet<>();
+      java.util.Set<String> retSet = new java.util.HashSet<>();
+      for (String id : outboundSdIds) {
+        if (id != null && !outSet.add(id)) {
+          return Response.error(SaleMessages.INVALID_REQUEST);
+        }
+      }
+      for (String id : returnSdIds) {
+        if (id != null && !retSet.add(id)) {
+          return Response.error(SaleMessages.INVALID_REQUEST);
+        }
+      }
+      for (String id : outSet) {
+        if (retSet.contains(id)) {
+          return Response.error(SaleMessages.INVALID_REQUEST);
+        }
+      }
+    }
 
     try {
       Response res = AbstractGenericRepositoryImpl.transactional(em -> doCreateSale(em, dto));

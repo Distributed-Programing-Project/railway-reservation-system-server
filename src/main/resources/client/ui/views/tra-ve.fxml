@@ -151,7 +151,7 @@
 
                   <Button fx:id="btnDoiVe" maxWidth="Infinity" mnemonicParsing="false" 
                           style="-fx-background-color: #0066CC; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10;" 
-                          text="TIẾN HÀNH ĐỔI VÉ" visible="false" managed="false">
+                          text="TIẾN HÀNH ĐỔI VÉ" visible="false" managed="false" onAction="#handleDoiVe">
                      <font>
                         <Font size="14.0" />
                      </font>

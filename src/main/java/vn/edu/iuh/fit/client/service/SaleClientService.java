@@ -7,6 +7,7 @@ import vn.edu.iuh.fit.common.dto.PaymentCreateRequestDTO;
 import vn.edu.iuh.fit.common.dto.PaymentStatusRequestDTO;
 import vn.edu.iuh.fit.common.dto.SaleCreateRequestDTO;
 import vn.edu.iuh.fit.common.dto.SaleScheduleSearchDTO;
+import vn.edu.iuh.fit.common.dto.CustomerSearchDTO;
 import vn.edu.iuh.fit.common.dto.SeatHoldRequestDTO;
 import vn.edu.iuh.fit.common.dto.SeatMapRequestDTO;
 import vn.edu.iuh.fit.common.request.Request;
@@ -45,6 +46,10 @@ public class SaleClientService {
             .scheduleDetailIds(scheduleDetailIds)
             .clientSessionId(clientSessionId)
             .build()));
+  }
+
+  public Response searchCustomers(CustomerSearchDTO dto) {
+    return socketRequestService.send(new Request(ActionType.SEARCH_CUSTOMERS, dto));
   }
 
   public Response createPaymentOrder(double amount, String description, String clientSessionId) {

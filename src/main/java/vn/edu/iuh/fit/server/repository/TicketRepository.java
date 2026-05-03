@@ -25,7 +25,16 @@ public interface TicketRepository {
 
     List<Ticket> findTicketsByCustomerIdCardWithStatusForExchange(EntityManager em, String idCard, TicketStatus status);
 
+    Ticket findTicketByIdOrQrWithSchedule(EntityManager em, String value);
+
+    List<Ticket> findTicketsByPassengerDocumentWithStatus(EntityManager em, String document, TicketStatus status);
+
     boolean updateTicket(EntityManager em, Ticket ticket);
 
     boolean updateTickets(EntityManager em, List<Ticket> tickets);
+
+    Double findActualPaidAmountByTicketId(EntityManager em, String ticketId);
+
+    List<Ticket> findTicketsByStatusWithSchedule(EntityManager em, TicketStatus status);
+
 }

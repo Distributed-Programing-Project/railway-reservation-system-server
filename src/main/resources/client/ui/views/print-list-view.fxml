@@ -9,7 +9,8 @@
 <?import javafx.scene.text.Font?>
 
 <VBox alignment="CENTER" spacing="15.0" style="-fx-background-color: white;" 
-      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="vn.edu.iuh.fit.client.controller.PrintListController">
     <padding>
         <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
     </padding>
@@ -32,6 +33,7 @@
         </TableView>
         
         <Button fx:id="btnDong" text="Đóng danh sách" 
+                onAction="#closeDialog"
                 style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold;" prefWidth="150.0"/>
     </children>
 </VBox>

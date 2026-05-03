@@ -1,12 +1,13 @@
 package vn.edu.iuh.fit.server.service;
 
-import vn.edu.iuh.fit.common.response.Response;
 import vn.edu.iuh.fit.common.dto.ExchangeEligibleTicketSearchDTO;
-import vn.edu.iuh.fit.common.dto.ExchangeTicketRequestDTO;
 import vn.edu.iuh.fit.common.dto.ExchangeTicketPreviewRequestDTO;
+import vn.edu.iuh.fit.common.dto.ExchangeTicketRequestDTO;
+import vn.edu.iuh.fit.common.dto.RefundReceiptRequestDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketConfirmDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketPreviewRequestDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketSearchDTO;
+import vn.edu.iuh.fit.common.response.Response;
 
 public interface TicketService {
   Response exchangeTickets(ExchangeTicketRequestDTO requestDTO);
@@ -20,4 +21,6 @@ public interface TicketService {
   Response previewReturnTickets(ReturnTicketPreviewRequestDTO previewRequestDTO);
 
   Response confirmReturnTickets(ReturnTicketConfirmDTO confirmDTO);
+
+  Response getRefundReceipt(RefundReceiptRequestDTO requestDTO);
 }

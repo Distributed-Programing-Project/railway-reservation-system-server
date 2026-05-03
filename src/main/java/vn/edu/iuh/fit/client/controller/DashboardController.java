@@ -1,5 +1,9 @@
 package vn.edu.iuh.fit.client.controller;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
@@ -12,10 +16,6 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 public class DashboardController {
 
@@ -99,11 +99,11 @@ public class DashboardController {
         });
         btnSellTicket.setOnAction(event -> {
             setActiveMenu(btnSellTicket);
-            loadContent("/client/ui/views/sell-ticket-wizard.fxml");
+            openSellTicketView();
         });
         btnExchangeTicket.setOnAction(event -> {
             setActiveMenu(btnExchangeTicket);
-            loadContent("/client/ui/views/doi-ve.fxml");
+            openExchangeTicketView();
         });
         btnReturnTicket.setOnAction(event -> {
             setActiveMenu(btnReturnTicket);
@@ -132,6 +132,24 @@ public class DashboardController {
         btnLogout.setOnAction(event -> logout());
     }
 
+    private void openExchangeTicketView() {
+        try {
+            // Tải cái khung Wizard Bán Vé
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/ui/views/ban-ve.fxml"));
+            javafx.scene.Parent root = loader.load();
+
+            vn.edu.iuh.fit.client.controller.BanVeController controller = loader.getController();
+
+            // Bật chế độ Đổi vé và show màn hình Tra cứu
+            controller.getState().setExchangeMode(true);
+            controller.showExchangeSearch();
+            contentPane.getChildren().setAll(root);
+
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void openHomeView() {
         loadContent("/client/ui/views/dashboard_statistics.fxml", controller -> {
             if (controller instanceof DashboardStatisticsController dashboardStatisticsController) {
@@ -146,6 +164,24 @@ public class DashboardController {
 
     private void openScheduleView() {
         loadContent("/client/ui/views/schedule-management.fxml");
+    }
+
+    private void openSellTicketView() {
+        if (tryLoadContent("/client/ui/views/ban-ve.fxml")) {
+            return;
+        }
+        loadContent("/client/ui/views/sell-ticket-wizard.fxml");
+    }
+
+    private boolean tryLoadContent(String fxmlPath) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            Parent view = loader.load();
+            contentPane.getChildren().setAll(view);
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     private void loadContent(String fxmlPath) {

@@ -136,6 +136,12 @@ public class SellTicketWizardController {
   private PaymentStatus status = PaymentStatus.PENDING;
   private SaleCreateResponseDTO lastSaleResult;
 
+  // BIẾN CHO CHẾ ĐỘ ĐỔI VÉ
+  private boolean isExchangeMode = false;
+  private List<String> exchangeOldTicketIds = new ArrayList<>();
+  private vn.edu.iuh.fit.common.dto.ExchangeTicketPreviewDTO exchangePreviewDTO;
+  private final vn.edu.iuh.fit.client.service.ExchangeTicketClientService exchangeService = new vn.edu.iuh.fit.client.service.ExchangeTicketClientService();
+
   // STEP indicator
   @FXML
   private Label lblStep1;
@@ -652,6 +658,16 @@ public class SellTicketWizardController {
         return;
       stopSeatMapPolling();
       renewHeldSeats();
+
+      // NẾU LÀ ĐỔI VÉ: Bỏ qua nhập thông tin khách (Step 3), nhảy thẳng sang thanh
+      // toán (Step 4)
+      if (isExchangeMode) {
+        currentStep = 4;
+        loadExchangePreview(); // Tính phí đổi vé
+        updateStepUI();
+        return;
+      }
+
       buildPassengerForms();
       currentStep = 3;
       updateStepUI();
@@ -677,6 +693,14 @@ public class SellTicketWizardController {
       returnCart.clear();
       refreshTotals();
     }
+
+    // NẾU LÀ ĐỔI VÉ: Lùi từ thanh toán (Step 4) thẳng về chọn ghế (Step 2)
+    if (currentStep == 4 && isExchangeMode) {
+      currentStep = 2;
+      updateStepUI();
+      return;
+    }
+
     currentStep--;
     updateStepUI();
   }
@@ -710,6 +734,38 @@ public class SellTicketWizardController {
     currentStep = 1;
     updateStepUI();
     refreshTotals();
+  }
+
+  private void loadExchangePreview() {
+    setLoading(true);
+    List<String> newSdIds = outboundCart.stream().map(CartItem::scheduleDetailId).toList();
+
+    Task<Response> task = new Task<>() {
+      @Override
+      protected Response call() {
+        return exchangeService.previewExchangeTickets(exchangeOldTicketIds, newSdIds, clientSessionId);
+      }
+    };
+    task.setOnSucceeded(e -> {
+      setLoading(false);
+      Response res = task.getValue();
+      if (res != null && res.isSuccess()
+          && res.getData() instanceof vn.edu.iuh.fit.common.dto.ExchangeTicketPreviewDTO dto) {
+        this.exchangePreviewDTO = dto;
+        // Ép UI hiển thị tổng tiền đổi vé:
+        lblTotalAmount.setText("TỔNG TIỀN ĐỔI: " + formatMoney(dto.getTotalAmount()));
+        chkRedeemPoints.setDisable(true); // Cấm tích điểm khi đổi vé
+      } else {
+        showError("Tính tiền đổi", res == null ? "Lỗi server" : res.getMessage());
+        handleBack(); // Bị lỗi thì lùi về chọn ghế lại
+      }
+    });
+    task.setOnFailed(e -> {
+      setLoading(false);
+      showError("Lỗi", "Không thể kết nối Server để tính phí.");
+      handleBack();
+    });
+    start(task, "preview-exchange");
   }
 
   private boolean validateStep1Selection() {
@@ -1134,6 +1190,12 @@ public class SellTicketWizardController {
   private boolean validateStep2Selection() {
     if (outboundCart.isEmpty()) {
       showWarning("Chọn ghế", "Vui lòng chọn ít nhất 1 ghế chiều đi.");
+      return false;
+    }
+    // NẾU LÀ ĐỔI VÉ: Số ghế mới phải bằng số vé cũ
+    if (isExchangeMode && outboundCart.size() != exchangeOldTicketIds.size()) {
+      showWarning("Chọn ghế", "Bạn đang đổi " + exchangeOldTicketIds.size() + " vé. Bạn đã chọn " + outboundCart.size()
+          + " ghế. Vui lòng chọn cho đủ.");
       return false;
     }
     if (rbRoundTrip.isSelected()) {
@@ -1611,28 +1673,62 @@ public class SellTicketWizardController {
       paymentOrderId = currentPayment.getPaymentOrderId();
     }
 
-    SaleCreateRequestDTO request = SaleCreateRequestDTO.builder()
-        .clientSessionId(clientSessionId)
-        .ticketCategory(rbRoundTrip.isSelected() ? TicketCategory.ROUND_TRIP : TicketCategory.ONE_WAY)
-        .outboundScheduleId(selectedOutbound.getScheduleId())
-        .returnScheduleId(rbRoundTrip.isSelected() ? selectedReturn.getScheduleId() : null)
-        .outboundScheduleDetailIds(outboundCart.stream().map(ci -> ci.scheduleDetailId).toList())
-        .returnScheduleDetailIds(
-            rbRoundTrip.isSelected() ? returnCart.stream().map(ci -> ci.scheduleDetailId).toList() : List.of())
-        .outboundPassengers(outboundPassengerForms.stream().map(PassengerForm::toDTO).toList())
-        .returnPassengers(
-            rbRoundTrip.isSelected() ? returnPassengerForms.stream().map(PassengerForm::toDTO).toList() : List.of())
-        .childrenUnder6(buildChildrenDTOs())
-        .buyer(buildBuyerDTO())
-        .vat(buildVatDTO())
-        .redeemPoints(
-            SaleRedeemPointsDTO.builder().redeemRequested(chkRedeemPoints.isSelected()).pointsToRedeem(redeem).build())
-        .paymentMethod(pm)
-        .amountPaid(amountPaid)
-        .paymentOrderId(paymentOrderId)
-        .build();
+    if (isExchangeMode) {
+      // GỌI API ĐỔI VÉ
+      vn.edu.iuh.fit.common.dto.ExchangeTicketRequestDTO exReq = vn.edu.iuh.fit.common.dto.ExchangeTicketRequestDTO
+          .builder()
+          .oldTicketIds(exchangeOldTicketIds)
+          .newScheduleDetailIds(outboundCart.stream().map(CartItem::scheduleDetailId).toList())
+          .employeeId(vn.edu.iuh.fit.client.session.ClientSessionContext.getInstance().getEmployeeId())
+          .clientSessionId(clientSessionId)
+          .build();
 
-    submitSaleAsync(request, null);
+      setLoading(true);
+      Task<Response> exTask = new Task<>() {
+        @Override
+        protected Response call() {
+          return exchangeService.exchangeTickets(exReq);
+        }
+      };
+      exTask.setOnSucceeded(e -> {
+        setLoading(false);
+        Response res = exTask.getValue();
+        if (res != null && res.isSuccess()) {
+          stopHoldKeepAlive();
+          showInfo("Thành công", "Giao dịch đổi vé thành công!");
+          btnFinishSale.setDisable(true);
+          btnPrintTickets.setDisable(false);
+        } else {
+          showError("Lỗi đổi vé", res != null ? res.getMessage() : "Lỗi Server.");
+        }
+      });
+      start(exTask, "finish-exchange");
+
+    } else {
+      // GỌI API BÁN VÉ GỐC
+      SaleCreateRequestDTO request = SaleCreateRequestDTO.builder()
+          .clientSessionId(clientSessionId)
+          .ticketCategory(rbRoundTrip.isSelected() ? TicketCategory.ROUND_TRIP : TicketCategory.ONE_WAY)
+          .outboundScheduleId(selectedOutbound.getScheduleId())
+          .returnScheduleId(rbRoundTrip.isSelected() ? selectedReturn.getScheduleId() : null)
+          .outboundScheduleDetailIds(outboundCart.stream().map(CartItem::scheduleDetailId).toList())
+          .returnScheduleDetailIds(
+              rbRoundTrip.isSelected() ? returnCart.stream().map(CartItem::scheduleDetailId).toList() : List.of())
+          .outboundPassengers(outboundPassengerForms.stream().map(PassengerForm::toDTO).toList())
+          .returnPassengers(
+              rbRoundTrip.isSelected() ? returnPassengerForms.stream().map(PassengerForm::toDTO).toList() : List.of())
+          .childrenUnder6(buildChildrenDTOs())
+          .buyer(buildBuyerDTO())
+          .vat(buildVatDTO())
+          .redeemPoints(SaleRedeemPointsDTO.builder().redeemRequested(chkRedeemPoints.isSelected())
+              .pointsToRedeem(redeem).build())
+          .paymentMethod(pm)
+          .amountPaid(amountPaid)
+          .paymentOrderId(paymentOrderId)
+          .build();
+
+      submitSaleAsync(request, null);
+    }
   }
 
   private void submitSaleAsync(SaleCreateRequestDTO request, Runnable afterSuccess) {
@@ -1893,6 +1989,18 @@ public class SellTicketWizardController {
     alert.setHeaderText(null);
     alert.setContentText(content);
     alert.showAndWait();
+  }
+
+  public void initExchangeMode(List<String> oldTicketIds) {
+    this.isExchangeMode = true;
+    this.exchangeOldTicketIds = oldTicketIds;
+
+    // Khóa UI: Đổi vé chỉ đổi 1 chiều, không mua khứ hồi
+    rbRoundTrip.setDisable(true);
+    rbOneWay.setSelected(true);
+
+    showInfo("Chế độ Đổi vé", "Hệ thống ghi nhận bạn đang đổi " + oldTicketIds.size()
+        + " vé.\nVui lòng chọn chính xác " + oldTicketIds.size() + " ghế mới.");
   }
 
   private record CartItem(String scheduleDetailId, int carriageNumber, int seatNumber, double price) {
