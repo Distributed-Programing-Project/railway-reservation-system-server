@@ -51,6 +51,6 @@ public class ScheduleDTO implements Serializable {
 
     @AssertTrue(message = ScheduleMessages.ARRIVAL_TIME_INVALID)
     public boolean isArrivalTimeValid() {
-        return departureTime == null || arrivalTime == null || !arrivalTime.isBefore(departureTime);
+        return departureTime == null || arrivalTime == null || arrivalTime.isAfter(departureTime);
     }
 }

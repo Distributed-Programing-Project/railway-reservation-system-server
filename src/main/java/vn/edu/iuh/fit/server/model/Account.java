@@ -3,11 +3,14 @@ package vn.edu.iuh.fit.server.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter
 @Getter
-@ToString
+@ToString(exclude = "roles")
 @Builder
 @Entity
 @Table(name = "accounts")
@@ -26,4 +29,13 @@ public class Account {
 
     @Column(name = "is_active", nullable = false)
     private boolean active;
+
+    @Builder.Default
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "account_roles",
+            joinColumns = @JoinColumn(name = "account_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
 }

@@ -1,24 +1,26 @@
 package vn.edu.iuh.fit.server.service;
 
-import vn.edu.iuh.fit.server.model.Route;
-
-import java.util.List;
+import vn.edu.iuh.fit.common.dto.RouteActionDTO;
+import vn.edu.iuh.fit.common.dto.RouteDTO;
+import vn.edu.iuh.fit.common.dto.RouteFilterDTO;
+import vn.edu.iuh.fit.common.response.Response;
 
 public interface RouteService {
-    boolean createRoute(Route route);
 
-    boolean updateRoute(Route route);
+    Response getAllRoutes();
 
-    Route findReverseRoute(String routeId);
+    Response searchRoutes(RouteFilterDTO filter);
 
-    boolean hasSchedules(String routeId);
+    Response findRouteById(String routeId);
 
-    boolean deleteRoute(String routeId);
+    Response createRoute(RouteDTO routeDTO);
 
-    Route findRouteById(String routeId);
+    Response updateRoute(RouteDTO routeDTO);
 
-    List<Route> findAllRoutes();
+    Response deleteRoute(RouteActionDTO dto);
 
-    List<Route> searchRoutes(String departureStationId, String destinationStationId, String status);
+    Response promoteRoute(RouteActionDTO dto);
+
+    Response disableRoute(RouteActionDTO dto);
 }
 

@@ -14,6 +14,26 @@
   -fx-padding: 0 0 10 0;
 }
 
+.title-1 {
+  -fx-font-size: 28px;
+  -fx-font-weight: 700;
+  -fx-text-fill: -color-fg-default;
+}
+
+.title-2 {
+  -fx-font-size: 20px;
+  -fx-font-weight: 700;
+  -fx-text-fill: -color-fg-default;
+}
+
+.text-caption {
+  -fx-text-fill: -color-fg-muted;
+}
+
+.text-bold {
+  -fx-font-weight: 700;
+}
+
 /* 3. Tùy chỉnh TableView (Dữ liệu lịch trình) */
 .data-table {
   -fx-background-color: -color-bg-default;
@@ -86,15 +106,38 @@
   -fx-font-weight: bold;
 }
 
-/* 8. Loading Overlay */
-#loadingOverlay {
-  -fx-background-color: rgba(0, 0, 0, 0.3); /* Làm mờ nhẹ nền */
+.status-muted {
+  -fx-background-color: -color-neutral-muted;
+  -fx-text-fill: -color-fg-muted;
 }
 
-.loading-container {
-  -fx-background-color: -color-bg-overlay;
-  -fx-border-color: -color-border-default;
-  -fx-background-radius: 12;
-  -fx-border-radius: 12;
-  -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.15), 20, 0, 0, 10);
+.status-info,
+.status-ready {
+  -fx-background-color: -color-accent-muted;
+  -fx-text-fill: -color-accent-fg;
+}
+
+.status-success {
+  -fx-background-color: -color-success-muted;
+  -fx-text-fill: -color-success-fg;
+}
+
+.status-warning {
+  -fx-background-color: -color-attention-muted;
+  -fx-text-fill: -color-attention-fg;
+}
+
+.status-danger {
+  -fx-background-color: -color-danger-muted;
+  -fx-text-fill: -color-danger-fg;
+}
+
+.status-success-text {
+  -fx-text-fill: -color-success-fg;
+  -fx-font-weight: 700;
+}
+
+.status-danger-text {
+  -fx-text-fill: -color-danger-fg;
+  -fx-font-weight: 700;
 }

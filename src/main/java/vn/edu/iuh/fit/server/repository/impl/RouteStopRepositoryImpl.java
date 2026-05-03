@@ -24,7 +24,10 @@ public class RouteStopRepositoryImpl extends AbstractGenericRepositoryImpl<Route
     @Override
     public List<RouteStop> findRouteStopsByRouteId(EntityManager em, String routeId) {
         return em.createQuery(
-                        "SELECT rs FROM RouteStop rs LEFT JOIN FETCH rs.stationStop WHERE rs.route.id = :id ORDER BY rs.stopOrder ASC",
+                        "SELECT rs FROM RouteStop rs " +
+                                "LEFT JOIN FETCH rs.stationStop " +
+                                "LEFT JOIN FETCH rs.route " +
+                                "WHERE rs.route.id = :id ORDER BY rs.orderStop ASC",
                         RouteStop.class)
                 .setParameter("id", routeId)
                 .getResultList();
@@ -61,5 +64,12 @@ public class RouteStopRepositoryImpl extends AbstractGenericRepositoryImpl<Route
             return true;
         }
         return false;
+    }
+
+    @Override
+    public int deleteRouteStopsByRouteId(EntityManager em, String routeId) {
+        return em.createQuery("DELETE FROM RouteStop rs WHERE rs.route.id = :routeId")
+                .setParameter("routeId", routeId)
+                .executeUpdate();
     }
 }

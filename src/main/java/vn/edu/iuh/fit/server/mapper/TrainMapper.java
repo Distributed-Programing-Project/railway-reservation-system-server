@@ -8,13 +8,12 @@ import vn.edu.iuh.fit.server.model.Train;
 
 import java.util.List;
 
-@Mapper
+@Mapper(uses = {CarriageMapper.class})
 public interface TrainMapper {
     TrainMapper INSTANCE = Mappers.getMapper(TrainMapper.class);
 
     @Mapping(target = "totalCarriages", expression = "java(train.getCarriages() != null ? train.getCarriages().size() : 0)")
     @Mapping(target = "totalSeats", expression = "java(countTotalSeats(train))")
-    @Mapping(target = "carriages", ignore = true)
     TrainDTO toDto(Train train);
 
     List<TrainDTO> toDtoList(List<Train> trains);
@@ -24,8 +23,8 @@ public interface TrainMapper {
             return 0;
         }
         return train.getCarriages().stream()
-                .filter(c -> c.getSeats() != null)
-                .mapToInt(c -> c.getSeats().size())
+                .filter(c -> c.getType() != null)
+                .mapToInt(c -> c.getType().getSeatCount())
                 .sum();
     }
 }

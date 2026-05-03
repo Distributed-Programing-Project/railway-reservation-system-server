@@ -1,20 +1,15 @@
 package vn.edu.iuh.fit.server.service;
 
-import vn.edu.iuh.fit.server.model.RouteStop;
-
-import java.util.List;
+import vn.edu.iuh.fit.common.dto.RouteActionDTO;
+import vn.edu.iuh.fit.common.dto.RouteStopDTO;
+import vn.edu.iuh.fit.common.response.Response;
 
 public interface RouteStopService {
-    List<RouteStop> findAllRouteStops();
+    Response findRouteStopsByRouteId(RouteActionDTO dto);
 
-    List<RouteStop> findRouteStopsByRouteId(String routeId);
+    Response createRouteStop(RouteStopDTO dto);
 
-    RouteStop findRouteStopById(String routeStopId);
+    Response updateRouteStop(RouteStopDTO dto);
 
-    boolean createRouteStop(RouteStop routeStop);
-
-    boolean updateRouteStop(RouteStop routeStop);
-
-    boolean deleteRouteStop(String routeStopId);
+    Response deleteRouteStop(RouteStopDTO dto);
 }
-

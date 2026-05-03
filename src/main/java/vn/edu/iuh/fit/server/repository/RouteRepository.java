@@ -1,6 +1,7 @@
 package vn.edu.iuh.fit.server.repository;
 
 import jakarta.persistence.EntityManager;
+import vn.edu.iuh.fit.common.constant.RouteStatus;
 import vn.edu.iuh.fit.server.model.Route;
 
 import java.util.List;
@@ -20,6 +21,6 @@ public interface RouteRepository {
 
     List<Route> findAllRoutes(EntityManager em);
 
-    List<Route> searchRoutes(EntityManager em, String departureStationId, String destinationStationId, String status);
+    List<Route> searchRoutes(EntityManager em, String departureStationId, String destinationStationId, RouteStatus status);
 }
 

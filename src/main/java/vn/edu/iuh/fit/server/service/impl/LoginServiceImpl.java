@@ -4,11 +4,13 @@ import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import jakarta.persistence.EntityManager;
 import vn.edu.iuh.fit.common.dto.AccountDTO;
 import vn.edu.iuh.fit.common.dto.LoginRequestDTO;
 import vn.edu.iuh.fit.common.message.LoginMessages;
 import vn.edu.iuh.fit.common.response.Response;
 import vn.edu.iuh.fit.server.model.Account;
+import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.repository.AccountRepository;
 import vn.edu.iuh.fit.server.repository.impl.AbstractGenericRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.AccountRepositoryImpl;
@@ -43,38 +45,19 @@ public class LoginServiceImpl implements LoginService {
                     log.warn("Login failed: account inactive username={}", username);
                     return Response.error(LoginMessages.ACCOUNT_INACTIVE);
                 }
-
                 if (!passwordMatches(password, account.getPassword())) {
                     log.warn("Login failed: invalid password username={}", username);
                     return Response.error(LoginMessages.INVALID_CREDENTIALS);
                 }
 
-                String employeeId = em.createQuery(
-                        "SELECT e.employeeId FROM Employee e WHERE e.account.id = :accountId",
-                        String.class)
-                        .setParameter("accountId", account.getId())
-                        .getResultStream()
-                        .findFirst()
-                        .orElse(null);
-
-                // Fallback cho trường hợp data account_id chưa link đúng,
-                // nhưng username chính là employee_code như QL001.
-                if (employeeId == null || employeeId.isBlank()) {
-                    employeeId = em.createQuery(
-                            "SELECT e.employeeId FROM Employee e WHERE e.employeeCode = :employeeCode",
-                            String.class)
-                            .setParameter("employeeCode", account.getUsername())
-                            .getResultStream()
-                            .findFirst()
-                            .orElse(null);
-                }
-
+                Employee employee = findEmployeeByAccountId(em, account.getId());
                 log.info("Login successful: username={}", username);
                 return Response.success(LoginMessages.LOGIN_SUCCESS, AccountDTO.builder()
                         .id(account.getId())
                         .username(account.getUsername())
                         .active(account.isActive())
-                        .employeeId(employeeId)
+                        .employeeId(employee == null ? null : employee.getEmployeeId())
+                        .isManager(employee != null && Boolean.TRUE.equals(employee.getIsManager()))
                         .build());
             });
         } catch (Exception e) {
@@ -92,6 +75,9 @@ public class LoginServiceImpl implements LoginService {
     }
 
     private boolean passwordMatches(String rawPassword, String storedPassword) {
+        if (rawPassword.equals(storedPassword)) {
+            return true;
+        }
         if (storedPassword == null || storedPassword.isBlank()) {
             return false;
         }
@@ -99,6 +85,16 @@ public class LoginServiceImpl implements LoginService {
             return BCrypt.checkpw(rawPassword, storedPassword);
         }
         return false;
+    }
+
+    private Employee findEmployeeByAccountId(EntityManager em, String accountId) {
+        return em.createQuery(
+                "SELECT e FROM Employee e WHERE e.account.id = :accountId",
+                Employee.class)
+                .setParameter("accountId", accountId)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
     }
 
     private boolean isBCryptHash(String value) {
