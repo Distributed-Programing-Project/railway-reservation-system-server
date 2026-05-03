@@ -63,6 +63,9 @@ public class DashboardController {
     private Button btnEmployee;
 
     @FXML
+    private Button btnCustomer;
+
+    @FXML
     private Button btnStatistics;
 
     @FXML
@@ -120,6 +123,10 @@ public class DashboardController {
         btnReturnTicket.setOnAction(event -> {
             setActiveMenu(btnReturnTicket);
             loadContent("/client/ui/views/tra-ve.fxml");
+        });
+        btnCustomer.setOnAction(event -> {
+            setActiveMenu(btnCustomer);
+            loadContent("/client/ui/views/customer-management.fxml");
         });
         btnSchedule.setOnAction(event -> {
             setActiveMenu(btnSchedule);
@@ -241,6 +248,7 @@ public class DashboardController {
         btnTrain.getStyleClass().remove("menu-item-active");
         btnEmployee.getStyleClass().remove("menu-item-active");
         btnStatistics.getStyleClass().remove("menu-item-active");
+        btnCustomer.getStyleClass().remove("menu-item-active");
     }
 
     private void logout() {

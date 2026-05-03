@@ -48,6 +48,9 @@
                 <Button fx:id="btnReturnTicket" text="Trả Vé"
                         styleClass="menu-item" maxWidth="Infinity"/>
 
+                <Button fx:id="btnCustomer" text="Quản Lý Khách Hàng"
+                        styleClass="menu-item" maxWidth="Infinity"/>
+                        
                 <Button fx:id="btnSchedule" text="Quản Lý Lịch Trình"
                         styleClass="menu-item" maxWidth="Infinity"/>
 
