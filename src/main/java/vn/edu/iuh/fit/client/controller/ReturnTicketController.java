@@ -2,11 +2,11 @@ package vn.edu.iuh.fit.client.controller;
 
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
-import java.text.NumberFormat;
 import java.text.Normalizer;
+import java.text.NumberFormat;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -54,7 +54,6 @@ import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.xml.JRXmlLoader;
 import vn.edu.iuh.fit.client.service.ReturnTicketClientService;
-import vn.edu.iuh.fit.client.session.ClientSessionContext;
 import vn.edu.iuh.fit.common.dto.RefundReceiptDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketPreviewDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketTicketDTO;
@@ -414,7 +413,7 @@ public class ReturnTicketController {
       showWarning("Trả vé", "Vui lòng tính toán hoàn tiền trước khi xác nhận.");
       return;
     }
-    String employeeId = ClientSessionContext.getInstance().getEmployeeId();
+    String employeeId = vn.edu.iuh.fit.client.service.SessionManager.getInstance().getEmployeeId();
     if (employeeId == null || employeeId.isBlank()) {
       showError("Trả vé", "Không xác định được nhân viên đang đăng nhập.");
       return;

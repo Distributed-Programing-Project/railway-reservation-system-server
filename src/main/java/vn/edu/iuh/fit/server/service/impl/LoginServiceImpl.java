@@ -50,13 +50,22 @@ public class LoginServiceImpl implements LoginService {
                     return Response.error(LoginMessages.INVALID_CREDENTIALS);
                 }
 
+                // 2. Truy vấn thủ công Employee để đảm bảo lấy được ID
                 Employee employee = findEmployeeByAccountId(em, account.getId());
-                log.info("Login successful: username={}", username);
+
+                // 3. Log để sếp kiểm tra trên Console ngay khi đăng nhập
+                if (employee != null) {
+                    log.info("Đăng nhập thành công: User={}, EmployeeID={}", username, employee.getEmployeeId());
+                } else {
+                    log.error("CẢNH BÁO: Tài khoản {} không có nhân viên liên kết!", username);
+                }
+
+                // 4. Trả về AccountDTO với đầy đủ thông tin session[cite: 13]
                 return Response.success(LoginMessages.LOGIN_SUCCESS, AccountDTO.builder()
                         .id(account.getId())
                         .username(account.getUsername())
                         .active(account.isActive())
-                        .employeeId(employee == null ? null : employee.getEmployeeId())
+                        .employeeId(employee != null ? employee.getEmployeeId() : null)
                         .isManager(employee != null && Boolean.TRUE.equals(employee.getIsManager()))
                         .build());
             });

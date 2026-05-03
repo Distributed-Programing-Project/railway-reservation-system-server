@@ -25,8 +25,6 @@ public final class ClientSessionContext {
 
     this.employeeId = dto.getEmployeeId();
 
-    // Fallback thực dụng: nếu server chưa trả employeeId,
-    // dùng username như employee_code, ví dụ QL001.
     if (this.employeeId == null || this.employeeId.isBlank()) {
       this.employeeId = dto.getUsername();
     }

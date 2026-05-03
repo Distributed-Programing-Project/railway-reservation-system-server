@@ -35,9 +35,8 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import vn.edu.iuh.fit.client.service.SaleClientService;
 import vn.edu.iuh.fit.client.service.ExchangeTicketClientService;
-import vn.edu.iuh.fit.client.session.ClientSessionContext;
+import vn.edu.iuh.fit.client.service.SaleClientService;
 import vn.edu.iuh.fit.client.session.SaleWizardState;
 import vn.edu.iuh.fit.client.session.SaleWizardState.BuyerDraft;
 import vn.edu.iuh.fit.client.session.SaleWizardState.PassengerDraft;
@@ -190,7 +189,8 @@ public class Step4PaymentController {
   @FXML
   private void handleXuatHoaDon() {
     if (coordinator != null && coordinator.getState().isExchangeMode()) {
-      if (lastExchangeResult == null || lastExchangeResult.getInvoiceId() == null || lastExchangeResult.getInvoiceId().isBlank()) {
+      if (lastExchangeResult == null || lastExchangeResult.getInvoiceId() == null
+          || lastExchangeResult.getInvoiceId().isBlank()) {
         showAlert(Alert.AlertType.WARNING, "Hóa đơn", "Chưa có giao dịch đổi vé nào được hoàn tất để xuất hóa đơn.");
         return;
       }
@@ -351,7 +351,8 @@ public class Step4PaymentController {
     containerVe.getChildren().addAll(rows);
   }
 
-  private Node createTicketRow(ScheduleSaleCardDTO schedule, SelectedSeatDraft seat, PassengerDraft passenger, TripDirection dir) {
+  private Node createTicketRow(ScheduleSaleCardDTO schedule, SelectedSeatDraft seat, PassengerDraft passenger,
+      TripDirection dir) {
     HBox row = new HBox(10.0);
     row.setAlignment(Pos.CENTER_LEFT);
     row.setStyle("-fx-padding: 8px 0; -fx-border-color: #eee; -fx-border-width: 0 0 1px 0;");
@@ -362,11 +363,14 @@ public class Step4PaymentController {
     LocalDateTime dt = schedule == null ? null : schedule.getDepartureTime();
     col1.getChildren().addAll(
         new Label(labelForDirection(dir) + ": Tàu " + train),
-        new Label(dt == null ? "--" : dt.format(DATE_TIME)) {{
-          setStyle("-fx-font-size: 11px;");
-        }});
+        new Label(dt == null ? "--" : dt.format(DATE_TIME)) {
+          {
+            setStyle("-fx-font-size: 11px;");
+          }
+        });
 
-    String carriage = seat != null && seat.getCarriageNumber() != null ? String.valueOf(seat.getCarriageNumber()) : "--";
+    String carriage = seat != null && seat.getCarriageNumber() != null ? String.valueOf(seat.getCarriageNumber())
+        : "--";
     String seatNo = seat != null && seat.getSeatNumber() != null ? String.valueOf(seat.getSeatNumber()) : "--";
     Label col2 = new Label("Toa " + carriage + " - Ghế " + seatNo);
     col2.setPrefWidth(headerToaCho.getPrefWidth());
@@ -375,9 +379,11 @@ public class Step4PaymentController {
     HBox.setHgrow(col3, Priority.ALWAYS);
     col3.getChildren().addAll(
         new Label(safe(passenger.getFullName())),
-        new Label("ID: " + safe(passenger.getDocumentNumber())) {{
-          setStyle("-fx-font-size: 11px;");
-        }});
+        new Label("ID: " + safe(passenger.getDocumentNumber())) {
+          {
+            setStyle("-fx-font-size: 11px;");
+          }
+        });
 
     Label col4 = new Label(ticketTypeVi(passenger.getTicketType()));
     col4.setPrefWidth(headerLoaiVe.getPrefWidth());
@@ -406,9 +412,11 @@ public class Step4PaymentController {
     LocalDateTime dt = outbound == null ? null : outbound.getDepartureTime();
     col1.getChildren().addAll(
         new Label("Trẻ <6 (không ghế) - Tàu " + train),
-        new Label(dt == null ? "--" : dt.format(DATE_TIME)) {{
-          setStyle("-fx-font-size: 11px;");
-        }});
+        new Label(dt == null ? "--" : dt.format(DATE_TIME)) {
+          {
+            setStyle("-fx-font-size: 11px;");
+          }
+        });
 
     Label col2 = new Label("Không chiếm ghế");
     col2.setPrefWidth(headerToaCho.getPrefWidth());
@@ -417,9 +425,11 @@ public class Step4PaymentController {
     HBox.setHgrow(col3, Priority.ALWAYS);
     col3.getChildren().addAll(
         new Label(safe(passenger.getFullName())),
-        new Label("DOB: " + (passenger.getDateOfBirth() == null ? "--" : passenger.getDateOfBirth())) {{
-          setStyle("-fx-font-size: 11px;");
-        }});
+        new Label("DOB: " + (passenger.getDateOfBirth() == null ? "--" : passenger.getDateOfBirth())) {
+          {
+            setStyle("-fx-font-size: 11px;");
+          }
+        });
 
     Label col4 = new Label("Miễn vé");
     col4.setPrefWidth(headerLoaiVe.getPrefWidth());
@@ -533,8 +543,8 @@ public class Step4PaymentController {
 
     // Re-map detail labels for exchange mode:
     // - "Chênh lệch giá" => priceDiffToPay
-    // - "Phí đổi vé"     => feeTotal
-    // - "Giá vé cũ"      => totalOldPrice
+    // - "Phí đổi vé" => feeTotal
+    // - "Giá vé cũ" => totalOldPrice
     updateTotalLabels(priceDiffToPay, feeTotal, 0, totalOldPrice);
     lblDetailTongThanhToan.setText(formatMoney(previewTotalToPay));
     lblDisplayTongThanhToan.setText(formatMoney(previewTotalToPay));
@@ -546,7 +556,8 @@ public class Step4PaymentController {
         .filter(PassengerDraft::isHasSeat)
         .anyMatch(p -> p.getTicketType() != null && p.getTicketType() != TicketType.NORMAL);
     boolean hasChildUnder6 = state.getChildrenUnder6() != null && !state.getChildrenUnder6().isEmpty();
-    boolean eligible = state.getRewardPoints() != null && state.getRewardPoints() > 0 && !anyDiscountTicket && !hasChildUnder6;
+    boolean eligible = state.getRewardPoints() != null && state.getRewardPoints() > 0 && !anyDiscountTicket
+        && !hasChildUnder6;
 
     if (!eligible) {
       pointsApplied = false;
@@ -751,7 +762,8 @@ public class Step4PaymentController {
         applySaleSuccessUi(dto, true);
       } else {
         btnXacNhanVaIn.setDisable(false);
-        showAlert(Alert.AlertType.ERROR, "Thanh toán", res == null ? "Không có phản hồi từ server." : safe(res.getMessage()));
+        showAlert(Alert.AlertType.ERROR, "Thanh toán",
+            res == null ? "Không có phản hồi từ server." : safe(res.getMessage()));
       }
     });
     task.setOnFailed(e -> {
@@ -765,7 +777,7 @@ public class Step4PaymentController {
   }
 
   private void submitCashExchangeAndPrintTickets(SaleWizardState state, double amountPaid) {
-    String employeeId = ClientSessionContext.getInstance().getEmployeeId();
+    String employeeId = vn.edu.iuh.fit.client.service.SessionManager.getInstance().getEmployeeId();
     if (employeeId == null || employeeId.isBlank()) {
       submitting = false;
       btnQuayLai.setDisable(false);
@@ -814,7 +826,8 @@ public class Step4PaymentController {
         applyExchangeSuccessUi(dto, true);
       } else {
         btnXacNhanVaIn.setDisable(false);
-        showAlert(Alert.AlertType.ERROR, "Đổi vé", res == null ? "Không có phản hồi từ server." : safe(res.getMessage()));
+        showAlert(Alert.AlertType.ERROR, "Đổi vé",
+            res == null ? "Không có phản hồi từ server." : safe(res.getMessage()));
       }
     });
     task.setOnFailed(e -> {
@@ -875,7 +888,8 @@ public class Step4PaymentController {
     }
 
     if (roundTrip) {
-      // Prevent duplicate entry constraints: outbound/return scheduleDetailIds must be distinct.
+      // Prevent duplicate entry constraints: outbound/return scheduleDetailIds must
+      // be distinct.
       Set<String> outboundIds = new HashSet<>();
       Set<String> returnIds = new HashSet<>();
       for (PassengerDraft p : seatPassengers) {
@@ -954,7 +968,8 @@ public class Step4PaymentController {
   }
 
   private SaleCreateRequestDTO buildRequest(SaleWizardState state, double amountPaid) {
-    boolean roundTrip = state.getTicketCategory() == TicketCategory.ROUND_TRIP && state.getSelectedReturnSchedule() != null;
+    boolean roundTrip = state.getTicketCategory() == TicketCategory.ROUND_TRIP
+        && state.getSelectedReturnSchedule() != null;
 
     List<PassengerDraft> seatPassengers = state.getPassengers().stream()
         .filter(Objects::nonNull)
@@ -996,7 +1011,8 @@ public class Step4PaymentController {
         .pointsToRedeem(pointsApplied ? pointsToRedeem : 0)
         .build();
 
-    List<SaleChildUnder6DTO> children = state.getChildrenUnder6() == null ? List.of() : new ArrayList<>(state.getChildrenUnder6());
+    List<SaleChildUnder6DTO> children = state.getChildrenUnder6() == null ? List.of()
+        : new ArrayList<>(state.getChildrenUnder6());
 
     return SaleCreateRequestDTO.builder()
         .clientSessionId(state.getClientSessionId())
@@ -1049,7 +1065,8 @@ public class Step4PaymentController {
 
     double diff = Math.abs(dto.getTotalAmount() - previewTotalToPay);
     if (diff >= 1) {
-      System.err.println("[WARN] UC001 preview total mismatch. preview=" + previewTotalToPay + ", server=" + dto.getTotalAmount());
+      System.err.println(
+          "[WARN] UC001 preview total mismatch. preview=" + previewTotalToPay + ", server=" + dto.getTotalAmount());
     }
 
     String invoiceShort = abbreviateInvoiceId(dto.getInvoiceId());
@@ -1096,7 +1113,8 @@ public class Step4PaymentController {
     System.err.println("[UC001] invoice preview request invoiceId=" + safe(lastSaleResult.getInvoiceId())
         + ", total=" + formatMoney(lastSaleResult.getTotalAmount())
         + ", tickets=" + (lastSaleResult.getTickets() == null ? 0 : lastSaleResult.getTickets().size())
-        + ", childVouchers=" + (lastSaleResult.getChildVouchers() == null ? 0 : lastSaleResult.getChildVouchers().size()));
+        + ", childVouchers="
+        + (lastSaleResult.getChildVouchers() == null ? 0 : lastSaleResult.getChildVouchers().size()));
     openInvoicePreview("In hóa đơn");
   }
 

@@ -12,10 +12,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import vn.edu.iuh.fit.common.constant.DocumentType;
 import vn.edu.iuh.fit.common.constant.InvoiceType;
 import vn.edu.iuh.fit.common.constant.PaymentMethod;
@@ -73,8 +75,9 @@ import vn.edu.iuh.fit.server.repository.impl.AbstractGenericRepositoryImpl;
 
 public class SaleServiceImpl implements SaleService {
 
+  private static final Logger log = LoggerFactory.getLogger(SaleServiceImpl.class);
   private static final int MAX_TICKETS_PER_LEG = 10;
-  private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+  private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
   private static final double POINT_REDEEM_VALUE = 1_000.0;
   private static final double POINT_EARN_VALUE = 10_000.0;
   private static final double MAX_REDEEM_RATE = 0.10;
@@ -160,7 +163,8 @@ public class SaleServiceImpl implements SaleService {
   }
 
   private ScheduleSaleCardDTO toSaleCard(jakarta.persistence.EntityManager em, Schedule schedule) {
-    if (schedule == null) return null;
+    if (schedule == null)
+      return null;
     int totalSeats = countTotalSeats(em, schedule.getId());
     int soldSeats = (int) scheduleRepository.countSoldSeatsByScheduleId(em, schedule.getId());
     int availableSeats = Math.max(0, totalSeats - soldSeats);
@@ -185,8 +189,8 @@ public class SaleServiceImpl implements SaleService {
 
   private int countTotalSeats(jakarta.persistence.EntityManager em, String scheduleId) {
     Long count = em.createQuery(
-            "SELECT COUNT(sd) FROM ScheduleDetail sd WHERE sd.schedule.id = :scheduleId",
-            Long.class)
+        "SELECT COUNT(sd) FROM ScheduleDetail sd WHERE sd.schedule.id = :scheduleId",
+        Long.class)
         .setParameter("scheduleId", scheduleId)
         .getSingleResult();
     return count != null ? count.intValue() : 0;
@@ -207,12 +211,12 @@ public class SaleServiceImpl implements SaleService {
         }
 
         List<ScheduleDetail> details = em.createQuery(
-                "SELECT sd FROM ScheduleDetail sd " +
-                    "JOIN FETCH sd.seat seat " +
-                    "JOIN FETCH seat.carriage c " +
-                    "JOIN FETCH sd.schedule sc " +
-                    "WHERE sc.id = :scheduleId",
-                ScheduleDetail.class)
+            "SELECT sd FROM ScheduleDetail sd " +
+                "JOIN FETCH sd.seat seat " +
+                "JOIN FETCH seat.carriage c " +
+                "JOIN FETCH sd.schedule sc " +
+                "WHERE sc.id = :scheduleId",
+            ScheduleDetail.class)
             .setParameter("scheduleId", scheduleId)
             .getResultList();
 
@@ -223,9 +227,11 @@ public class SaleServiceImpl implements SaleService {
         Map<String, Carriage> carriageById = new HashMap<>();
         for (ScheduleDetail sd : details) {
           Seat seat = sd.getSeat();
-          if (seat == null) continue;
+          if (seat == null)
+            continue;
           Carriage carriage = seat.getCarriage();
-          if (carriage == null) continue;
+          if (carriage == null)
+            continue;
           carriageById.putIfAbsent(carriage.getId(), carriage);
           double price = sd.getPriceSeat() != null ? sd.getPriceSeat().doubleValue() : 0.0;
 
@@ -281,11 +287,13 @@ public class SaleServiceImpl implements SaleService {
 
   @Override
   public Response holdSeatsForSale(SeatHoldRequestDTO dto) {
-    if (dto == null) return Response.error(SaleMessages.INVALID_REQUEST);
+    if (dto == null)
+      return Response.error(SaleMessages.INVALID_REQUEST);
     String scheduleId = normalize(dto.getScheduleId());
     String sessionId = normalize(dto.getClientSessionId());
     List<String> ids = dto.getScheduleDetailIds() != null ? dto.getScheduleDetailIds() : List.of();
-    if (scheduleId == null || sessionId == null || ids.isEmpty()) return Response.error(SaleMessages.INVALID_REQUEST);
+    if (scheduleId == null || sessionId == null || ids.isEmpty())
+      return Response.error(SaleMessages.INVALID_REQUEST);
 
     long now = System.currentTimeMillis();
     long expiresAt = now + SeatHoldStore.HOLD_TTL_MILLIS;
@@ -293,8 +301,8 @@ public class SaleServiceImpl implements SaleService {
     try {
       return AbstractGenericRepositoryImpl.readOnly(em -> {
         List<String> validIds = em.createQuery(
-                "SELECT sd.id FROM ScheduleDetail sd WHERE sd.schedule.id = :scheduleId AND sd.id IN :ids",
-                String.class)
+            "SELECT sd.id FROM ScheduleDetail sd WHERE sd.schedule.id = :scheduleId AND sd.id IN :ids",
+            String.class)
             .setParameter("scheduleId", scheduleId)
             .setParameter("ids", ids)
             .getResultList();
@@ -304,9 +312,9 @@ public class SaleServiceImpl implements SaleService {
         }
 
         Set<String> soldSdIds = em.createQuery(
-                "SELECT DISTINCT t.scheduleDetail.id FROM Ticket t " +
-                    "WHERE t.scheduleDetail.id IN :ids AND t.status NOT IN (:cancelled, :exchanged, :returned)",
-                String.class)
+            "SELECT DISTINCT t.scheduleDetail.id FROM Ticket t " +
+                "WHERE t.scheduleDetail.id IN :ids AND t.status NOT IN (:cancelled, :exchanged, :returned)",
+            String.class)
             .setParameter("ids", ids)
             .setParameter("cancelled", TicketStatus.CANCELLED)
             .setParameter("exchanged", TicketStatus.EXCHANGED)
@@ -328,8 +336,10 @@ public class SaleServiceImpl implements SaleService {
           }
 
           boolean ok = SeatHoldStore.tryHold(sdId, sessionId, expiresAt, now);
-          if (ok) success.add(sdId);
-          else failed.add(sdId);
+          if (ok)
+            success.add(sdId);
+          else
+            failed.add(sdId);
         }
 
         SeatHoldResponseDTO resDto = SeatHoldResponseDTO.builder()
@@ -346,10 +356,12 @@ public class SaleServiceImpl implements SaleService {
 
   @Override
   public Response releaseHeldSeatsForSale(SeatHoldRequestDTO dto) {
-    if (dto == null) return Response.error(SaleMessages.INVALID_REQUEST);
+    if (dto == null)
+      return Response.error(SaleMessages.INVALID_REQUEST);
     String sessionId = normalize(dto.getClientSessionId());
     List<String> ids = dto.getScheduleDetailIds() != null ? dto.getScheduleDetailIds() : List.of();
-    if (sessionId == null || ids.isEmpty()) return Response.error(SaleMessages.INVALID_REQUEST);
+    if (sessionId == null || ids.isEmpty())
+      return Response.error(SaleMessages.INVALID_REQUEST);
 
     long now = System.currentTimeMillis();
     List<String> success = new ArrayList<>();
@@ -362,8 +374,10 @@ public class SaleServiceImpl implements SaleService {
       }
 
       boolean ok = SeatHoldStore.releaseHold(sdId, sessionId, now);
-      if (ok) success.add(sdId);
-      else failed.add(sdId);
+      if (ok)
+        success.add(sdId);
+      else
+        failed.add(sdId);
     }
 
     SeatHoldResponseDTO resDto = SeatHoldResponseDTO.builder()
@@ -386,11 +400,13 @@ public class SaleServiceImpl implements SaleService {
     if (dto.getOutboundScheduleId() == null || dto.getOutboundScheduleId().isBlank()) {
       return Response.error(SaleMessages.INVALID_REQUEST);
     }
-    if (dto.getTicketCategory() == TicketCategory.ROUND_TRIP && (dto.getReturnScheduleId() == null || dto.getReturnScheduleId().isBlank())) {
+    if (dto.getTicketCategory() == TicketCategory.ROUND_TRIP
+        && (dto.getReturnScheduleId() == null || dto.getReturnScheduleId().isBlank())) {
       return Response.error(SaleMessages.INVALID_REQUEST);
     }
 
-    List<String> outboundSdIds = dto.getOutboundScheduleDetailIds() != null ? dto.getOutboundScheduleDetailIds() : List.of();
+    List<String> outboundSdIds = dto.getOutboundScheduleDetailIds() != null ? dto.getOutboundScheduleDetailIds()
+        : List.of();
     List<String> returnSdIds = dto.getReturnScheduleDetailIds() != null ? dto.getReturnScheduleDetailIds() : List.of();
 
     if (outboundSdIds.size() > MAX_TICKETS_PER_LEG || returnSdIds.size() > MAX_TICKETS_PER_LEG) {
@@ -403,7 +419,6 @@ public class SaleServiceImpl implements SaleService {
       return Response.error(SaleMessages.INVALID_REQUEST);
     }
     if (dto.getTicketCategory() == TicketCategory.ROUND_TRIP) {
-      // Defensive: outbound/return scheduleDetailIds must not overlap, and must be unique per leg.
       java.util.Set<String> outSet = new java.util.HashSet<>();
       java.util.Set<String> retSet = new java.util.HashSet<>();
       for (String id : outboundSdIds) {
@@ -440,6 +455,43 @@ public class SaleServiceImpl implements SaleService {
     }
   }
 
+  // --- HÀM BỔ TRỢ: TỰ ĐỘNG CẬP NHẬT/TẠO HỒ SƠ KHÁCH HÀNG ---
+  private Customer ensureCustomerRecord(EntityManager em, String name, String docNum, DocumentType docType,
+      String phone, String email) {
+    String normalizedDoc = normalize(docNum);
+    if (normalizedDoc == null)
+      return null;
+
+    Customer existing = em.createQuery(
+        "SELECT c FROM Customer c WHERE c.idCard = :doc OR c.passport = :doc", Customer.class)
+        .setParameter("doc", normalizedDoc)
+        .getResultStream()
+        .findFirst()
+        .orElse(null);
+
+    if (existing != null) {
+      if (phone != null)
+        existing.setPhoneNumber(normalize(phone));
+      if (email != null)
+        existing.setEmail(normalize(email));
+      return em.merge(existing);
+    }
+
+    Customer created = Customer.builder()
+        .name(normalize(name))
+        .idCard(docType == DocumentType.ID_CARD ? normalizedDoc : null)
+        .passport(docType == DocumentType.PASSPORT ? normalizedDoc : null)
+        .phoneNumber(normalize(phone))
+        .email(normalize(email))
+        .isActive(true)
+        .rewardPoints(0)
+        .build();
+
+    em.persist(created);
+    log.info("Auto-registered new customer: {} - {}", name, normalizedDoc);
+    return created;
+  }
+
   private Response doCreateSale(jakarta.persistence.EntityManager em, SaleCreateRequestDTO dto) {
     PaymentMethod paymentMethod = dto.getPaymentMethod();
     if (paymentMethod == null) {
@@ -468,34 +520,37 @@ public class SaleServiceImpl implements SaleService {
       }
     }
 
-    SaleBuyerDTO buyer = dto.getBuyer();
-    if (buyer == null) {
+    SaleBuyerDTO buyerDTO = dto.getBuyer();
+    if (buyerDTO == null) {
       return Response.error(SaleMessages.INVALID_REQUEST);
     }
-    String buyerDoc = normalize(buyer.getDocumentNumber());
-    if (buyerDoc == null) {
+
+    // 1. TỰ ĐỘNG ĐĂNG KÝ NGƯỜI MUA VÀO DB[cite: 1, 16, 17]
+    Customer buyerCustomer = ensureCustomerRecord(em,
+        buyerDTO.getBuyerName(),
+        buyerDTO.getDocumentNumber(),
+        buyerDTO.getDocumentType(),
+        buyerDTO.getBuyerPhone(),
+        buyerDTO.getBuyerEmail());
+
+    if (buyerCustomer == null) {
       return Response.error(SaleMessages.CUSTOMER_DOCUMENT_REQUIRED);
     }
-
-    Customer customer = resolveOrCreateCustomer(em, buyer);
-    if (customer == null) {
-      return Response.error(SaleMessages.CUSTOMER_DOCUMENT_REQUIRED);
-    }
-
-    boolean hasAccount = buyer.isHasAccount();
 
     List<Ticket> createdTickets = new ArrayList<>();
     List<InvoiceDetail> createdDetails = new ArrayList<>();
     List<IssuedTicketDTO> issuedTickets = new ArrayList<>();
     List<IssuedTicketDTO> childVouchers = new ArrayList<>();
 
-    List<SalePassengerDTO> outboundPassengers = dto.getOutboundPassengers() != null ? dto.getOutboundPassengers() : List.of();
+    List<SalePassengerDTO> outboundPassengers = dto.getOutboundPassengers() != null ? dto.getOutboundPassengers()
+        : List.of();
     List<SalePassengerDTO> returnPassengers = dto.getReturnPassengers() != null ? dto.getReturnPassengers() : List.of();
 
     if (outboundPassengers.size() != dto.getOutboundScheduleDetailIds().size()) {
       return Response.error(SaleMessages.INVALID_REQUEST);
     }
-    if (dto.getTicketCategory() == TicketCategory.ROUND_TRIP && returnPassengers.size() != dto.getReturnScheduleDetailIds().size()) {
+    if (dto.getTicketCategory() == TicketCategory.ROUND_TRIP
+        && returnPassengers.size() != dto.getReturnScheduleDetailIds().size()) {
       return Response.error(SaleMessages.INVALID_REQUEST);
     }
 
@@ -507,16 +562,20 @@ public class SaleServiceImpl implements SaleService {
       return Response.error(SaleMessages.CHILD_REQUIRES_ADULT);
     }
 
-    boolean redeemRequested = hasAccount && dto.getRedeemPoints() != null && dto.getRedeemPoints().isRedeemRequested();
-    boolean hasDiscountType = outboundPassengers.stream().anyMatch(p -> p != null && p.getTicketType() != null && p.getTicketType() != TicketType.NORMAL)
-        || returnPassengers.stream().anyMatch(p -> p != null && p.getTicketType() != null && p.getTicketType() != TicketType.NORMAL)
+    boolean redeemRequested = buyerDTO.isHasAccount() && dto.getRedeemPoints() != null
+        && dto.getRedeemPoints().isRedeemRequested();
+    boolean hasDiscountType = outboundPassengers.stream()
+        .anyMatch(p -> p != null && p.getTicketType() != null && p.getTicketType() != TicketType.NORMAL)
+        || returnPassengers.stream()
+            .anyMatch(p -> p != null && p.getTicketType() != null && p.getTicketType() != TicketType.NORMAL)
         || (dto.getChildrenUnder6() != null && !dto.getChildrenUnder6().isEmpty());
     if (redeemRequested && hasDiscountType) {
       return Response.error(SaleMessages.POINTS_NOT_ALLOWED_WITH_DISCOUNT);
     }
 
     long now = System.currentTimeMillis();
-    List<String> allSdIds = combineScheduleDetailIds(dto.getOutboundScheduleDetailIds(), dto.getReturnScheduleDetailIds());
+    List<String> allSdIds = combineScheduleDetailIds(dto.getOutboundScheduleDetailIds(),
+        dto.getReturnScheduleDetailIds());
     for (String sdId : allSdIds) {
       SeatHoldStore.SeatHold hold = SeatHoldStore.getActiveHold(sdId, now);
       if (hold == null || !sessionId.equals(hold.clientSessionId())) {
@@ -526,29 +585,34 @@ public class SaleServiceImpl implements SaleService {
 
     double subtotalAfterTypeDiscount = 0.0;
 
+    // 2. TẠO VÉ VÀ TỰ ĐỘNG ĐĂNG KÝ HÀNH KHÁCH[cite: 16, 17]
     subtotalAfterTypeDiscount += createSeatTicketsForLeg(em, TripDirection.OUTBOUND, outboundSchedule,
-        dto.getOutboundScheduleDetailIds(), outboundPassengers, customer, dto.getTicketCategory() == TicketCategory.ROUND_TRIP,
+        dto.getOutboundScheduleDetailIds(), outboundPassengers, buyerCustomer,
+        dto.getTicketCategory() == TicketCategory.ROUND_TRIP,
         createdTickets, createdDetails, issuedTickets);
 
     if (dto.getTicketCategory() == TicketCategory.ROUND_TRIP) {
       subtotalAfterTypeDiscount += createSeatTicketsForLeg(em, TripDirection.RETURN, returnSchedule,
-          dto.getReturnScheduleDetailIds(), returnPassengers, customer, true, createdTickets, createdDetails, issuedTickets);
+          dto.getReturnScheduleDetailIds(), returnPassengers, buyerCustomer, true, createdTickets, createdDetails,
+          issuedTickets);
     }
 
     List<SaleChildUnder6DTO> childrenUnder6 = dto.getChildrenUnder6() != null ? dto.getChildrenUnder6() : List.of();
     for (SaleChildUnder6DTO child : childrenUnder6) {
-      Response childResult = createChildVoucher(em, child, dto, outboundSchedule, returnSchedule, customer,
+      Response childResult = createChildVoucher(em, child, dto, outboundSchedule, returnSchedule, buyerCustomer,
           createdTickets, createdDetails, childVouchers);
-      if (!childResult.isSuccess()) return childResult;
+      if (!childResult.isSuccess())
+        return childResult;
     }
 
     double pointsDiscount = 0.0;
     int redeemedPoints = 0;
-    if (hasAccount && dto.getRedeemPoints() != null && dto.getRedeemPoints().isRedeemRequested() && customer.getRewardPoints() > 0) {
+    if (buyerDTO.isHasAccount() && dto.getRedeemPoints() != null && dto.getRedeemPoints().isRedeemRequested()
+        && buyerCustomer.getRewardPoints() > 0) {
       int requested = Math.max(0, dto.getRedeemPoints().getPointsToRedeem());
       double maxDiscount = subtotalAfterTypeDiscount * MAX_REDEEM_RATE;
       int maxPointsByRate = (int) Math.floor(maxDiscount / POINT_REDEEM_VALUE);
-      int maxByBalance = customer.getRewardPoints();
+      int maxByBalance = buyerCustomer.getRewardPoints();
       int allowed = Math.max(0, Math.min(maxByBalance, maxPointsByRate));
       redeemedPoints = requested <= 0 ? allowed : Math.min(requested, allowed);
       pointsDiscount = redeemedPoints * POINT_REDEEM_VALUE;
@@ -594,7 +658,7 @@ public class SaleServiceImpl implements SaleService {
         .issueDate(LocalDateTime.now())
         .totalAmount(totalAmount)
         .type(InvoiceType.SALE)
-        .customer(customer)
+        .customer(buyerCustomer)
         .employee(null)
         .taxCode(dto.getVat() != null ? normalize(dto.getVat().getTaxCode()) : null)
         .companyName(dto.getVat() != null ? normalize(dto.getVat().getCompanyName()) : null)
@@ -616,16 +680,17 @@ public class SaleServiceImpl implements SaleService {
     }
 
     int earnedPoints = 0;
-    if (hasAccount) {
+    if (buyerDTO.isHasAccount()) {
       earnedPoints = (int) Math.floor(totalAmount / POINT_EARN_VALUE);
-      int newPoints = Math.max(0, customer.getRewardPoints() - redeemedPoints + earnedPoints);
-      customer.setRewardPoints(newPoints);
-      em.merge(customer);
+      int newPoints = Math.max(0, buyerCustomer.getRewardPoints() - redeemedPoints + earnedPoints);
+      buyerCustomer.setRewardPoints(newPoints);
+      em.merge(buyerCustomer);
     }
 
     if (paymentMethod == PaymentMethod.ONLINE) {
       String orderId = normalize(dto.getPaymentOrderId());
-      InternalPaymentOrderStore.PaymentOrder consumed = InternalPaymentOrderStore.consumeOrder(orderId, invoice.getId(), sessionId);
+      InternalPaymentOrderStore.PaymentOrder consumed = InternalPaymentOrderStore.consumeOrder(orderId, invoice.getId(),
+          sessionId);
       if (consumed == null || consumed.consumedInvoiceId() == null) {
         throw new IllegalStateException(SaleMessages.ONLINE_PAYMENT_CONSUME_FAILED);
       }
@@ -646,9 +711,11 @@ public class SaleServiceImpl implements SaleService {
   }
 
   private String resolvePaymentReferenceCode(SaleCreateRequestDTO dto) {
-    if (dto.getPaymentMethod() != PaymentMethod.ONLINE) return null;
+    if (dto.getPaymentMethod() != PaymentMethod.ONLINE)
+      return null;
     String orderId = normalize(dto.getPaymentOrderId());
-    if (orderId == null) return null;
+    if (orderId == null)
+      return null;
     InternalPaymentOrderStore.PaymentOrder order = InternalPaymentOrderStore.get(orderId);
     return order != null ? order.referenceCode() : null;
   }
@@ -658,18 +725,19 @@ public class SaleServiceImpl implements SaleService {
       Schedule schedule,
       List<String> scheduleDetailIds,
       List<SalePassengerDTO> passengers,
-      Customer customer,
+      Customer buyerCustomer,
       boolean roundTrip,
       List<Ticket> createdTickets,
       List<InvoiceDetail> createdDetails,
       List<IssuedTicketDTO> issuedTickets) {
 
-    if (scheduleDetailIds == null || scheduleDetailIds.isEmpty()) return 0.0;
+    if (scheduleDetailIds == null || scheduleDetailIds.isEmpty())
+      return 0.0;
     double subtotal = 0.0;
 
     for (int i = 0; i < scheduleDetailIds.size(); i++) {
       String sdId = scheduleDetailIds.get(i);
-      SalePassengerDTO passenger = passengers.get(i);
+      SalePassengerDTO passengerDTO = passengers.get(i);
 
       ScheduleDetail sd = scheduleDetailRepository.findById(sdId, em);
       if (sd == null || sd.getSchedule() == null || !Objects.equals(sd.getSchedule().getId(), schedule.getId())) {
@@ -682,9 +750,9 @@ public class SaleServiceImpl implements SaleService {
       }
 
       long alreadySold = em.createQuery(
-              "SELECT COUNT(t) FROM Ticket t WHERE t.scheduleDetail.id = :sdId " +
-                  "AND t.status NOT IN (:cancelled, :exchanged, :returned)",
-              Long.class)
+          "SELECT COUNT(t) FROM Ticket t WHERE t.scheduleDetail.id = :sdId " +
+              "AND t.status NOT IN (:cancelled, :exchanged, :returned)",
+          Long.class)
           .setParameter("sdId", sdId)
           .setParameter("cancelled", TicketStatus.CANCELLED)
           .setParameter("exchanged", TicketStatus.EXCHANGED)
@@ -694,11 +762,23 @@ public class SaleServiceImpl implements SaleService {
         throw new IllegalArgumentException(SaleMessages.SEAT_ALREADY_SOLD);
       }
 
+      // 3. TỰ ĐỘNG ĐĂNG KÝ HÀNH KHÁCH RIÊNG LẺ[cite: 1, 16, 17]
+      Customer passengerCustomer = ensureCustomerRecord(em,
+          passengerDTO.getPassengerName(),
+          passengerDTO.getDocumentNumber(),
+          passengerDTO.getDocumentType(),
+          null, // Hành khách thường chưa cần SĐT ngay
+          null);
+
+      // Nếu không tạo được hồ sơ riêng, gán tạm vào người mua
+      if (passengerCustomer == null)
+        passengerCustomer = buyerCustomer;
+
       double base = sd.getPriceSeat().doubleValue();
-      Pricing pricing = applyPassengerPricing(passenger, schedule.getDepartureTime(), base);
+      Pricing pricing = applyPassengerPricing(passengerDTO, schedule.getDepartureTime(), base);
 
       Ticket ticket = Ticket.builder()
-          .customer(customer)
+          .customer(passengerCustomer) // Gán đúng khách hàng thực tế[cite: 1, 17]
           .scheduleDetail(sd)
           .type(pricing.effectiveType)
           .roundTrip(roundTrip)
@@ -706,8 +786,8 @@ public class SaleServiceImpl implements SaleService {
           .qrCode(null)
           .originalTicketId(null)
           .exchanged(false)
-          .passengerName(normalize(passenger.getPassengerName()))
-          .passengerIdCard(normalize(passenger.getDocumentNumber()))
+          .passengerName(normalize(passengerDTO.getPassengerName()))
+          .passengerIdCard(normalize(passengerDTO.getDocumentNumber()))
           .build();
       ticketRepository.createTicket(ticket, em);
       ticket.setQrCode(ticket.getId());
@@ -738,19 +818,23 @@ public class SaleServiceImpl implements SaleService {
       SaleCreateRequestDTO request,
       Schedule outboundSchedule,
       Schedule returnSchedule,
-      Customer customer,
+      Customer buyerCustomer,
       List<Ticket> createdTickets,
       List<InvoiceDetail> createdDetails,
       List<IssuedTicketDTO> childVouchers) {
 
-    if (child == null) return Response.error(SaleMessages.INVALID_REQUEST);
+    if (child == null)
+      return Response.error(SaleMessages.INVALID_REQUEST);
     LocalDate dob = child.getDateOfBirth();
-    if (dob == null) return Response.error(SaleMessages.INVALID_REQUEST);
+    if (dob == null)
+      return Response.error(SaleMessages.INVALID_REQUEST);
     TripDirection dir = child.getAccompanyDirection();
-    if (dir == null) return Response.error(SaleMessages.INVALID_REQUEST);
+    if (dir == null)
+      return Response.error(SaleMessages.INVALID_REQUEST);
 
     Schedule schedule = dir == TripDirection.OUTBOUND ? outboundSchedule : returnSchedule;
-    if (schedule == null) return Response.error(SaleMessages.INVALID_REQUEST);
+    if (schedule == null)
+      return Response.error(SaleMessages.INVALID_REQUEST);
     int age = ageAt(dob, schedule.getDepartureTime());
     if (age >= 6) {
       return Response.error(SaleMessages.INVALID_REQUEST);
@@ -765,13 +849,14 @@ public class SaleServiceImpl implements SaleService {
     }
 
     SalePassengerDTO adult = passengers.get(child.getAccompanyPassengerIndex());
-    if (adult == null) return Response.error(SaleMessages.INVALID_REQUEST);
+    if (adult == null)
+      return Response.error(SaleMessages.INVALID_REQUEST);
     if (adult.getTicketType() == TicketType.CHILD) {
       return Response.error(SaleMessages.INVALID_REQUEST);
     }
 
     Ticket voucher = Ticket.builder()
-        .customer(customer)
+        .customer(buyerCustomer) // Trẻ em gán vào người mua
         .scheduleDetail(null)
         .type(TicketType.CHILD)
         .roundTrip(request.getTicketCategory() == TicketCategory.ROUND_TRIP)
@@ -801,7 +886,6 @@ public class SaleServiceImpl implements SaleService {
 
     String accompanyTicketId = null;
     if (dir == TripDirection.OUTBOUND && request.getOutboundScheduleDetailIds() != null) {
-      // best effort: match adult index to ticket issued order (same index)
       accompanyTicketId = findAccompanyTicketId(createdTickets, adult.getPassengerName());
     }
 
@@ -811,8 +895,12 @@ public class SaleServiceImpl implements SaleService {
         .passengerDocument(null)
         .scheduleId(schedule.getId())
         .trainCode(schedule.getTrain() != null ? schedule.getTrain().getTrainCode() : null)
-        .departureStation(schedule.getRoute() != null && schedule.getRoute().getDepartureStation() != null ? schedule.getRoute().getDepartureStation().getName() : null)
-        .destinationStation(schedule.getRoute() != null && schedule.getRoute().getDestinationStation() != null ? schedule.getRoute().getDestinationStation().getName() : null)
+        .departureStation(schedule.getRoute() != null && schedule.getRoute().getDepartureStation() != null
+            ? schedule.getRoute().getDepartureStation().getName()
+            : null)
+        .destinationStation(schedule.getRoute() != null && schedule.getRoute().getDestinationStation() != null
+            ? schedule.getRoute().getDestinationStation().getName()
+            : null)
         .departureTime(schedule.getDepartureTime())
         .carriageName("—")
         .seatNumber("Không ghế")
@@ -828,9 +916,11 @@ public class SaleServiceImpl implements SaleService {
   }
 
   private String findAccompanyTicketId(List<Ticket> createdTickets, String passengerName) {
-    if (createdTickets == null) return null;
+    if (createdTickets == null)
+      return null;
     String normalizedName = normalize(passengerName);
-    if (normalizedName == null) return null;
+    if (normalizedName == null)
+      return null;
     return createdTickets.stream()
         .filter(t -> t.getScheduleDetail() != null)
         .filter(t -> normalizedName.equalsIgnoreCase(normalize(t.getPassengerName())))
@@ -867,33 +957,6 @@ public class SaleServiceImpl implements SaleService {
         .build();
   }
 
-  private Customer resolveOrCreateCustomer(jakarta.persistence.EntityManager em, SaleBuyerDTO buyer) {
-    String doc = normalize(buyer.getDocumentNumber());
-    if (doc == null) return null;
-
-    Customer existing = em.createQuery(
-            "SELECT c FROM Customer c WHERE c.isActive = true AND (c.idCard = :doc OR c.passport = :doc)",
-            Customer.class)
-        .setParameter("doc", doc)
-        .getResultStream()
-        .findFirst()
-        .orElse(null);
-
-    if (existing != null) return existing;
-
-    Customer created = Customer.builder()
-        .name(normalize(buyer.getBuyerName()))
-        .idCard(buyer.getDocumentType() == DocumentType.ID_CARD ? doc : null)
-        .passport(buyer.getDocumentType() == DocumentType.PASSPORT ? doc : null)
-        .phoneNumber(normalize(buyer.getBuyerPhone()))
-        .email(normalize(buyer.getBuyerEmail()))
-        .isActive(true)
-        .rewardPoints(0)
-        .build();
-    em.persist(created);
-    return created;
-  }
-
   private Pricing applyPassengerPricing(SalePassengerDTO passenger, LocalDateTime departureTime, double base) {
     if (passenger == null) {
       return new Pricing(TicketType.NORMAL, 0.0, base);
@@ -927,12 +990,14 @@ public class SaleServiceImpl implements SaleService {
   }
 
   private int ageAt(LocalDate dob, LocalDateTime departureTime) {
-    if (dob == null || departureTime == null) return 0;
+    if (dob == null || departureTime == null)
+      return 0;
     return Period.between(dob, departureTime.toLocalDate()).getYears();
   }
 
   private String normalize(String value) {
-    if (value == null) return null;
+    if (value == null)
+      return null;
     String trimmed = value.trim();
     return trimmed.isEmpty() ? null : trimmed;
   }
@@ -942,8 +1007,10 @@ public class SaleServiceImpl implements SaleService {
 
   private static List<String> combineScheduleDetailIds(List<String> outbound, List<String> returns) {
     List<String> out = new ArrayList<>();
-    if (outbound != null) out.addAll(outbound);
-    if (returns != null) out.addAll(returns);
+    if (outbound != null)
+      out.addAll(outbound);
+    if (returns != null)
+      out.addAll(returns);
     return out;
   }
 }

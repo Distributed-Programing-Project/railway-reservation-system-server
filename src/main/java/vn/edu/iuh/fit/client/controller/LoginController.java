@@ -1,5 +1,7 @@
 package vn.edu.iuh.fit.client.controller;
 
+import java.io.IOException;
+
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -12,12 +14,9 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import vn.edu.iuh.fit.client.service.LoginClientService;
-import vn.edu.iuh.fit.client.session.ClientSessionContext;
 import vn.edu.iuh.fit.client.service.SessionManager;
 import vn.edu.iuh.fit.common.dto.AccountDTO;
 import vn.edu.iuh.fit.common.response.Response;
-
-import java.io.IOException;
 
 public class LoginController {
 
@@ -104,6 +103,7 @@ public class LoginController {
                     accountDTO.getEmployeeId(),
                     accountDTO.getUsername(),
                     accountDTO.isManager());
+
         }
         String dashboardPath = isManager
                 ? "/client/ui/views/dashboard.fxml"
