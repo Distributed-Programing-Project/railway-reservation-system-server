@@ -27,7 +27,8 @@ public class ScheduleDetailRepositoryImpl extends AbstractGenericRepositoryImpl<
 
     @Override
     public List<ScheduleDetail> findByIdsWithSeatAndSchedule(EntityManager em, List<String> ids) {
-        if (ids == null || ids.isEmpty()) return List.of();
+        if (ids == null || ids.isEmpty())
+            return List.of();
         String jpql = "SELECT sd FROM ScheduleDetail sd " +
                 "JOIN FETCH sd.seat s " +
                 "JOIN FETCH sd.schedule sc " +
@@ -59,9 +60,9 @@ public class ScheduleDetailRepositoryImpl extends AbstractGenericRepositoryImpl<
             return Set.of();
         }
         List<String> ids = em.createQuery(
-                        "SELECT sd.id FROM ScheduleDetail sd " +
-                                "WHERE sd.schedule.id = :scheduleId AND sd.id IN :detailIds",
-                        String.class)
+                "SELECT sd.id FROM ScheduleDetail sd " +
+                        "WHERE sd.schedule.id = :scheduleId AND sd.id IN :detailIds",
+                String.class)
                 .setParameter("scheduleId", scheduleId)
                 .setParameter("detailIds", detailIds)
                 .getResultList();
@@ -73,17 +74,17 @@ public class ScheduleDetailRepositoryImpl extends AbstractGenericRepositoryImpl<
         return em.merge(scheduleDetail);
     }
 
-  @Override
-  public Set<String> getSoldSeatIds(EntityManager em, String scheduleId) {
-    String jpql = "SELECT sd.seat.id FROM Ticket t JOIN t.scheduleDetail sd " +
-            "WHERE sd.schedule.id = :scheduleId AND t.status NOT IN (:cancelledStatus, :exchangedStatus, :returnedStatus)";
+    @Override
+    public Set<String> getSoldSeatIds(EntityManager em, String scheduleId) {
+        String jpql = "SELECT sd.seat.id FROM Ticket t JOIN t.scheduleDetail sd " +
+                "WHERE sd.schedule.id = :scheduleId AND t.status NOT IN (:cancelledStatus, :exchangedStatus, :returnedStatus)";
 
-    List<String> seatIds = em.createQuery(jpql, String.class)
-            .setParameter("scheduleId", scheduleId)
-            .setParameter("cancelledStatus", TicketStatus.CANCELLED)
-            .setParameter("exchangedStatus", TicketStatus.EXCHANGED)
-            .setParameter("returnedStatus", TicketStatus.RETURNED)
-            .getResultList();
+        List<String> seatIds = em.createQuery(jpql, String.class)
+                .setParameter("scheduleId", scheduleId)
+                .setParameter("cancelledStatus", TicketStatus.CANCELLED)
+                .setParameter("exchangedStatus", TicketStatus.EXCHANGED)
+                .setParameter("returnedStatus", TicketStatus.RETURNED)
+                .getResultList();
 
         return new HashSet<>(seatIds);
     }
@@ -91,10 +92,10 @@ public class ScheduleDetailRepositoryImpl extends AbstractGenericRepositoryImpl<
     @Override
     public Set<String> getSoldScheduleDetailIds(EntityManager em, String scheduleId) {
         List<String> detailIds = em.createQuery(
-                        "SELECT sd.id FROM Ticket t JOIN t.scheduleDetail sd " +
-                                "WHERE sd.schedule.id = :scheduleId " +
-                                "AND t.status NOT IN (:cancelledStatus, :exchangedStatus, :returnedStatus)",
-                        String.class)
+                "SELECT sd.id FROM Ticket t JOIN t.scheduleDetail sd " +
+                        "WHERE sd.schedule.id = :scheduleId " +
+                        "AND t.status NOT IN (:cancelledStatus, :exchangedStatus, :returnedStatus)",
+                String.class)
                 .setParameter("scheduleId", scheduleId)
                 .setParameter("cancelledStatus", TicketStatus.CANCELLED)
                 .setParameter("exchangedStatus", TicketStatus.EXCHANGED)
@@ -107,8 +108,8 @@ public class ScheduleDetailRepositoryImpl extends AbstractGenericRepositoryImpl<
     public Set<String> getSoldSeatIdsWithLock(EntityManager em, String scheduleId) {
         List<String> seatIds = em.createQuery(
                 "SELECT sd.seat.id FROM Ticket t JOIN t.scheduleDetail sd " +
-                "WHERE sd.schedule.id = :scheduleId " +
-                "AND t.status NOT IN (:cancelledStatus, :exchangedStatus, :returnedStatus)",
+                        "WHERE sd.schedule.id = :scheduleId " +
+                        "AND t.status NOT IN (:cancelledStatus, :exchangedStatus, :returnedStatus)",
                 String.class)
                 .setParameter("scheduleId", scheduleId)
                 .setParameter("cancelledStatus", TicketStatus.CANCELLED)
@@ -124,10 +125,10 @@ public class ScheduleDetailRepositoryImpl extends AbstractGenericRepositoryImpl<
     @Override
     public boolean existsUnpricedSeat(EntityManager em, String scheduleId) {
         Long count = em.createQuery(
-                        "SELECT COUNT(sd) FROM ScheduleDetail sd " +
+                "SELECT COUNT(sd) FROM ScheduleDetail sd " +
                         "WHERE sd.schedule.id = :scheduleId " +
                         "AND (sd.priceSeat IS NULL OR sd.priceSeat <= :zero)",
-                        Long.class)
+                Long.class)
                 .setParameter("scheduleId", scheduleId)
                 .setParameter("zero", BigDecimal.ZERO)
                 .getSingleResult();

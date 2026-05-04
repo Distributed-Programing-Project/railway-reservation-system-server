@@ -16,8 +16,9 @@
 <?import javafx.scene.layout.Region?>
 
 <VBox fx:id="mainContainer" spacing="20.0" style="-fx-background-color: #ffffff;" 
-      styleClass="banve-content-wrapper" stylesheets="@../css/ban-ve.css" 
-      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+      styleClass="banve-content-wrapper" stylesheets="/client/ui/css/ban-ve.css" 
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="vn.edu.iuh.fit.client.controller.Step4PaymentController">
     <padding>
         <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
     </padding>
@@ -113,9 +114,9 @@
                          <!-- Hàng nút chức năng -->
                           <HBox spacing="10.0" alignment="CENTER_LEFT">
                               <children>
-                                  <Button fx:id="btnXuatHoaDon" text="Xuất hoá đơn VAT" styleClass="action-button" disable="true"/>
-                                  <Button fx:id="btnDoiDiem" text="Đổi điểm tích lũy" styleClass="action-button"/>
-                                  <Button fx:id="btnTichDiem" text="Tích điểm khách hàng" styleClass="action-button"/>
+                                  <Button fx:id="btnXuatHoaDon" text="Xuất hoá đơn VAT" onAction="#handleXuatHoaDon" styleClass="action-button" disable="true"/>
+                                  <Button fx:id="btnDoiDiem" text="Đổi điểm tích lũy" onAction="#handleDoiDiem" styleClass="action-button"/>
+                                  <Button fx:id="btnTichDiem" text="Tích điểm khách hàng" onAction="#handleTichDiem" styleClass="action-button"/>
                               </children>
                               <VBox.margin>
                                   <Insets top="10.0"/>
@@ -162,11 +163,13 @@
                             <StackPane>
                                 <children>
                                     <Button fx:id="btnXacNhanVaIn" 
+                                            onAction="#handleXacNhanVaIn" 
                                             text="THANH TOÁN &amp; IN VÉ" 
                                             style="-fx-background-color: #0066CC; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 12;" 
                                             maxWidth="Infinity" />
 
                                     <Button fx:id="btnHoanTat" 
+                                            onAction="#handleHoanTat" 
                                             text="HOÀN TẤT GIAO DỊCH" 
                                             style="-fx-background-color: #008000; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 12;" 
                                             maxWidth="Infinity" 
@@ -183,6 +186,7 @@
         <HBox alignment="BOTTOM_RIGHT" spacing="15" style="-fx-padding: 12 0 0 0;">
             <children>
                 <Button fx:id="btnQuayLai"
+                        onAction="#handleQuayLai"
                         text="Quay lại"
                         styleClass="nav-button, nav-button-secondary"
                         prefWidth="120" />

@@ -16,8 +16,9 @@
 <?import javafx.scene.text.Font?>
 
 
-<VBox spacing="15.0" style="-fx-background-color: white;" stylesheets="@../css/ban-ve.css" 
-      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<VBox spacing="15.0" style="-fx-background-color: white;" stylesheets="@../css/ban-ve.css"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="vn.edu.iuh.fit.client.controller.ReturnTicketController">
    <padding>
       <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
    </padding>
@@ -150,7 +151,7 @@
 
                   <Button fx:id="btnDoiVe" maxWidth="Infinity" mnemonicParsing="false" 
                           style="-fx-background-color: #0066CC; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10;" 
-                          text="TIẾN HÀNH ĐỔI VÉ" visible="false" managed="false">
+                          text="TIẾN HÀNH ĐỔI VÉ" visible="false" managed="false" onAction="#handleDoiVe">
                      <font>
                         <Font size="14.0" />
                      </font>

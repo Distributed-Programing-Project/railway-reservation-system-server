@@ -13,9 +13,10 @@
 <?import javafx.scene.shape.Rectangle?>
 
 <VBox fx:id="toaContainer" spacing="20.0" style="-fx-background-color: #ffffff;"
-      styleClass="banve-content-wrapper" stylesheets="@../css/ban-ve.css"
+      styleClass="banve-content-wrapper" stylesheets="/client/ui/css/ban-ve.css"
       xmlns="http://javafx.com/javafx/25"
       xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="vn.edu.iuh.fit.client.controller.Step2SeatSelectionController"
 >
 
     <padding>
@@ -140,6 +141,7 @@
 
                             <Button fx:id="btnMuaVe"
                                     text="Mua vé"
+                                    onAction="#handleTiepTheo"
                                     styleClass="nav-button, nav-button-primary"
                                     maxWidth="Infinity"/>
                         </VBox>
@@ -153,6 +155,7 @@
               style="-fx-padding: 12 20 12 20; -fx-background-color: transparent;">
             <children>
                 <Button fx:id="btnQuayLai"
+                        onAction="#handleQuayLai"
                         text="Quay lại"
                         styleClass="nav-button, nav-button-secondary"
                         prefWidth="120" />

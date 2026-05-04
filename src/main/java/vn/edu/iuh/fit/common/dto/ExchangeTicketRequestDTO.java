@@ -28,6 +28,9 @@ public class ExchangeTicketRequestDTO implements Serializable {
     @NotBlank(message = TicketMessages.EMPLOYEE_ID_REQUIRED)
     private String employeeId;
 
+    @NotBlank(message = TicketMessages.INVALID_SESSION)
+    private String clientSessionId;
+
     @Size(max = 20, message = TicketMessages.TAX_CODE_TOO_LONG)
     private String taxCode;
 

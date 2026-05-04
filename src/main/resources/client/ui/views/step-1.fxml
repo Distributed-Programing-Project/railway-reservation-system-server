@@ -16,7 +16,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox fx:id="contentArea" spacing="20.0" style="-fx-background-color: #ffffff;" styleClass="banve-content-wrapper" stylesheets="@../css/ban-ve.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
+<VBox fx:id="contentArea" spacing="20.0" style="-fx-background-color: #ffffff;" styleClass="banve-content-wrapper" stylesheets="/client/ui/css/ban-ve.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="vn.edu.iuh.fit.client.controller.Step1SaleController">
 
     <padding>
         <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
@@ -76,7 +76,7 @@
                             </children>
                         </HBox>
                         
-                        <Button fx:id="btnTimChuyen" prefHeight="40.0" prefWidth="140.0" styleClass="btnTimKiem" text="Tìm kiếm" GridPane.columnIndex="4" GridPane.rowIndex="1" />
+                        <Button fx:id="btnTimChuyen" onAction="#handleTimKiem" prefHeight="40.0" prefWidth="140.0" styleClass="btnTimKiem" text="Tìm kiếm" GridPane.columnIndex="4" GridPane.rowIndex="1" />
                     </children>
                 </GridPane>
             </content>
@@ -101,11 +101,13 @@
         <HBox alignment="CENTER_RIGHT" spacing="15.0">
             <children>
                 <Button fx:id="btnQuayLai" 
+                        onAction="#handleQuayLai" 
                         text="Quay lại" 
                         styleClass="nav-button, nav-button-secondary" 
                         prefWidth="120.0" />
                 
                 <Button fx:id="btnTiepTheo" 
+                        onAction="#handleTiepTheo" 
                         text="Tiếp theo" 
                         styleClass="nav-button, nav-button-primary" 
                         prefWidth="120.0" />
