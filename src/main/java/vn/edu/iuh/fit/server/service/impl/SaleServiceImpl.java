@@ -14,10 +14,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.LockModeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import vn.edu.iuh.fit.common.constant.DocumentType;
 import vn.edu.iuh.fit.common.constant.InvoiceType;
 import vn.edu.iuh.fit.common.constant.PaymentMethod;
@@ -38,11 +39,11 @@ import vn.edu.iuh.fit.common.dto.SalePassengerDTO;
 import vn.edu.iuh.fit.common.dto.SaleScheduleSearchDTO;
 import vn.edu.iuh.fit.common.dto.SaleScheduleSearchResultDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleSaleCardDTO;
+import vn.edu.iuh.fit.common.dto.SeatHoldRequestDTO;
+import vn.edu.iuh.fit.common.dto.SeatHoldResponseDTO;
 import vn.edu.iuh.fit.common.dto.SeatMapRequestDTO;
 import vn.edu.iuh.fit.common.dto.SeatMapResponseDTO;
 import vn.edu.iuh.fit.common.dto.SeatMapSeatDTO;
-import vn.edu.iuh.fit.common.dto.SeatHoldRequestDTO;
-import vn.edu.iuh.fit.common.dto.SeatHoldResponseDTO;
 import vn.edu.iuh.fit.common.dto.StationDTO;
 import vn.edu.iuh.fit.common.message.SaleMessages;
 import vn.edu.iuh.fit.common.response.Response;
@@ -64,6 +65,7 @@ import vn.edu.iuh.fit.server.repository.ScheduleDetailRepository;
 import vn.edu.iuh.fit.server.repository.ScheduleRepository;
 import vn.edu.iuh.fit.server.repository.StationRepository;
 import vn.edu.iuh.fit.server.repository.TicketRepository;
+import vn.edu.iuh.fit.server.repository.impl.AbstractGenericRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.InvoiceDetailRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.InvoiceRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.ScheduleDetailRepositoryImpl;
@@ -71,7 +73,6 @@ import vn.edu.iuh.fit.server.repository.impl.ScheduleRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.StationRepositoryImpl;
 import vn.edu.iuh.fit.server.repository.impl.TicketRepositoryImpl;
 import vn.edu.iuh.fit.server.service.SaleService;
-import vn.edu.iuh.fit.server.repository.impl.AbstractGenericRepositoryImpl;
 
 public class SaleServiceImpl implements SaleService {
 
@@ -448,8 +449,15 @@ public class SaleServiceImpl implements SaleService {
       }
       return res;
     } catch (RuntimeException e) {
+      Throwable cause = e.getCause();
+
       if (e.getCause() instanceof jakarta.persistence.OptimisticLockException) {
         return Response.error(SaleMessages.SEAT_ALREADY_SOLD);
+      }
+
+      if (cause != null && cause.getCause() != null && cause.getCause().getMessage().contains("Duplicate entry")) {
+        return Response.error(
+            "Lỗi Dữ liệu: Ghế này đã bị kẹt ràng buộc UNIQUE trong Database (có thể do vé cũ đã trả/hủy)");
       }
       return Response.error(e.getMessage());
     }
@@ -525,7 +533,7 @@ public class SaleServiceImpl implements SaleService {
       return Response.error(SaleMessages.INVALID_REQUEST);
     }
 
-    // 1. TỰ ĐỘNG ĐĂNG KÝ NGƯỜI MUA VÀO DB[cite: 1, 16, 17]
+    // 1. TỰ ĐỘNG ĐĂNG KÝ NGƯỜI MUA VÀO DB
     Customer buyerCustomer = ensureCustomerRecord(em,
         buyerDTO.getBuyerName(),
         buyerDTO.getDocumentNumber(),
@@ -585,7 +593,7 @@ public class SaleServiceImpl implements SaleService {
 
     double subtotalAfterTypeDiscount = 0.0;
 
-    // 2. TẠO VÉ VÀ TỰ ĐỘNG ĐĂNG KÝ HÀNH KHÁCH[cite: 16, 17]
+    // 2. TẠO VÉ VÀ TỰ ĐỘNG ĐĂNG KÝ HÀNH KHÁCH
     subtotalAfterTypeDiscount += createSeatTicketsForLeg(em, TripDirection.OUTBOUND, outboundSchedule,
         dto.getOutboundScheduleDetailIds(), outboundPassengers, buyerCustomer,
         dto.getTicketCategory() == TicketCategory.ROUND_TRIP,
@@ -679,13 +687,12 @@ public class SaleServiceImpl implements SaleService {
       invoiceDetailRepository.createInvoiceDetail(em, detail);
     }
 
+    // 4. LUÔN LUÔN TÍCH ĐIỂM CHO NGƯỜI MUA BẤT KỂ LÀ AI
     int earnedPoints = 0;
-    if (buyerDTO.isHasAccount()) {
-      earnedPoints = (int) Math.floor(totalAmount / POINT_EARN_VALUE);
-      int newPoints = Math.max(0, buyerCustomer.getRewardPoints() - redeemedPoints + earnedPoints);
-      buyerCustomer.setRewardPoints(newPoints);
-      em.merge(buyerCustomer);
-    }
+    earnedPoints = (int) Math.floor(totalAmount / POINT_EARN_VALUE);
+    int newPoints = Math.max(0, buyerCustomer.getRewardPoints() - redeemedPoints + earnedPoints);
+    buyerCustomer.setRewardPoints(newPoints);
+    em.merge(buyerCustomer);
 
     if (paymentMethod == PaymentMethod.ONLINE) {
       String orderId = normalize(dto.getPaymentOrderId());
@@ -762,7 +769,7 @@ public class SaleServiceImpl implements SaleService {
         throw new IllegalArgumentException(SaleMessages.SEAT_ALREADY_SOLD);
       }
 
-      // 3. TỰ ĐỘNG ĐĂNG KÝ HÀNH KHÁCH RIÊNG LẺ[cite: 1, 16, 17]
+      // 3. TỰ ĐỘNG ĐĂNG KÝ HÀNH KHÁCH RIÊNG LẺ
       Customer passengerCustomer = ensureCustomerRecord(em,
           passengerDTO.getPassengerName(),
           passengerDTO.getDocumentNumber(),
@@ -778,9 +785,9 @@ public class SaleServiceImpl implements SaleService {
       Pricing pricing = applyPassengerPricing(passengerDTO, schedule.getDepartureTime(), base);
 
       Ticket ticket = Ticket.builder()
-          .customer(passengerCustomer) // Gán đúng khách hàng thực tế[cite: 1, 17]
+          .customer(passengerCustomer) // Gán đúng khách hàng thực tế
           .scheduleDetail(sd)
-          .type(pricing.effectiveType)
+          .type(pricing.effectiveType())
           .roundTrip(roundTrip)
           .status(TicketStatus.PAID)
           .qrCode(null)
@@ -797,8 +804,8 @@ public class SaleServiceImpl implements SaleService {
           .invoice(null)
           .ticket(ticket)
           .subTotal(base)
-          .discount(pricing.discountAmount)
-          .insurance(0.0)
+          .discount(pricing.discountAmount())
+          .insurance(pricing.insurance()) // Đã cập nhật phí bảo hiểm
           .isReturned(false)
           .refundAmount(0.0)
           .build();
@@ -806,8 +813,8 @@ public class SaleServiceImpl implements SaleService {
       createdTickets.add(ticket);
       createdDetails.add(detail);
 
-      issuedTickets.add(toIssuedTicket(schedule, sd, ticket, pricing.finalPrice, false, null));
-      subtotal += pricing.finalPrice;
+      issuedTickets.add(toIssuedTicket(schedule, sd, ticket, pricing.finalPrice(), false, null));
+      subtotal += pricing.finalPrice();
     }
 
     return subtotal;
@@ -959,7 +966,7 @@ public class SaleServiceImpl implements SaleService {
 
   private Pricing applyPassengerPricing(SalePassengerDTO passenger, LocalDateTime departureTime, double base) {
     if (passenger == null) {
-      return new Pricing(TicketType.NORMAL, 0.0, base);
+      return new Pricing(TicketType.NORMAL, 0.0, 2000.0, Math.ceil((base + 2000.0) / 1000.0) * 1000.0);
     }
     TicketType type = passenger.getTicketType() != null ? passenger.getTicketType() : TicketType.NORMAL;
     TicketType effective = type;
@@ -985,8 +992,13 @@ public class SaleServiceImpl implements SaleService {
     }
 
     double discountAmount = base * discountRate;
-    double finalPrice = Math.max(0, base - discountAmount);
-    return new Pricing(effective, discountAmount, finalPrice);
+    double insurance = 2000.0; // Phí bảo hiểm cố định 2.000đ
+
+    // Tính tổng thô và làm tròn LÊN đến hàng nghìn (vd 179.600 -> 180.000)
+    double rawPrice = Math.max(0, base - discountAmount) + insurance;
+    double finalPrice = Math.ceil(rawPrice / 1000.0) * 1000.0;
+
+    return new Pricing(effective, discountAmount, insurance, finalPrice);
   }
 
   private int ageAt(LocalDate dob, LocalDateTime departureTime) {
@@ -1002,7 +1014,7 @@ public class SaleServiceImpl implements SaleService {
     return trimmed.isEmpty() ? null : trimmed;
   }
 
-  private record Pricing(TicketType effectiveType, double discountAmount, double finalPrice) {
+  private record Pricing(TicketType effectiveType, double discountAmount, double insurance, double finalPrice) {
   }
 
   private static List<String> combineScheduleDetailIds(List<String> outbound, List<String> returns) {

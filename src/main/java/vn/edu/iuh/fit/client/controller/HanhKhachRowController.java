@@ -19,7 +19,6 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.TextField;
-import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
@@ -183,12 +182,6 @@ public class HanhKhachRowController {
         txtHoTen.textProperty().addListener((obs, oldVal, newVal) -> notifyDataChange());
         txtSoGiayTo.textProperty().addListener((obs, oldVal, newVal) -> notifyDataChange());
 
-        txtSoGiayTo.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.ENTER && parentController != null) {
-                parentController.lookupPassengerByDocumentAsync(this);
-            }
-        });
-
         hideExtraControls();
         applyTicketTypeVisibility();
     }
@@ -198,7 +191,8 @@ public class HanhKhachRowController {
         recalcPricePreview();
     }
 
-    public void setData(SelectedSeatDraft outboundSeat, SelectedSeatDraft returnSeat, Step3PassengerController parentController,
+    public void setData(SelectedSeatDraft outboundSeat, SelectedSeatDraft returnSeat,
+            Step3PassengerController parentController,
             int passengerIndex) {
         this.outboundSeat = outboundSeat;
         this.returnSeat = returnSeat;
@@ -207,7 +201,8 @@ public class HanhKhachRowController {
         initData();
     }
 
-    public void restorePassengerDraft(String fullName, String documentNumber, TicketType ticketType, LocalDate dateOfBirth,
+    public void restorePassengerDraft(String fullName, String documentNumber, TicketType ticketType,
+            LocalDate dateOfBirth,
             boolean studentCardVerified, String adultTicketCode) {
         if (fullName != null) {
             txtHoTen.setText(fullName);
@@ -366,13 +361,15 @@ public class HanhKhachRowController {
             var schedule = parentController.getOutboundSchedule();
             if (schedule != null) {
                 lblTenTauDi.setText("Tàu " + safe(schedule.getTrainCode()) + " (Đi)");
-                lblThoiGianDi.setText(schedule.getDepartureTime() != null ? schedule.getDepartureTime().format(TIME) : "");
+                lblThoiGianDi
+                        .setText(schedule.getDepartureTime() != null ? schedule.getDepartureTime().format(TIME) : "");
             } else {
                 lblTenTauDi.setText("Chiều đi");
                 lblThoiGianDi.setText("");
             }
 
-            String carriageText = outboundSeat.getCarriageNumber() != null ? ("Toa " + outboundSeat.getCarriageNumber()) : "Toa -";
+            String carriageText = outboundSeat.getCarriageNumber() != null ? ("Toa " + outboundSeat.getCarriageNumber())
+                    : "Toa -";
             String seatText = outboundSeat.getSeatNumber() != null ? ("Ghế " + outboundSeat.getSeatNumber()) : "Ghế -";
             lblThongTinChoDi.setText(carriageText + " - " + seatText);
             lblLoaiToaDi.setText(outboundSeat.getSeatType() != null ? outboundSeat.getSeatType().getName() : "");
@@ -380,7 +377,8 @@ public class HanhKhachRowController {
             var schedule = parentController.getOutboundSchedule();
             if (schedule != null) {
                 lblTenTauDi.setText("Tàu " + safe(schedule.getTrainCode()) + " (Đi)");
-                lblThoiGianDi.setText(schedule.getDepartureTime() != null ? schedule.getDepartureTime().format(TIME) : "");
+                lblThoiGianDi
+                        .setText(schedule.getDepartureTime() != null ? schedule.getDepartureTime().format(TIME) : "");
             } else {
                 lblTenTauDi.setText("Chiều đi");
                 lblThoiGianDi.setText("");
@@ -403,13 +401,15 @@ public class HanhKhachRowController {
             var schedule = parentController.getReturnSchedule();
             if (schedule != null) {
                 lblTenTauVe.setText("Tàu " + safe(schedule.getTrainCode()) + " (Về)");
-                lblThoiGianVe.setText(schedule.getDepartureTime() != null ? schedule.getDepartureTime().format(TIME) : "");
+                lblThoiGianVe
+                        .setText(schedule.getDepartureTime() != null ? schedule.getDepartureTime().format(TIME) : "");
             } else {
                 lblTenTauVe.setText("Chiều về");
                 lblThoiGianVe.setText("");
             }
 
-            String carriageText = returnSeat.getCarriageNumber() != null ? ("Toa " + returnSeat.getCarriageNumber()) : "Toa -";
+            String carriageText = returnSeat.getCarriageNumber() != null ? ("Toa " + returnSeat.getCarriageNumber())
+                    : "Toa -";
             String seatText = returnSeat.getSeatNumber() != null ? ("Ghế " + returnSeat.getSeatNumber()) : "Ghế -";
             lblThongTinChoVe.setText(carriageText + " - " + seatText);
             lblLoaiToaVe.setText(returnSeat.getSeatType() != null ? returnSeat.getSeatType().getName() : "");
@@ -517,7 +517,8 @@ public class HanhKhachRowController {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Miễn vé");
         confirm.setHeaderText(null);
-        confirm.setContentText("Trẻ em dưới 6 tuổi không chiếm chỗ và được miễn vé. Bạn có muốn nhả ghế đã chọn cho hành khách này?");
+        confirm.setContentText(
+                "Trẻ em dưới 6 tuổi không chiếm chỗ và được miễn vé. Bạn có muốn nhả ghế đã chọn cho hành khách này?");
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isEmpty() || result.get() != ButtonType.OK) {
             return;
@@ -610,7 +611,10 @@ public class HanhKhachRowController {
 
         double discountRate = resolveDiscountRate();
         double discountAmount = baseSum * discountRate;
-        double total = baseSum - discountAmount + insuranceSum;
+
+        // Làm tròn lên hàng nghìn cho giao diện
+        double rawTotal = baseSum - discountAmount + insuranceSum;
+        double total = Math.ceil(rawTotal / 1000.0) * 1000.0;
 
         lblGiaVe.setText(MONEY.format(baseSum + insuranceSum) + " VNĐ");
         lblBaoHiem.setText(MONEY.format(insuranceSum) + " VNĐ");
@@ -634,7 +638,9 @@ public class HanhKhachRowController {
         int seatCount = (outboundSeat != null ? 1 : 0) + (returnSeat != null ? 1 : 0);
         double insuranceSum = seatCount * INSURANCE_FEE;
         double discount = baseSum * resolveDiscountRate();
-        return baseSum - discount + insuranceSum;
+
+        double rawTotal = baseSum - discount + insuranceSum;
+        return Math.ceil(rawTotal / 1000.0) * 1000.0; // Trả về giá trị đã làm tròn
     }
 
     private double resolveDiscountRate() {

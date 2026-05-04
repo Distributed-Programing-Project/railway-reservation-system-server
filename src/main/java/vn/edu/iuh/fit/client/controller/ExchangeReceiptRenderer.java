@@ -7,14 +7,16 @@ import java.nio.file.Files;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.ArrayList;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
@@ -42,6 +44,12 @@ final class ExchangeReceiptRenderer {
 
   static File renderPreviewPdf(ExchangeTicketResponseDTO dto, SaleWizardState state) {
     try {
+      // ÉP FONT UNICODE
+      JRPropertiesUtil properties = JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance());
+      properties.setProperty("net.sf.jasperreports.default.font.name", "Arial");
+      properties.setProperty("net.sf.jasperreports.default.pdf.encoding", "Identity-H");
+      properties.setProperty("net.sf.jasperreports.default.pdf.font.name", "fonts/arial.ttf");
+
       JasperReport report = compileReport();
       Map<String, Object> params = toParams(dto, state);
       List<ExchangeReceiptRowDTO> rows = buildRows(dto, state);
@@ -57,8 +65,9 @@ final class ExchangeReceiptRenderer {
       File pdf = Files.createTempFile("exchange-receipt-", ".pdf").toFile();
       pdf.deleteOnExit();
       JasperExportManager.exportReportToPdfFile(print, pdf.getAbsolutePath());
-      System.err.println("[UC001] exchange receipt pdf generated invoiceId=" + safe(dto == null ? null : dto.getInvoiceId())
-          + ", file=" + pdf.getAbsolutePath());
+      System.err
+          .println("[UC001] exchange receipt pdf generated invoiceId=" + safe(dto == null ? null : dto.getInvoiceId())
+              + ", file=" + pdf.getAbsolutePath());
       return pdf;
     } catch (Exception e) {
       throw new IllegalStateException("Unable to render exchange receipt PDF", e);
@@ -135,7 +144,8 @@ final class ExchangeReceiptRenderer {
         ? state.getExchangeOldTickets()
         : List.of();
 
-    // Preferred source for "new ticket info": server-issued tickets (has route + price).
+    // Preferred source for "new ticket info": server-issued tickets (has route +
+    // price).
     List<IssuedTicketDTO> newTickets = dto != null && dto.getNewTickets() != null ? dto.getNewTickets() : List.of();
     if (!oldTickets.isEmpty() && !newTickets.isEmpty()) {
       int count = Math.min(oldTickets.size(), newTickets.size());
@@ -144,7 +154,8 @@ final class ExchangeReceiptRenderer {
         ReturnTicketTicketDTO old = oldTickets.get(i);
         IssuedTicketDTO nt = newTickets.get(i);
 
-        String oldRoute = old == null ? "--" : safe(old.getDepartureStation()) + " - " + safe(old.getDestinationStation());
+        String oldRoute = old == null ? "--"
+            : safe(old.getDepartureStation()) + " - " + safe(old.getDestinationStation());
         double oldPrice = old == null ? 0d : old.getTicketPrice();
 
         String newRoute = nt == null ? "--" : safe(nt.getDepartureStation()) + " - " + safe(nt.getDestinationStation());
@@ -155,7 +166,8 @@ final class ExchangeReceiptRenderer {
       return rows;
     }
 
-    // Fallback: build from wizard state seats (price only) + state stations for route.
+    // Fallback: build from wizard state seats (price only) + state stations for
+    // route.
     if (state == null) {
       return List.of();
     }
@@ -178,7 +190,8 @@ final class ExchangeReceiptRenderer {
       PassengerDraft p = seatPassengers.get(i);
       SelectedSeatDraft seat = p == null ? null : p.getOutboundSeat();
 
-      String oldRoute = old == null ? "--" : safe(old.getDepartureStation()) + " - " + safe(old.getDestinationStation());
+      String oldRoute = old == null ? "--"
+          : safe(old.getDepartureStation()) + " - " + safe(old.getDestinationStation());
       double oldPrice = old == null ? 0d : old.getTicketPrice();
 
       double newPrice = seat != null && seat.getPrice() != null ? seat.getPrice() : 0d;

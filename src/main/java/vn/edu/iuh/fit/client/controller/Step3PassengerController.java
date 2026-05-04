@@ -6,7 +6,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -22,7 +21,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
-import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import vn.edu.iuh.fit.client.service.SaleClientService;
@@ -117,12 +115,6 @@ public class Step3PassengerController {
 
     @FXML
     public void initialize() {
-        txtNguoiMuaSoGiayTo.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.ENTER) {
-                lookupBuyerByDocumentAsync(false);
-            }
-        });
-
         txtNguoiMuaHoTen.textProperty().addListener((obs, oldVal, newVal) -> {
             if (txtNguoiMuaHoTen.isFocused() || txtNguoiMuaSoGiayTo.isFocused()) {
                 syncBuyerFromFirstPassenger = false;
@@ -184,8 +176,55 @@ public class Step3PassengerController {
             return;
         }
 
-        persistStateForStep4();
-        coordinator.nextFromStep3();
+        // --- BẮT ĐẦU LUỒNG KIỂM TRA DB TRƯỚC KHI SANG BƯỚC 4 ---
+        String buyerDoc = safe(txtNguoiMuaSoGiayTo.getText()).trim();
+
+        // Nếu người mua không có giấy tờ
+        if (buyerDoc.isBlank()) {
+            return;
+        }
+
+        Task<Response> task = new Task<>() {
+            @Override
+            protected Response call() {
+                // Tra cứu DB 1 lần duy nhất lúc chuyển bước
+                return saleClientService
+                        .searchCustomers(CustomerSearchDTO.builder().keyword(buyerDoc).page(0).size(5).build());
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            Response response = task.getValue();
+            if (response != null && response.isSuccess()) {
+                CustomerDTO customer = extractFirstCustomer(response.getData());
+                if (customer != null) {
+                    // Đã là khách hàng cũ -> Hốt ID và Điểm tích luỹ mang sang Step 4
+                    selectedCustomerId = customer.getCustomerId();
+                    rewardPoints = customer.getRewardPoints();
+                } else {
+                    // Khách lạ -> Sang Step 4 điểm = 0
+                    selectedCustomerId = null;
+                    rewardPoints = null;
+                }
+            } else {
+                selectedCustomerId = null;
+                rewardPoints = null;
+            }
+
+            // Sau khi đã chốt xong Điểm & ID, lưu State và đẩy sang Step 4
+            persistStateForStep4();
+            coordinator.nextFromStep3();
+        });
+
+        task.setOnFailed(e -> {
+            // Lỗi mạng rớt DB thì vẫn cho qua bán vé bình thường (Khách lạ)
+            selectedCustomerId = null;
+            rewardPoints = null;
+            persistStateForStep4();
+            coordinator.nextFromStep3();
+        });
+
+        executor.submit(task);
     }
 
     ScheduleSaleCardDTO getOutboundSchedule() {
@@ -209,39 +248,6 @@ public class Step3PassengerController {
             return schedule.getDepartureTime().toLocalDate();
         }
         return LocalDate.now();
-    }
-
-    void lookupPassengerByDocumentAsync(HanhKhachRowController rowController) {
-        if (rowController == null) {
-            return;
-        }
-        String doc = safe(rowController.getDocumentNumber()).trim();
-        if (doc.isBlank()) {
-            return;
-        }
-
-        Task<Response> task = new Task<>() {
-            @Override
-            protected Response call() {
-                return saleClientService.searchCustomers(CustomerSearchDTO.builder().keyword(doc).page(0).size(5).build());
-            }
-        };
-
-        task.setOnSucceeded(e -> {
-            Response response = task.getValue();
-            if (response == null || !response.isSuccess()) {
-                return;
-            }
-            CustomerDTO customer = extractFirstCustomer(response.getData());
-            if (customer != null && customer.getFullName() != null && !customer.getFullName().isBlank()) {
-                rowController.setPassengerNameFromLookup(customer.getFullName());
-            }
-            if (syncBuyerFromFirstPassenger && !rowControllers.isEmpty() && rowControllers.get(0) == rowController) {
-                syncFirstPassengerToBuyer(rowController, true);
-            }
-        });
-
-        executor.submit(task);
     }
 
     void releaseSeatsForChildUnder6Async(HanhKhachRowController rowController) {
@@ -288,7 +294,8 @@ public class Step3PassengerController {
 
         task.setOnFailed(e -> Platform.runLater(() -> {
             rowController.setSeatReleaseInProgress(false);
-            showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể nhả ghế: " + (task.getException() != null ? task.getException().getMessage() : ""));
+            showAlert(Alert.AlertType.ERROR, "Lỗi",
+                    "Không thể nhả ghế: " + (task.getException() != null ? task.getException().getMessage() : ""));
         }));
 
         executor.submit(task);
@@ -346,7 +353,8 @@ public class Step3PassengerController {
                 rowController.setData(outSeat, retSeat, this, i);
                 rowController.setOnDataChange(() -> {
                     updateTongThanhTien();
-                    if (syncBuyerFromFirstPassenger && !rowControllers.isEmpty() && rowControllers.get(0) == rowController) {
+                    if (syncBuyerFromFirstPassenger && !rowControllers.isEmpty()
+                            && rowControllers.get(0) == rowController) {
                         syncFirstPassengerToBuyer(rowController, true);
                     }
                 });
@@ -384,14 +392,16 @@ public class Step3PassengerController {
                 HanhKhachRowController rowController = loader.getController();
                 rowController.setCoordinator(coordinator);
                 rowController.setData(draft.getOutboundSeat(), draft.getReturnSeat(), this, i);
-                rowController.restorePassengerDraft(draft.getFullName(), draft.getDocumentNumber(), draft.getTicketType(), draft.getDateOfBirth(),
+                rowController.restorePassengerDraft(draft.getFullName(), draft.getDocumentNumber(),
+                        draft.getTicketType(), draft.getDateOfBirth(),
                         draft.isStudentCardVerified(), draft.getAdultTicketCode());
                 if (draft.isChildUnder6() || !draft.isHasSeat()) {
                     rowController.applyChildUnder6NoSeatModeFromState();
                 }
                 rowController.setOnDataChange(() -> {
                     updateTongThanhTien();
-                    if (syncBuyerFromFirstPassenger && !rowControllers.isEmpty() && rowControllers.get(0) == rowController) {
+                    if (syncBuyerFromFirstPassenger && !rowControllers.isEmpty()
+                            && rowControllers.get(0) == rowController) {
                         syncFirstPassengerToBuyer(rowController, true);
                     }
                 });
@@ -420,7 +430,8 @@ public class Step3PassengerController {
         for (int i = 0; i < rowControllers.size(); i++) {
             PassengerDraft draft = state.getPassengers().get(i);
             HanhKhachRowController row = rowControllers.get(i);
-            row.restorePassengerDraft(draft.getFullName(), draft.getDocumentNumber(), draft.getTicketType(), draft.getDateOfBirth(),
+            row.restorePassengerDraft(draft.getFullName(), draft.getDocumentNumber(), draft.getTicketType(),
+                    draft.getDateOfBirth(),
                     draft.isStudentCardVerified(), draft.getAdultTicketCode());
         }
     }
@@ -463,78 +474,7 @@ public class Step3PassengerController {
         }
         if (!doc.isBlank()) {
             txtNguoiMuaSoGiayTo.setText(doc);
-            if (isValidDocumentNumber(doc)) {
-                lookupBuyerByDocumentAsync(silentLookup);
-            }
         }
-    }
-
-    private void lookupBuyerByDocumentAsync(boolean silent) {
-        if (coordinator == null) {
-            return;
-        }
-        String doc = safe(txtNguoiMuaSoGiayTo.getText()).trim();
-        if (doc.isBlank()) {
-            return;
-        }
-
-        Task<Response> task = new Task<>() {
-            @Override
-            protected Response call() {
-                return saleClientService.searchCustomers(CustomerSearchDTO.builder().keyword(doc).page(0).size(5).build());
-            }
-        };
-
-        task.setOnSucceeded(e -> {
-            Response response = task.getValue();
-            if (response == null || !response.isSuccess()) {
-                if (!silent) {
-                    showAlert(Alert.AlertType.WARNING, "Không tìm thấy", "Không tìm thấy khách hàng theo số giấy tờ.");
-                }
-                selectedCustomerId = null;
-                rewardPoints = null;
-                if (!silent) {
-                    txtNguoiMuaEmail.clear();
-                    txtNguoiMuaSDT.clear();
-                }
-                return;
-            }
-
-            CustomerDTO customer = extractFirstCustomer(response.getData());
-            if (customer == null) {
-                if (!silent) {
-                    showAlert(Alert.AlertType.WARNING, "Không tìm thấy", "Không tìm thấy khách hàng theo số giấy tờ.");
-                }
-                selectedCustomerId = null;
-                rewardPoints = null;
-                if (!silent) {
-                    txtNguoiMuaEmail.clear();
-                    txtNguoiMuaSDT.clear();
-                }
-                return;
-            }
-
-            selectedCustomerId = customer.getCustomerId();
-            rewardPoints = customer.getRewardPoints();
-
-            if (syncBuyerFromFirstPassenger || safe(txtNguoiMuaHoTen.getText()).isBlank()) {
-                txtNguoiMuaHoTen.setText(safe(customer.getFullName()));
-            }
-            if (customer.getPhone() != null) {
-                txtNguoiMuaSDT.setText(customer.getPhone());
-            }
-            if (customer.getEmail() != null) {
-                txtNguoiMuaEmail.setText(customer.getEmail());
-            }
-        });
-
-        task.setOnFailed(e -> {
-            if (!silent) {
-                showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể tra cứu khách hàng: " + task.getException());
-            }
-        });
-
-        executor.submit(task);
     }
 
     private void syncHeaderWidths(HanhKhachRowController firstRowController) {
@@ -595,14 +535,16 @@ public class Step3PassengerController {
                 }
                 if (!isValidDocumentNumber(doc)) {
                     showAlert(Alert.AlertType.WARNING, "Sai định dạng",
-                            "Giấy tờ hành khách không hợp lệ (CCCD/CMND 9 hoặc 12 số; Hộ chiếu 1-9 ký tự chữ/số): " + doc);
+                            "Giấy tờ hành khách không hợp lệ (CCCD/CMND 9 hoặc 12 số; Hộ chiếu 1-9 ký tự chữ/số): "
+                                    + doc);
                     return false;
                 }
             } else {
                 // Child under 6: document can be empty; validate only if provided.
                 if (!doc.isBlank() && !isValidDocumentNumber(doc)) {
                     showAlert(Alert.AlertType.WARNING, "Sai định dạng",
-                            "Giấy tờ hành khách không hợp lệ (CCCD/CMND 9 hoặc 12 số; Hộ chiếu 1-9 ký tự chữ/số): " + doc);
+                            "Giấy tờ hành khách không hợp lệ (CCCD/CMND 9 hoặc 12 số; Hộ chiếu 1-9 ký tự chữ/số): "
+                                    + doc);
                     return false;
                 }
             }
@@ -610,7 +552,8 @@ public class Step3PassengerController {
             TicketType ticketType = row.getTicketType();
             if (ticketType == TicketType.CHILD || ticketType == TicketType.SENIOR) {
                 if (row.getDateOfBirth() == null) {
-                    showAlert(Alert.AlertType.WARNING, "Thiếu thông tin", "Vui lòng chọn ngày sinh cho hành khách " + name);
+                    showAlert(Alert.AlertType.WARNING, "Thiếu thông tin",
+                            "Vui lòng chọn ngày sinh cho hành khách " + name);
                     return false;
                 }
             }
@@ -634,7 +577,8 @@ public class Step3PassengerController {
             if (ticketType == TicketType.SENIOR) {
                 int age = HanhKhachRowController.ageAt(row.getDateOfBirth(), getDepartureDateForAgeCheck());
                 if (age < 60) {
-                    showAlert(Alert.AlertType.WARNING, "Chưa hợp lệ", "Hành khách chưa đủ 60 tuổi cho loại vé người cao tuổi.");
+                    showAlert(Alert.AlertType.WARNING, "Chưa hợp lệ",
+                            "Hành khách chưa đủ 60 tuổi cho loại vé người cao tuổi.");
                     return false;
                 }
             }
@@ -695,31 +639,38 @@ public class Step3PassengerController {
         long seatPassengers = rowControllers.stream().filter(HanhKhachRowController::hasSeat).count();
         if (state.getTicketCategory() == TicketCategory.ROUND_TRIP) {
             if (state.getOutboundSeats().size() != seatPassengers || state.getReturnSeats().size() != seatPassengers) {
-                showAlert(Alert.AlertType.WARNING, "Dữ liệu không hợp lệ", "Số hành khách có ghế phải khớp với số ghế đã chọn (chiều đi/về).");
+                showAlert(Alert.AlertType.WARNING, "Dữ liệu không hợp lệ",
+                        "Số hành khách có ghế phải khớp với số ghế đã chọn (chiều đi/về).");
                 return false;
             }
         } else {
             if (state.getOutboundSeats().size() != seatPassengers) {
-                showAlert(Alert.AlertType.WARNING, "Dữ liệu không hợp lệ", "Số hành khách có ghế phải khớp với số ghế đã chọn.");
+                showAlert(Alert.AlertType.WARNING, "Dữ liệu không hợp lệ",
+                        "Số hành khách có ghế phải khớp với số ghế đã chọn.");
                 return false;
             }
         }
 
         for (HanhKhachRowController row : rowControllers) {
             if (row.isChildUnder6NoSeat() && !row.isSeatReleasedForChildUnder6()) {
-                showAlert(Alert.AlertType.WARNING, "Dữ liệu không hợp lệ", "Có hành khách trẻ < 6 nhưng ghế chưa được nhả.");
+                showAlert(Alert.AlertType.WARNING, "Dữ liệu không hợp lệ",
+                        "Có hành khách trẻ < 6 nhưng ghế chưa được nhả.");
                 return false;
             }
             if (row.hasSeat()) {
                 SelectedSeatDraft outSeat = row.getOutboundSeat();
-                if (outSeat == null || outSeat.getScheduleDetailId() == null || outSeat.getScheduleDetailId().isBlank()) {
-                    showAlert(Alert.AlertType.WARNING, "Dữ liệu không hợp lệ", "Có hành khách đang chiếm ghế nhưng thiếu scheduleDetailId.");
+                if (outSeat == null || outSeat.getScheduleDetailId() == null
+                        || outSeat.getScheduleDetailId().isBlank()) {
+                    showAlert(Alert.AlertType.WARNING, "Dữ liệu không hợp lệ",
+                            "Có hành khách đang chiếm ghế nhưng thiếu scheduleDetailId.");
                     return false;
                 }
                 if (state.getTicketCategory() == TicketCategory.ROUND_TRIP) {
                     SelectedSeatDraft retSeat = row.getReturnSeat();
-                    if (retSeat == null || retSeat.getScheduleDetailId() == null || retSeat.getScheduleDetailId().isBlank()) {
-                        showAlert(Alert.AlertType.WARNING, "Dữ liệu không hợp lệ", "Có hành khách khứ hồi nhưng thiếu scheduleDetailId chiều về.");
+                    if (retSeat == null || retSeat.getScheduleDetailId() == null
+                            || retSeat.getScheduleDetailId().isBlank()) {
+                        showAlert(Alert.AlertType.WARNING, "Dữ liệu không hợp lệ",
+                                "Có hành khách khứ hồi nhưng thiếu scheduleDetailId chiều về.");
                         return false;
                     }
                 }

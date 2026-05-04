@@ -42,7 +42,7 @@ public class Ticket {
   @JoinColumn(name = "customer_id")
   private Customer customer;
 
-  @OneToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "schedule_detail_id")
   private ScheduleDetail scheduleDetail;
 
