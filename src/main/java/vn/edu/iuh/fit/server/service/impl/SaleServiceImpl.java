@@ -782,7 +782,8 @@ public class SaleServiceImpl implements SaleService {
         passengerCustomer = buyerCustomer;
 
       double base = sd.getPriceSeat().doubleValue();
-      Pricing pricing = applyPassengerPricing(passengerDTO, schedule.getDepartureTime(), base);
+      Pricing pricing = applyPassengerPricing(passengerDTO, schedule.getDepartureTime(), base,
+          direction == TripDirection.RETURN);
 
       Ticket ticket = Ticket.builder()
           .customer(passengerCustomer) // Gán đúng khách hàng thực tế
@@ -964,41 +965,48 @@ public class SaleServiceImpl implements SaleService {
         .build();
   }
 
-  private Pricing applyPassengerPricing(SalePassengerDTO passenger, LocalDateTime departureTime, double base) {
+  private Pricing applyPassengerPricing(SalePassengerDTO passenger, LocalDateTime departureTime, double base,
+      boolean isReturnTicket) {
+    double insurance = 2000.0; // Phí bảo hiểm cố định
+
     if (passenger == null) {
-      return new Pricing(TicketType.NORMAL, 0.0, 2000.0, Math.ceil((base + 2000.0) / 1000.0) * 1000.0);
+      double rawPrice = (base + insurance);
+      if (isReturnTicket)
+        rawPrice = rawPrice * 0.9; // Giảm 10% cho vé chiều về
+      double finalPrice = Math.ceil(rawPrice / 1000.0) * 1000.0;
+      return new Pricing(TicketType.NORMAL, 0.0, insurance, finalPrice);
     }
+
     TicketType type = passenger.getTicketType() != null ? passenger.getTicketType() : TicketType.NORMAL;
-    TicketType effective = type;
     double discountRate = 0.0;
 
+    // Xét hệ số giảm giá theo đối tượng
     if (type == TicketType.CHILD) {
-      int age = ageAt(passenger.getDateOfBirth(), departureTime);
-      if (age < 6 || age >= 10) {
-        throw new IllegalArgumentException(SaleMessages.INVALID_REQUEST);
-      }
       discountRate = 0.25;
     } else if (type == TicketType.SENIOR) {
-      int age = ageAt(passenger.getDateOfBirth(), departureTime);
-      if (age < 60) {
-        throw new IllegalArgumentException(SaleMessages.INVALID_REQUEST);
-      }
       discountRate = 0.15;
     } else if (type == TicketType.STUDENT) {
-      if (!passenger.isStudentCardVerified()) {
-        throw new IllegalArgumentException(SaleMessages.INVALID_REQUEST);
-      }
       discountRate = 0.10;
     }
 
-    double discountAmount = base * discountRate;
-    double insurance = 2000.0; // Phí bảo hiểm cố định 2.000đ
+    // 1. Cộng dồn bảo hiểm trước
+    double priceWithInsurance = base + insurance;
 
-    // Tính tổng thô và làm tròn LÊN đến hàng nghìn (vd 179.600 -> 180.000)
-    double rawPrice = Math.max(0, base - discountAmount) + insurance;
-    double finalPrice = Math.ceil(rawPrice / 1000.0) * 1000.0;
+    // 2. Trừ % giảm giá đối tượng
+    double priceAfterTargetDiscount = priceWithInsurance * (1.0 - discountRate);
 
-    return new Pricing(effective, discountAmount, insurance, finalPrice);
+    // 3. Nếu là vé khứ hồi (chiều về) -> Giảm thêm 10%
+    if (isReturnTicket) {
+      priceAfterTargetDiscount = priceAfterTargetDiscount * 0.9;
+    }
+
+    // Làm tròn LÊN đến hàng nghìn (Vd: 2.143.800 -> 2.144.000)
+    double finalPrice = Math.ceil(priceAfterTargetDiscount / 1000.0) * 1000.0;
+
+    // Tính ra số tiền thực tế được giảm để lưu vào hóa đơn
+    double totalDiscountAmount = priceWithInsurance - finalPrice;
+
+    return new Pricing(type, totalDiscountAmount, insurance, finalPrice);
   }
 
   private int ageAt(LocalDate dob, LocalDateTime departureTime) {
@@ -1024,5 +1032,34 @@ public class SaleServiceImpl implements SaleService {
     if (returns != null)
       out.addAll(returns);
     return out;
+  }
+
+  // Tính hệ số khoảng cách
+  public static double getDistanceMultiplier(double km) {
+    if (km <= 100)
+      return 1.1;
+    if (km <= 300)
+      return 1.25;
+    if (km <= 800)
+      return 1.5;
+    return 2.0; // > 800km
+  }
+
+  // Tính hệ số loại ghế (Tùy theo Enum SeatType của sếp)
+  public static double getSeatMultiplier(String seatType) {
+    switch (seatType) {
+      case "GHE_CUNG":
+        return 1.0;
+      case "GHE_MEM":
+        return 1.2;
+      case "GIUONG_4":
+        return 1.4;
+      case "GIUONG_6":
+        return 1.6;
+      case "VIP":
+        return 2.0;
+      default:
+        return 1.0;
+    }
   }
 }
