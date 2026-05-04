@@ -1014,6 +1014,9 @@ public class Step4PaymentController {
     List<SaleChildUnder6DTO> children = state.getChildrenUnder6() == null ? List.of()
         : new ArrayList<>(state.getChildrenUnder6());
 
+    // LẤY ID NHÂN VIÊN ĐANG ĐĂNG NHẬP
+    String currentEmployeeId = vn.edu.iuh.fit.client.service.SessionManager.getInstance().getEmployeeId();
+
     return SaleCreateRequestDTO.builder()
         .clientSessionId(state.getClientSessionId())
         .ticketCategory(state.getTicketCategory())
@@ -1028,6 +1031,7 @@ public class Step4PaymentController {
         .redeemPoints(redeem)
         .paymentMethod(PaymentMethod.CASH)
         .amountPaid(amountPaid)
+        .employeeId(currentEmployeeId) // TRUYỀN ID NHÂN VIÊN XUỐNG SERVER
         .build();
   }
 

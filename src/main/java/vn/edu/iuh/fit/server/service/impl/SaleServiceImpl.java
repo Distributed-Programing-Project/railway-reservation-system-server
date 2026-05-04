@@ -50,6 +50,7 @@ import vn.edu.iuh.fit.common.response.Response;
 import vn.edu.iuh.fit.server.entity.InvoiceMetadata;
 import vn.edu.iuh.fit.server.model.Carriage;
 import vn.edu.iuh.fit.server.model.Customer;
+import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.model.Invoice;
 import vn.edu.iuh.fit.server.model.InvoiceDetail;
 import vn.edu.iuh.fit.server.model.Route;
@@ -545,6 +546,12 @@ public class SaleServiceImpl implements SaleService {
       return Response.error(SaleMessages.CUSTOMER_DOCUMENT_REQUIRED);
     }
 
+    // TÌM NHÂN VIÊN ĐANG THỰC HIỆN GIAO DỊCH
+    Employee staff = null;
+    if (dto.getEmployeeId() != null && !dto.getEmployeeId().isBlank()) {
+      staff = em.find(Employee.class, dto.getEmployeeId().trim());
+    }
+
     List<Ticket> createdTickets = new ArrayList<>();
     List<InvoiceDetail> createdDetails = new ArrayList<>();
     List<IssuedTicketDTO> issuedTickets = new ArrayList<>();
@@ -667,7 +674,7 @@ public class SaleServiceImpl implements SaleService {
         .totalAmount(totalAmount)
         .type(InvoiceType.SALE)
         .customer(buyerCustomer)
-        .employee(null)
+        .employee(staff) // GÁN NHÂN VIÊN VÀO ĐÂY SAU KHI TÌM ĐƯỢC
         .taxCode(dto.getVat() != null ? normalize(dto.getVat().getTaxCode()) : null)
         .companyName(dto.getVat() != null ? normalize(dto.getVat().getCompanyName()) : null)
         .build();
