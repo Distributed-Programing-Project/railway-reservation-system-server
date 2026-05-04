@@ -38,28 +38,26 @@ flowchart LR
         START(( )) --> A1[Chọn chức năng\nQuản lý lịch trình]
         A1 --> DA{Chọn hành động}
         DA -->|Phát triển| A2[Chọn lịch trình DRAFT\nBấm Phát triển]
-        A2 --> DA2{Xác nhận\nPhát triển?}
-        DA2 -->|Hủy| R1([Hủy thao tác])
+        A2 --> DC{Xác nhận\nPhát triển?}
+        DC -->|Hủy| R1([Hủy thao tác])
         DA -->|Vô hiệu hóa| A3[Chọn lịch trình\nBấm Vô hiệu hóa]
-        A3 --> DA3{Xác nhận\nVô hiệu hóa?}
-        DA3 -->|Hủy| R2([Hủy thao tác])
+        A3 --> DD{Xác nhận\nVô hiệu hóa?}
+        DD -->|Hủy| R2([Hủy thao tác])
     end
 
     subgraph system["⚙️ Hệ thống"]
         direction TB
-        S1[Hiển thị danh sách lịch trình\nvà các nút hành động]
-        S2[Hiển thị hộp thoại\nxác nhận Phát triển]
-        S3{Giá vé và\nthời gian hợp lệ?}
-        SE1[Lỗi: chưa cấu hình giá\nhoặc thời gian đã qua]
-        S4[Cập nhật DRAFT\n→ NOT_STARTED]
-        S5[Thông báo Phát triển\nthành công]
-        S6[Hiển thị hộp thoại\nxác nhận Vô hiệu hóa]
-        S7{Trạng thái\nlịch trình?}
-        S8[Xóa lịch trình DRAFT\nCascade delete ScheduleDetail]
-        S9{Đã có\nvé bán?}
+        S1[Hiển thị danh sách\nlịch trình]
+        S2{Giá vé và\nthời gian hợp lệ?}
+        SE1[Lỗi: giá vé hoặc\nthời gian đã qua]
+        S3[Cập nhật DRAFT\n→ NOT_STARTED]
+        S4[Thông báo Phát triển\nthành công]
+        S5{Trạng thái\nlịch trình?}
+        S6[Xóa lịch trình DRAFT\nvà ScheduleDetail]
+        S7{Đã có\nvé bán?}
         SE2[Lỗi: đã có\nkhách mua vé]
-        S10[Cập nhật NOT_STARTED\n→ PAUSED]
-        S11[Thông báo Vô hiệu hóa\nthành công]
+        S8[Cập nhật NOT_STARTED\n→ PAUSED]
+        S9[Thông báo Vô hiệu hóa\nthành công]
         END1((( )))
         END2((( )))
         END3((( )))
@@ -67,23 +65,20 @@ flowchart LR
     end
 
     A1 --> S1
-    A2 --> S2
-    S2 --> DA2
-    DA2 -->|Xác nhận| S3
-    S3 -->|Không hợp lệ| SE1
+    S1 --> DA
+    DC -->|Xác nhận| S2
+    S2 -->|Không hợp lệ| SE1
     SE1 --> END1
-    S3 -->|Hợp lệ| S4
-    S4 --> S5
-    S5 --> END2
-    A3 --> S6
-    S6 --> DA3
-    DA3 -->|Xác nhận| S7
-    S7 -->|DRAFT| S8
-    S8 --> S11
-    S7 -->|NOT_STARTED| S9
-    S9 -->|Có| SE2
+    S2 -->|Hợp lệ| S3
+    S3 --> S4
+    S4 --> END2
+    DD -->|Xác nhận| S5
+    S5 -->|DRAFT| S6
+    S6 --> S9
+    S5 -->|NOT_STARTED| S7
+    S7 -->|Có| SE2
     SE2 --> END3
-    S9 -->|Không| S10
-    S10 --> S11
-    S11 --> END4
+    S7 -->|Không| S8
+    S8 --> S9
+    S9 --> END4
 ```
