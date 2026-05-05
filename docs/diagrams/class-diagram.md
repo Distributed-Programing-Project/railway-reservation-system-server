@@ -56,44 +56,38 @@ classDiagram
 
     %% ── Auth ──────────────────────────────────────────────
     class Role {
-        <<entity · roles>>
-        +String id [UUID]
-        +String code [unique]
+        +String id
+        +String code
         +String name
     }
 
     class Account {
-        <<entity · accounts>>
-        +String id [UUID]
-        +String username [unique]
+        +String id
+        +String username
         +String password
         +boolean active
-        +Set~Role~ roles
     }
 
     class Employee {
-        <<entity · employees>>
-        +String employeeId [custom, len=12]
-        +String employeeCode [unique]
+        +String id
+        +String employeeCode
         +String employeeName
-        +String nationalId [unique]
+        +String nationalId
         +String address
         +LocalDate dateOfBirth
         +Boolean gender
         +String phoneNumber
-        +String email [unique]
+        +String email
         +Boolean isManager
-        +EmployeeStatus employeeStatus
+        +EmployeeStatus status
         +LocalDate createdAt
         +LocalDate updatedAt
-        +Account account
     }
 
     %% ── Khach hang ────────────────────────────────────────
     class Customer {
-        <<entity · customers>>
-        +String id [custom, len=11]
-        +String name [full_name]
+        +String id
+        +String fullName
         +String idCard
         +String passport
         +String phoneNumber
@@ -104,147 +98,116 @@ classDiagram
 
     %% ── Tau - Toa - Ghe ───────────────────────────────────
     class Train {
-        <<entity · trains>>
-        +String id [custom, len=6]
-        +String trainCode [unique]
+        +String id
+        +String trainCode
         +TrainStatus status
     }
 
     class Carriage {
-        <<entity · carriages>>
-        +String id [UUID]
-        +int number [sequence_number]
-        +CarriageType type [carriage_type]
-        +Train train
+        +String id
+        +int number
+        +CarriageType type
     }
 
     class Seat {
-        <<entity · seats>>
-        +String id [UUID]
-        +int number [sequence_number]
-        +boolean available [is_available]
-        +SeatType type [seat_type]
-        +Carriage carriage
+        +String id
+        +int number
+        +boolean available
+        +SeatType type
     }
 
     %% ── Ga - Tuyen - Diem dung ────────────────────────────
     class Station {
-        <<entity · stations>>
-        +String id [custom, len=6]
-        +String name [station_name]
+        +String id
+        +String name
         +Float destinationKm
     }
 
     class Route {
-        <<entity · routes>>
-        +String id [custom, len=8]
+        +String id
         +String routeCode
         +RouteStatus status
         +Double priceBasic
-        +Station departureStation
-        +Station destinationStation
     }
 
     class RouteStop {
-        <<entity · route_stops>>
-        +String id [UUID]
+        +String id
         +int orderStop
-        +Station stationStop
-        +Route route
     }
 
     %% ── Lich trinh ────────────────────────────────────────
     class Schedule {
-        <<entity · schedules>>
-        +String id [custom, len=10]
+        +String id
         +LocalDateTime departureTime
         +LocalDateTime arrivalTime
         +StatusSchedule status
-        +Train train
-        +Route route
     }
 
     class ScheduleDetail {
-        <<entity · schedule_details>>
-        +String id [UUID]
+        +String id
         +BigDecimal priceSeat
-        +Seat seat
-        +Schedule schedule
-        +RouteStop routeStop [nullable]
-        +Station segmentDepartureStation
-        +Station segmentDestinationStation
         +Integer segmentDepartureOrder
         +Integer segmentDestinationOrder
-        +int version [@Version]
+        +int version
     }
 
     %% ── Ve - Hoa don ──────────────────────────────────────
     class Ticket {
-        <<entity · tickets>>
-        +String id [custom, len=10]
-        +TicketType type [ticket_type]
-        +boolean roundTrip [is_round_trip]
+        +String id
+        +TicketType type
+        +boolean roundTrip
         +TicketStatus status
-        +String qrCode [TEXT]
+        +String qrCode
         +String originalTicketId
-        +boolean exchanged [is_exchanged]
+        +boolean exchanged
         +String passengerName
         +String passengerIdCard
-        +Customer customer
-        +ScheduleDetail scheduleDetail
     }
 
     class Invoice {
-        <<entity · invoices>>
-        +String id [custom, len=10]
+        +String id
         +LocalDateTime issueDate
         +double totalAmount
-        +InvoiceType type [invoice_type]
+        +InvoiceType type
         +String taxCode
         +String companyName
-        +Customer customer
-        +Employee employee
     }
 
     class InvoiceDetail {
-        <<entity · invoice_details>>
-        +String id [UUID]
+        +String id
         +Double subTotal
         +double discount
-        +double insurance [insurance_fee]
+        +double insurance
         +boolean isReturned
         +double refundAmount
-        +Invoice invoice
-        +Ticket ticket
     }
 
-    %% ── Relationships ──────────────────────────────────────
-    Account "*" --> "*" Role            : account_roles
-    Employee "1" --> "1" Account        : account_id FK
+    %% ── Composition — parent sở hữu lifecycle của child (cascade) ──
+    Train "1" *-- "*" Carriage
+    Carriage "1" *-- "*" Seat
+    Route "1" *-- "*" RouteStop
+    Schedule "1" *-- "*" ScheduleDetail
+    Invoice "1" *-- "*" InvoiceDetail
 
-    Train "1" *-- "*" Carriage          : train_id FK
-    Carriage "1" *-- "*" Seat           : carriage_id FK
+    %% ── Aggregation — whole/part, child tồn tại độc lập ──────────
+    Employee "1" o-- "1" Account
 
-    Route "*" --> "1" Station           : departure_station_id FK
-    Route "*" --> "1" Station           : destination_station_id FK
-    Route "1" *-- "*" RouteStop         : route_id FK
-    RouteStop "*" --> "1" Station       : station_stop_id FK
-
-    Schedule "*" --> "1" Train          : train_id FK
-    Schedule "*" --> "1" Route          : route_id FK
-    Schedule "1" *-- "*" ScheduleDetail : schedule_id FK, cascade REMOVE
-
-    ScheduleDetail "*" --> "1" Seat         : seat_id FK
-    ScheduleDetail "*" --> "0..1" RouteStop : route_stop_id FK (nullable)
-    ScheduleDetail "*" --> "1" Station      : segment_departure_station_id FK
-    ScheduleDetail "*" --> "1" Station      : segment_destination_station_id FK
-
-    Customer "1" --> "*" Ticket         : customer_id FK
-    ScheduleDetail "1" --> "*" Ticket   : schedule_detail_id FK
-    Customer "1" --> "*" Invoice        : customer_id FK
-    Employee "1" --> "*" Invoice        : employee_id FK
-    Invoice "1" *-- "*" InvoiceDetail   : invoice_id FK, cascade ALL
-    Ticket "1" --> "*" InvoiceDetail    : ticket_id FK
+    %% ── Association — FK reference ────────────────────────────────
+    Account "*" --> "*" Role
+    Route "*" --> "1" Station : departure
+    Route "*" --> "1" Station : destination
+    RouteStop "*" --> "1" Station
+    Schedule "*" --> "1" Train
+    Schedule "*" --> "1" Route
+    ScheduleDetail "*" --> "1" Seat
+    ScheduleDetail "*" --> "0..1" RouteStop
+    ScheduleDetail "*" --> "1" Station : segmentDeparture
+    ScheduleDetail "*" --> "1" Station : segmentDestination
+    Ticket "*" --> "1" Customer
+    Ticket "*" --> "1" ScheduleDetail
+    Invoice "*" --> "1" Customer
+    Invoice "*" --> "1" Employee
+    InvoiceDetail "*" --> "1" Ticket
 ```
 
 ---
@@ -690,11 +653,13 @@ classDiagram
 
 ## 6. Ký hiệu
 
-| Ký hiệu | Ý nghĩa |
-|---|---|
-| `"1" *-- "*"` | Composition — One-to-Many (cascade) |
-| `"1" --> "*"` | Association — One-to-Many (FK) |
-| `"*" --> "1"` | Many-to-One (FK nằm ở bảng Many) |
+| Ký hiệu | Loại | Ý nghĩa |
+|---|---|---|
+| `A "1" *-- "*" B` | **Composition** ◆── | A sở hữu B, B không tồn tại nếu không có A (cascade delete) |
+| `A "1" o-- "1" B` | **Aggregation** ◇── | A chứa B, nhưng B có thể tồn tại độc lập |
+| `A "*" --> "1" B` | **Association** ──▶ | A tham chiếu B qua FK, không quản lý lifecycle |
+| `A "*" --> "*" B` | **Association** ──▶ | Many-to-Many (join table) |
+| `"0..1"` | Cardinality | Quan hệ nullable (FK có thể null) |
 | `"1" -- "1"` | One-to-One |
 | `"*" --> "*"` | Many-to-Many (qua join table) |
 | `..>` | Dependency / DTO input |
