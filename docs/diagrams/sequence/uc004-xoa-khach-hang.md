@@ -12,7 +12,7 @@ sequenceDiagram
   participant CusRepo as "CustomerRepositoryImpl"
   participant DB as "MariaDB"
 
-  Manager->>UI: "Chọn khách hàng cần xóa"
+  Manager->>UI: "selectCustomerToDelete()"
   UI->>Socket: "send(Request{ActionType.DELETE_CUSTOMER, data=CustomerDeleteRequestDTO})"
   Socket->>Server: "writeObject(Request)"
   Server->>Router: "route(Request)"
@@ -40,10 +40,10 @@ sequenceDiagram
           Svc->>CusRepo: "hasAnyInvoice(customerId)"
           CusRepo->>DB: "SELECT COUNT(invoices) WHERE customerId=?"
           alt "Has history (ticket/invoice)"
-            Svc->>DB: "UPDATE customers SET is_active=false"
+            Svc->>DB: "softDeleteCustomer(isActive=false)"
             Svc-->>Router: "Response.success(CustomerDTO)"
           else "No history"
-            Svc->>DB: "DELETE FROM customers WHERE id=?"
+            Svc->>DB: "hardDeleteCustomer(customerId)"
             Svc-->>Router: "Response.success(customerId)"
           end
         end
@@ -53,4 +53,3 @@ sequenceDiagram
   Router-->>Socket: "Response"
   Socket-->>UI: "Response"
 ```
-

@@ -11,7 +11,7 @@ sequenceDiagram
   participant Repo as "CustomerRepositoryImpl"
   participant DB as "MariaDB"
 
-  User->>UI: "Nhập keyword/page/size"
+  User->>UI: "inputSearchCriteria()"
   UI->>Socket: "send(Request{ActionType.SEARCH_CUSTOMERS, data=CustomerSearchDTO})"
   Socket->>Server: "writeObject(Request)"
   Server->>Router: "route(Request)"
@@ -20,12 +20,11 @@ sequenceDiagram
     Svc-->>Router: "Response.error(errors)"
   else "OK"
     Svc->>Repo: "searchActiveCustomers(keyword, page, size)"
-    Repo->>DB: "SELECT customers WHERE isActive=true AND (kw LIKE ...)"
+    Repo->>DB: "selectActiveCustomers(keyword,page,size)"
     Svc->>Repo: "countActiveCustomers(keyword)"
-    Repo->>DB: "SELECT COUNT(customers) WHERE isActive=true AND (kw LIKE ...)"
+    Repo->>DB: "countActiveCustomers(keyword)"
     Svc-->>Router: "Response.success(CustomerPageDTO)"
   end
   Router-->>Socket: "Response"
   Socket-->>UI: "Response"
 ```
-

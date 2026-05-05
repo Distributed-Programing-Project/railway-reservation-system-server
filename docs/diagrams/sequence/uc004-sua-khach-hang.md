@@ -11,7 +11,7 @@ sequenceDiagram
   participant Repo as "CustomerRepositoryImpl"
   participant DB as "MariaDB"
 
-  User->>UI: "Chỉnh sửa thông tin khách hàng"
+  User->>UI: "editCustomerForm()"
   UI->>Socket: "send(Request{ActionType.UPDATE_CUSTOMER, data=CustomerDTO})"
   Socket->>Server: "writeObject(Request)"
   Server->>Router: "route(Request)"
@@ -30,11 +30,10 @@ sequenceDiagram
         Svc->>Repo: "existsByEmail(email, exclude=customerId)"
         Repo->>DB: "SELECT COUNT(customers) WHERE email=? AND id<>?"
       end
-      Svc->>DB: "UPDATE customers (name/idCard/phone/email)"
+      Svc->>DB: "updateCustomer(name,idCard,phone,email)"
       Svc-->>Router: "Response.success(CustomerDTO)"
     end
   end
   Router-->>Socket: "Response"
   Socket-->>UI: "Response"
 ```
-
