@@ -50,12 +50,11 @@ graph TD
 
 ## 2. Class Diagram — Entities
 
-### 2a. Auth & Nhân viên
-
 ```mermaid
 classDiagram
-    direction LR
+    direction TB
 
+    %% ── Auth ──────────────────────────────────────────────
     class Role {
         <<entity · roles>>
         +String id [UUID]
@@ -90,14 +89,7 @@ classDiagram
         +Account account
     }
 
-    Account "*" --> "*" Role        : account_roles (join table)
-    Employee "1" --> "1" Account    : account_id FK
-```
-
-### 2b. Khách hàng
-
-```mermaid
-classDiagram
+    %% ── Khach hang ────────────────────────────────────────
     class Customer {
         <<entity · customers>>
         +String id [custom, len=11]
@@ -109,14 +101,8 @@ classDiagram
         +boolean isActive
         +int rewardPoints
     }
-```
 
-### 2c. Tàu — Toa — Ghế
-
-```mermaid
-classDiagram
-    direction LR
-
+    %% ── Tau - Toa - Ghe ───────────────────────────────────
     class Train {
         <<entity · trains>>
         +String id [custom, len=6]
@@ -141,20 +127,11 @@ classDiagram
         +Carriage carriage
     }
 
-    Train "1" *-- "*" Carriage  : train_id FK
-    Carriage "1" *-- "*" Seat   : carriage_id FK
-```
-
-### 2d. Ga — Tuyến — Điểm dừng
-
-```mermaid
-classDiagram
-    direction LR
-
+    %% ── Ga - Tuyen - Diem dung ────────────────────────────
     class Station {
         <<entity · stations>>
         +String id [custom, len=6]
-        +String name [station_name, NVARCHAR]
+        +String name [station_name]
         +Float destinationKm
     }
 
@@ -176,18 +153,7 @@ classDiagram
         +Route route
     }
 
-    Route "*" --> "1" Station   : departure_station_id FK
-    Route "*" --> "1" Station   : destination_station_id FK
-    Route "1" *-- "*" RouteStop : route_id FK
-    RouteStop "*" --> "1" Station : station_stop_id FK
-```
-
-### 2e. Lịch trình — Chi tiết lịch trình
-
-```mermaid
-classDiagram
-    direction LR
-
+    %% ── Lich trinh ────────────────────────────────────────
     class Schedule {
         <<entity · schedules>>
         +String id [custom, len=10]
@@ -212,21 +178,7 @@ classDiagram
         +int version [@Version]
     }
 
-    Schedule "*" --> "1" Train         : train_id FK
-    Schedule "*" --> "1" Route         : route_id FK
-    Schedule "1" *-- "*" ScheduleDetail : schedule_id FK, cascade REMOVE
-    ScheduleDetail "*" --> "1" Seat         : seat_id FK
-    ScheduleDetail "*" --> "0..1" RouteStop : route_stop_id FK (nullable)
-    ScheduleDetail "*" --> "1" Station      : segment_departure_station_id FK
-    ScheduleDetail "*" --> "1" Station      : segment_destination_station_id FK
-```
-
-### 2f. Vé — Hóa đơn
-
-```mermaid
-classDiagram
-    direction LR
-
+    %% ── Ve - Hoa don ──────────────────────────────────────
     class Ticket {
         <<entity · tickets>>
         +String id [custom, len=10]
@@ -236,7 +188,7 @@ classDiagram
         +String qrCode [TEXT]
         +String originalTicketId
         +boolean exchanged [is_exchanged]
-        +String passengerName [NVARCHAR]
+        +String passengerName
         +String passengerIdCard
         +Customer customer
         +ScheduleDetail scheduleDetail
@@ -249,7 +201,7 @@ classDiagram
         +double totalAmount
         +InvoiceType type [invoice_type]
         +String taxCode
-        +String companyName [NVARCHAR]
+        +String companyName
         +Customer customer
         +Employee employee
     }
@@ -265,6 +217,27 @@ classDiagram
         +Invoice invoice
         +Ticket ticket
     }
+
+    %% ── Relationships ──────────────────────────────────────
+    Account "*" --> "*" Role            : account_roles
+    Employee "1" --> "1" Account        : account_id FK
+
+    Train "1" *-- "*" Carriage          : train_id FK
+    Carriage "1" *-- "*" Seat           : carriage_id FK
+
+    Route "*" --> "1" Station           : departure_station_id FK
+    Route "*" --> "1" Station           : destination_station_id FK
+    Route "1" *-- "*" RouteStop         : route_id FK
+    RouteStop "*" --> "1" Station       : station_stop_id FK
+
+    Schedule "*" --> "1" Train          : train_id FK
+    Schedule "*" --> "1" Route          : route_id FK
+    Schedule "1" *-- "*" ScheduleDetail : schedule_id FK, cascade REMOVE
+
+    ScheduleDetail "*" --> "1" Seat         : seat_id FK
+    ScheduleDetail "*" --> "0..1" RouteStop : route_stop_id FK (nullable)
+    ScheduleDetail "*" --> "1" Station      : segment_departure_station_id FK
+    ScheduleDetail "*" --> "1" Station      : segment_destination_station_id FK
 
     Customer "1" --> "*" Ticket         : customer_id FK
     ScheduleDetail "1" --> "*" Ticket   : schedule_detail_id FK
