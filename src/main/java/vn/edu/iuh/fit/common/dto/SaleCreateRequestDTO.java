@@ -39,4 +39,6 @@ public class SaleCreateRequestDTO implements Serializable {
   private PaymentMethod paymentMethod;
   private Double amountPaid;
   private String paymentOrderId;
+
+  private String employeeId;
 }

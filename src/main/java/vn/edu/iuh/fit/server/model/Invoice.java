@@ -9,8 +9,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -24,6 +22,7 @@ import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.BatchSize;
 import vn.edu.iuh.fit.common.constant.InvoiceType;
+import vn.edu.iuh.fit.server.util.id.annotation.GeneratedInvoiceId;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -36,8 +35,8 @@ import vn.edu.iuh.fit.common.constant.InvoiceType;
 @BatchSize(size = 25)
 public class Invoice {
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
-  @Column(name = "invoice_id", length = 36)
+  @GeneratedInvoiceId
+  @Column(name = "invoice_id", length = 10)
   private String id;
 
   @Column(name = "issue_date")

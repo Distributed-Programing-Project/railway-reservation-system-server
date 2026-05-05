@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import vn.edu.iuh.fit.common.constant.TrainStatus;
+import vn.edu.iuh.fit.server.util.id.annotation.GeneratedTrainId;
 
 import java.util.List;
 
@@ -19,8 +20,8 @@ import java.util.List;
 public class Train {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
-  @Column(name = "train_id", length = 36)
+  @GeneratedTrainId
+  @Column(name = "train_id", length = 6)
   private String id;
 
   @Column(name = "train_code", unique = true, nullable = false, length = 10)

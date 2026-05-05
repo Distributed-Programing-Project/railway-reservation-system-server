@@ -26,4 +26,3 @@ public class SalePassengerDTO implements Serializable {
   private LocalDate dateOfBirth;
   private boolean studentCardVerified;
 }
-

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
 import vn.edu.iuh.fit.common.constant.StatusSchedule;
+import vn.edu.iuh.fit.server.util.id.annotation.GeneratedScheduleId;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,8 +21,8 @@ import java.util.List;
 @BatchSize(size = 25)
 public class Schedule {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "schedule_id", length = 36)
+    @GeneratedScheduleId
+    @Column(name = "schedule_id", length = 10)
     private String id;
 
     @Column(name = "departure_time")
