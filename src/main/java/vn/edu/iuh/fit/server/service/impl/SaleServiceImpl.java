@@ -1133,16 +1133,19 @@ public class SaleServiceImpl implements SaleService {
   }
 
   public static double getSeatMultiplier(String seatType) {
+    if (seatType == null)
+      return 1.0;
+
     switch (seatType) {
-      case "GHE_CUNG":
+      case "HARD_SEAT":
         return 1.0;
-      case "GHE_MEM":
+      case "SOFT_SEAT":
         return 1.2;
-      case "GIUONG_4":
+      case "BERTH_4":
         return 1.4;
-      case "GIUONG_6":
+      case "BERTH_6":
         return 1.6;
-      case "VIP":
+      case "VIP_SEAT":
         return 2.0;
       default:
         return 1.0;
