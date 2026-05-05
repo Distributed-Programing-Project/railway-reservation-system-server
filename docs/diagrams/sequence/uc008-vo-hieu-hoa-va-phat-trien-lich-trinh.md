@@ -79,8 +79,12 @@ sequenceDiagram
 
     User->>UI: Đăng nhập thành công
     User->>UI: Chọn màn hình "Quản lý lịch trình"
-    User->>UI: Chọn "Vô hiệu hóa" lịch trình
-    UI->>UI: Xác nhận hành động
+    User->>UI: Chọn lịch trình, nhấn "Vô hiệu hóa"
+    UI->>UI: Kiểm tra selected.status == DRAFT hoặc NOT_STARTED
+    alt status không phải DRAFT hoặc NOT_STARTED
+        UI-->>User: Thông báo "Chỉ được vô hiệu hóa lịch trình ở trạng thái Nháp hoặc Chưa khởi hành"
+    end
+    UI->>UI: Hiển thị confirm dialog (nội dung thay đổi theo status), nhận xác nhận
     UI->>OIS: Request(PUBLISH_OR_DISABLE_SCHEDULE, ScheduleLifecycleDTO)
     OIS->>RR: route(request)
     RR->>SS: disableSchedule(dto)
@@ -153,8 +157,12 @@ sequenceDiagram
 
     User->>UI: Đăng nhập thành công
     User->>UI: Chọn màn hình "Quản lý lịch trình"
-    User->>UI: Chọn "Phát triển" lịch trình
-    UI->>UI: Xác nhận hành động
+    User->>UI: Chọn lịch trình, nhấn "Phát triển"
+    UI->>UI: Kiểm tra selected.status == DRAFT
+    alt status != DRAFT
+        UI-->>User: Thông báo "Chỉ được phép phát triển lịch trình ở trạng thái Bản nháp (DRAFT)"
+    end
+    UI->>UI: Hiển thị confirm dialog, nhận xác nhận
     UI->>OIS: Request(PUBLISH_OR_DISABLE_SCHEDULE, ScheduleLifecycleDTO)
     OIS->>RR: route(request)
     RR->>SS: publishSchedule(dto)

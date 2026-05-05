@@ -72,7 +72,17 @@ sequenceDiagram
 
     User->>UI: Đăng nhập thành công
     User->>UI: Chọn màn hình "Quản lý lịch trình"
-    User->>UI: Nhấn "Sửa" → điền form → nhấn "Xác nhận"
+    User->>UI: Chọn lịch trình muốn sửa, nhấn "Sửa"
+    UI->>UI: Kiểm tra selected.status == DRAFT
+    alt status != DRAFT
+        UI-->>User: Thông báo "Chỉ được phép sửa lịch trình ở trạng thái Bản nháp (DRAFT)"
+    end
+    UI->>UI: Mở dialog sửa, điền dữ liệu hiện tại vào form (initForEdit)
+    User->>UI: Chỉnh sửa thông tin, nhấn "Xác nhận"
+    UI->>UI: validateForm() — kiểm tra trường bắt buộc, departureTime > now(), arrivalTime > departureTime
+    alt Lỗi validate phía UI
+        UI-->>User: Hiển thị thông báo lỗi (không gửi request đến server)
+    end
     UI ->> UI: Tạo ScheduleUpdateDTO(requestEmployeeId, scheduleId, trainId, routeId, departureTime, arrivalTime)
     UI ->> SC: sendRequest(new Request(UPDATE_SCHEDULE, scheduleUpdateDTO))
     SC ->> SRV: ObjectOutputStream.writeObject(request)

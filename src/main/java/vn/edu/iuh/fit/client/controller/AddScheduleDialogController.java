@@ -274,7 +274,7 @@ public class AddScheduleDialogController {
                 }
             } else {
                 // Create mode: phải cách ít nhất 1 ngày
-                if (!departure.isAfter(LocalDateTime.now().plusDays(1).minusMinutes(1))) {
+                if (departure.isBefore(LocalDateTime.now().plusDays(1))) {
                     errors.add("- Ngày khởi hành phải cách ít nhất 1 ngày so với hôm nay.");
                 }
             }

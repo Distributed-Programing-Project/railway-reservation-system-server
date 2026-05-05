@@ -69,6 +69,11 @@ sequenceDiagram
     UI->>UI: Hiển thị form (trainId, routeId, departureTime, arrivalTime)
     Manager->>UI: Điền đầy đủ form, nhấn Xác nhận
 
+    UI->>UI: validateForm() — kiểm tra trường bắt buộc, departureTime >= now+1 ngày, arrivalTime > departureTime
+    alt Lỗi validate phía UI
+        UI-->>Manager: Hiển thị thông báo lỗi (không gửi request đến server)
+    end
+
     UI->>UI: new ScheduleCreateDTO(trainId, routeId, departureTime, arrivalTime)
     UI->>Socket: sendRequest(new Request(CREATE_SCHEDULE, scheduleCreateDTO))
     Socket->>Server: ObjectOutputStream.writeObject(request)
