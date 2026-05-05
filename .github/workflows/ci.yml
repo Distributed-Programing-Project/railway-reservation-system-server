@@ -33,5 +33,14 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: Checkout common
+        uses: actions/checkout@v4
+        with:
+          repository: Distributed-Programing-Project/railway-reservation-system-common
+          path: common
+
+      - name: Install common
+        run: mvn -B install -DskipTests -f common/pom.xml
+
       - name: Build
         run: mvn -B clean package -DskipTests
