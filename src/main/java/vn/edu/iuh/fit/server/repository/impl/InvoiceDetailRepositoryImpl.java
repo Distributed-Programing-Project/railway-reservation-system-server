@@ -49,18 +49,24 @@ public class InvoiceDetailRepositoryImpl extends AbstractGenericRepositoryImpl<I
     @Override
     public List<InvoiceDetail> findDetailsWithFullChainByInvoiceId(String invoiceId) {
         return readOnly(em -> em.createQuery(
-            "SELECT d FROM InvoiceDetail d " +
-            "JOIN FETCH d.ticket t " +
-            "LEFT JOIN FETCH t.scheduleDetail sd " +
-            "LEFT JOIN FETCH sd.schedule " +
-            "LEFT JOIN FETCH sd.seat seat " +
-            "LEFT JOIN FETCH seat.carriage car " +
-            "LEFT JOIN FETCH car.train " +
-            "LEFT JOIN FETCH sd.segmentDepartureStation " +
-            "LEFT JOIN FETCH sd.segmentDestinationStation " +
-            "WHERE d.invoice.id = :invoiceId", InvoiceDetail.class)
-            .setParameter("invoiceId", invoiceId)
-            .getResultList());
+                        """
+                        SELECT DISTINCT d
+                        FROM InvoiceDetail d
+                        JOIN FETCH d.ticket t
+                        LEFT JOIN FETCH t.scheduleDetail sd
+                        LEFT JOIN FETCH sd.schedule s
+                        LEFT JOIN FETCH s.route r
+                        LEFT JOIN FETCH r.departureStation
+                        LEFT JOIN FETCH r.destinationStation
+                        LEFT JOIN FETCH sd.seat seat
+                        LEFT JOIN FETCH seat.carriage car
+                        LEFT JOIN FETCH car.train
+                        WHERE d.invoice.id = :invoiceId
+                        """,
+                        InvoiceDetail.class
+                )
+                .setParameter("invoiceId", invoiceId)
+                .getResultList());
     }
 }
 

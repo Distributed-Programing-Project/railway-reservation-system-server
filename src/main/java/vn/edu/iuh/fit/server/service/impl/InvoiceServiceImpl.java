@@ -14,6 +14,7 @@ import vn.edu.iuh.fit.common.message.InvoiceMessages;
 import vn.edu.iuh.fit.common.response.Response;
 import vn.edu.iuh.fit.server.model.Carriage;
 import vn.edu.iuh.fit.server.model.Employee;
+import vn.edu.iuh.fit.server.model.Route;
 import vn.edu.iuh.fit.server.model.Invoice;
 import vn.edu.iuh.fit.server.model.InvoiceDetail;
 import vn.edu.iuh.fit.server.model.Schedule;
@@ -172,8 +173,9 @@ public class InvoiceServiceImpl implements InvoiceService {
         Carriage carriage = seat != null ? seat.getCarriage() : null;
         Train train = carriage != null ? carriage.getTrain() : null;
         Schedule schedule = scheduleDetail != null ? scheduleDetail.getSchedule() : null;
-        Station departureStation = scheduleDetail != null ? scheduleDetail.getSegmentDepartureStation() : null;
-        Station arrivalStation = scheduleDetail != null ? scheduleDetail.getSegmentDestinationStation() : null;
+        Route route = schedule != null ? schedule.getRoute() : null;
+        Station departureStation = route != null ? route.getDepartureStation() : null;
+        Station arrivalStation = route != null ? route.getDestinationStation() : null;
 
         double finalAmount = (detail.getSubTotal() != null ? detail.getSubTotal() : 0.0)
             - detail.getDiscount() + detail.getInsurance();
