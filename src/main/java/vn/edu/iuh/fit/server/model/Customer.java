@@ -4,8 +4,6 @@ import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -15,6 +13,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import vn.edu.iuh.fit.server.util.id.annotation.GeneratedCustomerId;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -26,8 +25,8 @@ import lombok.ToString;
 @Table(name = "customers")
 public class Customer {
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
-  @Column(name = "customer_id", length = 36)
+  @GeneratedCustomerId
+  @Column(name = "customer_id", length = 11)
   private String id;
 
   @Column(name = "full_name", nullable = false, columnDefinition = "NVARCHAR(255)")

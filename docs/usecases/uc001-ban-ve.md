@@ -1,132 +1,123 @@
-# Usecase - 001: Bán vé tàu
+# Use case UC001: Bán vé
 
 ## Actor
 - **Primary:** Nhân viên bán vé (quầy)
-- **System:** JavaFX Client, TCP Socket Server, MariaDB, (tùy chọn) máy in/PDF viewer
+- **System:** JavaFX Client → TCP Socket Server → MariaDB (và mô-đun thanh toán nội bộ qua QR)
 
 ## Tiền điều kiện
-- Nhân viên đã đăng nhập và mở chức năng **Bán vé** trên client.
-- Lịch trình (`Schedule`) đã được tạo và đang ở trạng thái bán được (`StatusSchedule.NOT_STARTED`).
+- Nhân viên đã đăng nhập trên client.
+- Lịch trình (`Schedule`) và giá ghế (`ScheduleDetail.priceSeat`) đã được cấu hình để bán.
 
-## Hậu điều kiện
-- Tạo `Invoice` type `SALE` và các `InvoiceDetail` tương ứng.
-- Tạo các `Ticket` (status `TicketStatus.PAID`) gắn với `ScheduleDetail` đã chọn.
-- Nếu khách có tài khoản tích điểm: cập nhật `Customer.rewardPoints` (quy tắc tính điểm nằm trong `SaleServiceImpl`).
-- Ghế đã bán được tính theo `Ticket.status NOT IN (CANCELLED, EXCHANGED, RETURNED)`; các ghế đã “giữ chỗ” (hold) được giải phóng sau khi bán thành công.
+## Hậu điều kiện (khi thành công)
+- Tạo `Invoice` type `SALE` + `InvoiceDetail` tương ứng.
+- Tạo `Ticket` trạng thái `TicketStatus.PAID` cho từng ghế (`ScheduleDetail`) đã chọn.
+- Cập nhật điểm thưởng của người mua (`Customer.rewardPoints`):
+  - Có thể trừ điểm nếu có yêu cầu đổi điểm (`SaleRedeemPointsDTO`).
+  - Luôn cộng điểm theo tổng tiền thanh toán (rule trong `SaleServiceImpl`).
+- Nếu thanh toán online: `paymentOrderId` bị “consume” và gắn với `invoiceId` (qua `InternalPaymentOrderStore.consumeOrder(...)`).
+
+---
 
 ## Mô tả
-Nhân viên tra cứu chuyến theo ga đi/ga đến/ngày đi (và ngày về nếu khứ hồi), xem sơ đồ ghế, giữ ghế tạm thời theo phiên (`clientSessionId`), nhập thông tin hành khách/người mua, (tùy chọn) đổi điểm hoặc thanh toán online, sau đó xác nhận thanh toán để phát hành vé và hóa đơn.
+Nhân viên tìm chuyến theo ga đi/ga đến/ngày đi (và ngày về nếu khứ hồi), xem sơ đồ ghế, giữ ghế theo phiên (`clientSessionId`), nhập thông tin hành khách/người mua, chọn phương thức thanh toán (tiền mặt hoặc online qua QR), xác nhận thanh toán và chốt giao dịch để phát hành vé + hóa đơn.
 
 ---
 
-## Luồng chính
+## Luồng chính (theo ActionType)
 
-### 1) Tra cứu chuyến tàu
-1. Nhân viên chọn ga đi/ga đến và ngày đi (DTO: `SaleScheduleSearchDTO`).
-2. Client gửi `Request(ActionType.SEARCH_SCHEDULES_FOR_SALE, SaleScheduleSearchDTO)`.
-3. Server validate:
-   - Nếu thiếu dữ liệu → **"Dữ liệu yêu cầu không hợp lệ"** (`SaleMessages.INVALID_REQUEST`).
-   - Nếu ga đi = ga đến hoặc trống → **"Ga đi và ga đến không hợp lệ"** (`SaleMessages.INVALID_STATIONS`).
-   - Nếu ngày đi/ngày về không hợp lệ → **"Ngày đi/ngày về không hợp lệ"** (`SaleMessages.INVALID_DATES`).
-4. Server truy vấn danh sách `Schedule` theo ngày, lọc theo tuyến có thứ tự ga hợp lệ (repo: `ScheduleRepositoryImpl.filterSchedules(...)`) và trả về `SaleScheduleSearchResultDTO`.
+### 1) Tìm ga (phục vụ UI)
+1. Client gửi `Request(ActionType.FIND_ALL_STATIONS, null)`.
+2. Server trả `List<StationDTO>` (từ `SaleServiceImpl.findAllStations()`).
 
-### 2) Xem sơ đồ ghế
-1. Nhân viên chọn 1 chuyến (outbound/return) → client gọi `SaleClientService.getSeatMap(...)`.
-2. Client gửi `Request(ActionType.GET_SEATMAP_FOR_SCHEDULE, SeatMapRequestDTO)`.
-3. Server lấy `ScheduleDetail` (JPQL join `ScheduleDetail` ↔ `Seat` ↔ `Carriage`) và tính trạng thái ghế:
-   - `SOLD`: ghế đã có vé (status không thuộc `CANCELLED/EXCHANGED/RETURNED`).
-   - `HELD`: ghế đang được `SeatHoldStore` giữ chỗ (TTL 10 phút).
-   - `AVAILABLE`: còn trống.
-4. Trả về `SeatMapResponseDTO` gồm danh sách toa (`CarriageSeatMapDTO`) và ghế (`SeatMapSeatDTO`).
+### 2) Tra cứu chuyến bán vé
+1. Client gửi `Request(ActionType.SEARCH_SCHEDULES_FOR_SALE, SaleScheduleSearchDTO)`.
+2. Server validate dữ liệu (tham chiếu `SaleMessages.INVALID_REQUEST/INVALID_STATIONS/INVALID_DATES`).
+3. Server trả `SaleScheduleSearchResultDTO` (danh sách chuyến outbound/return dạng `ScheduleSaleCardDTO`).
 
-### 3) Giữ ghế (hold) theo phiên làm việc
-1. Nhân viên chọn các ghế theo `scheduleDetailIds`.
-2. Client gửi `Request(ActionType.HOLD_SEATS_FOR_SALE, SeatHoldRequestDTO)` với `clientSessionId`.
-3. Server:
-   - Validate `scheduleId`, `clientSessionId`, danh sách `scheduleDetailIds` thuộc đúng schedule.
-   - Loại các ghế đã bán (Ticket.status không thuộc `CANCELLED/EXCHANGED/RETURNED`).
-   - Gọi `SeatHoldStore.tryHold(...)` cho từng `scheduleDetailId`.
-4. Trả về `SeatHoldResponseDTO` gồm `successIds`, `failedIds`, `expiresAtEpochMillis`.
+### 3) Xem sơ đồ ghế
+1. Client gửi `Request(ActionType.GET_SEATMAP_FOR_SCHEDULE, SeatMapRequestDTO)`.
+2. Server trả `SeatMapResponseDTO` (toa/ghế + trạng thái ghế: `SOLD/HELD/AVAILABLE`).
 
-### 4) Nhập thông tin hành khách + người mua
-1. Nhân viên nhập danh sách hành khách theo số ghế đã giữ:
-   - DTO: `SalePassengerDTO` cho từng hành khách (tên/giấy tờ/loại vé/ngày sinh…).
-2. Nhân viên nhập thông tin người mua:
-   - DTO: `SaleBuyerDTO` (buyerName, documentType, documentNumber, buyerEmail, buyerPhone, hasAccount, customerId).
-3. (Tùy chọn) nhập VAT: `SaleVatDTO` và yêu cầu đổi điểm: `SaleRedeemPointsDTO`.
+### 4) Giữ ghế / nhả ghế theo phiên
+1. Client gửi:
+   - Hold: `Request(ActionType.HOLD_SEATS_FOR_SALE, SeatHoldRequestDTO)`
+   - Release: `Request(ActionType.RELEASE_HELD_SEATS_FOR_SALE, SeatHoldRequestDTO)`
+2. Server trả `SeatHoldResponseDTO` gồm `successIds/failedIds/expiresAtEpochMillis`.
 
-### 5) Thanh toán và phát hành vé
+### 5) Thanh toán online (nếu chọn ONLINE)
+1. Tạo đơn thanh toán (QR):
+   - Client gửi `Request(ActionType.CREATE_PAYMENT_ORDER, PaymentCreateRequestDTO)`
+   - Server tạo đơn trong `InternalPaymentOrderStore` và trả `PaymentCreateResponseDTO` (kèm QR payload/PNG).
+2. Theo dõi trạng thái:
+   - Client gửi `Request(ActionType.GET_PAYMENT_ORDER_STATUS, PaymentStatusRequestDTO)`
+   - Server trả `PaymentStatusDTO` (PENDING/SUCCESS/EXPIRED...).
+3. Xác nhận thanh toán:
+   - Client gửi `Request(ActionType.CONFIRM_PAYMENT_ORDER, PaymentStatusRequestDTO)` (hoặc `CONFIRM_INTERNAL_PAYMENT`)
+   - Server xác nhận và trả `PaymentStatusDTO` trạng thái `SUCCESS`.
+
+### 6) Chốt giao dịch bán vé
 1. Client gửi `Request(ActionType.CREATE_SALE_TRANSACTION, SaleCreateRequestDTO)`.
-2. Server kiểm tra:
-   - Ràng buộc số lượng: tối đa 10 vé mỗi chiều → **"Mỗi chiều chỉ được mua tối đa 10 vé"**.
-   - Khứ hồi: số ghế chiều đi và chiều về phải bằng nhau → **"Số lượng ghế chiều đi và chiều về phải bằng nhau"**.
-   - Hold hợp lệ theo `clientSessionId` → nếu ghế do phiên khác giữ → **"Ghế đang được giao dịch bởi quầy khác"**.
-   - Quy tắc trẻ em: có `childrenUnder6` thì bắt buộc có người lớn đi kèm → **"Vé trẻ em bắt buộc phải có người lớn đi kèm"**.
-   - Không cho đổi điểm khi có vé ưu đãi theo đối tượng (CHILD/SENIOR/STUDENT…) → **"Không được đổi điểm khi có vé ưu đãi đối tượng"**.
-   - Thanh toán:
-     - Tiền mặt: nếu `amountPaid < totalAmount` → **"Chưa đủ điều kiện thanh toán"**.
-     - Online: cần `paymentOrderId`, trạng thái đơn SUCCESS, chưa dùng, đúng session, đúng số tiền; nếu sai trả các lỗi `SaleMessages.ONLINE_*` tương ứng.
-3. Nếu hợp lệ, server tạo `Invoice(SALE)` + `InvoiceDetail`, persist `Ticket(PAID)`, trả `SaleCreateResponseDTO` (invoiceId, totalAmount, changeAmount, earnedPoints, redeemedPoints, tickets…).
-4. Server/Client giải phóng hold ghế sau khi tạo giao dịch thành công (`releaseHeldSeatsForSale(...)`).
+2. `SaleServiceImpl.createSaleTransaction()`:
+   - Kiểm tra `paymentMethod`:
+     - CASH: cần `amountPaid >= 0` và đủ tiền (`amountPaid >= totalAmount`).
+     - ONLINE: cần `paymentOrderId` và trạng thái đơn hợp lệ (session khớp, số tiền khớp, đã confirm).
+   - Kiểm tra ràng buộc nghiệp vụ:
+     - Vé khứ hồi: số ghế chiều đi = chiều về (`SaleMessages.SEAT_CONSTRAINT_MISMATCH`).
+     - Mỗi chiều tối đa 10 vé (`SaleMessages.TOO_MANY_TICKETS_PER_LEG`).
+     - Trẻ < 6 tuổi phải có người lớn đi kèm (`SaleMessages.CHILD_REQUIRES_ADULT`).
+     - Không cho đổi điểm nếu có vé ưu đãi theo đối tượng (`SaleMessages.POINTS_NOT_ALLOWED_WITH_DISCOUNT`).
+     - Ghế phải đang được hold bởi đúng `clientSessionId`, không bị giao dịch khác giữ/bán.
+   - Ghi DB trong 1 transaction: tạo `Invoice`, `InvoiceMetadata`, `Ticket`, `InvoiceDetail`, cập nhật `Customer.rewardPoints`.
+3. Server trả `SaleCreateResponseDTO` (invoiceId, tổng tiền, tiền thừa, danh sách vé phát hành...).
 
 ---
 
-## Luồng thay thế / Luồng lỗi (bắt buộc đúng message từ code)
-- **[Dữ liệu yêu cầu không hợp lệ]**: **"Dữ liệu yêu cầu không hợp lệ"** (`SaleMessages.INVALID_REQUEST`).
-- **[Ga đi/ga đến không hợp lệ]**: **"Ga đi và ga đến không hợp lệ"** (`SaleMessages.INVALID_STATIONS`).
-- **[Ngày đi/ngày về không hợp lệ]**: **"Ngày đi/ngày về không hợp lệ"** (`SaleMessages.INVALID_DATES`).
-- **[Không tìm thấy chuyến]**: **"Không tìm thấy chuyến tàu phù hợp"** (`SaleMessages.NOT_FOUND_SCHEDULE`).
-- **[Giữ ghế thất bại do ghế đã bán]** (khi chốt giao dịch): **"Ghế đã được bán bởi giao dịch khác, vui lòng chọn lại"** (`SaleMessages.SEAT_ALREADY_SOLD`).
-- **[Giữ ghế thất bại do quầy khác giữ]**: **"Ghế đang được giao dịch bởi quầy khác"** (`SaleMessages.SEAT_HELD_BY_OTHER`).
-- **[Vượt số lượng vé]**: **"Mỗi chiều chỉ được mua tối đa 10 vé"** (`SaleMessages.TOO_MANY_TICKETS_PER_LEG`).
-- **[Ràng buộc khứ hồi]**: **"Số lượng ghế chiều đi và chiều về phải bằng nhau"** (`SaleMessages.SEAT_CONSTRAINT_MISMATCH`).
-- **[Thiếu giấy tờ người mua]**: **"Cần CCCD/CMND hoặc hộ chiếu"** (`SaleMessages.CUSTOMER_DOCUMENT_REQUIRED`).
-- **[Chưa đủ điều kiện thanh toán]**: **"Chưa đủ điều kiện thanh toán"** (`SaleMessages.PAYMENT_NOT_READY`).
-- **[Online payment lỗi]**:
-  - **"Cần tạo đơn thanh toán online"**, **"Không tìm thấy đơn thanh toán online"**, **"Thanh toán online chưa được xác nhận"**, **"Đơn thanh toán online đã được sử dụng"**, **"Phiên giao dịch không khớp với đơn thanh toán"**, **"Số tiền đơn thanh toán không khớp tổng tiền"**.
-- **[Trẻ em dưới 6]**: **"Vé trẻ em bắt buộc phải có người lớn đi kèm"** (`SaleMessages.CHILD_REQUIRES_ADULT`).
-- **[Đổi điểm không hợp lệ]**: **"Không được đổi điểm khi có vé ưu đãi đối tượng"** (`SaleMessages.POINTS_NOT_ALLOWED_WITH_DISCOUNT`).
+## Luồng lỗi tiêu biểu (tham chiếu đúng constant trong code)
+- `SaleMessages.INVALID_REQUEST`: thiếu/sai DTO, thiếu `clientSessionId`, mismatch số lượng passenger vs scheduleDetailIds.
+- `SaleMessages.SEAT_ALREADY_SOLD`: ghế vừa bị bán bởi giao dịch khác (optimistic lock/constraint).
+- `SaleMessages.SEAT_HELD_BY_OTHER`: ghế đang bị phiên khác giữ.
+- `SaleMessages.ONLINE_PAYMENT_ORDER_REQUIRED`: chọn ONLINE nhưng thiếu `paymentOrderId`.
+- `SaleMessages.ONLINE_PAYMENT_NOT_CONFIRMED`: đơn online chưa được xác nhận.
+- `SaleMessages.ONLINE_PAYMENT_AMOUNT_MISMATCH`: tiền đơn online không khớp tổng tiền.
+- `SaleMessages.PAYMENT_NOT_READY`: tiền mặt chưa đủ điều kiện (thiếu/âm/không đủ tiền).
 
 ---
 
-## Dữ liệu vào/ra (I/O Data)
+## Dữ liệu vào/ra (I/O)
 
-### Client → Server (Request.data DTO)
-| ActionType | DTO | Field |
+### Client → Server (Request.data)
+| ActionType | DTO | Trường chính |
 |---|---|---|
+| `FIND_ALL_STATIONS` | `null` | - |
 | `SEARCH_SCHEDULES_FOR_SALE` | `SaleScheduleSearchDTO` | `departureStationId`, `destinationStationId`, `departureDate`, `ticketCategory`, `returnDate`, `page`, `size` |
 | `GET_SEATMAP_FOR_SCHEDULE` | `SeatMapRequestDTO` | `scheduleId`, `clientSessionId` |
 | `HOLD_SEATS_FOR_SALE` / `RELEASE_HELD_SEATS_FOR_SALE` | `SeatHoldRequestDTO` | `scheduleId`, `scheduleDetailIds`, `clientSessionId` |
-| `CREATE_SALE_TRANSACTION` | `SaleCreateRequestDTO` | `clientSessionId`, `ticketCategory`, `outboundScheduleId`, `returnScheduleId`, `outboundScheduleDetailIds`, `returnScheduleDetailIds`, `outboundPassengers`, `returnPassengers`, `childrenUnder6`, `buyer`, `vat`, `redeemPoints`, `paymentMethod`, `amountPaid`, `paymentOrderId` |
+| `CREATE_PAYMENT_ORDER` | `PaymentCreateRequestDTO` | `clientSessionId`, `amount`, `description` |
+| `GET_PAYMENT_ORDER_STATUS` / `CONFIRM_PAYMENT_ORDER` / `CONFIRM_INTERNAL_PAYMENT` | `PaymentStatusRequestDTO` | `clientSessionId`, `paymentOrderId` |
+| `CREATE_SALE_TRANSACTION` | `SaleCreateRequestDTO` | `clientSessionId`, `ticketCategory`, `outboundScheduleId`, `returnScheduleId`, `outboundScheduleDetailIds`, `returnScheduleDetailIds`, `outboundPassengers`, `returnPassengers`, `childrenUnder6`, `buyer`, `vat`, `redeemPoints`, `paymentMethod`, `amountPaid`, `paymentOrderId`, `employeeId` |
 
-### Server → Client (Response.data DTO)
-| API | Response.message | Response.data |
-|---|---|---|
-| Danh sách ga | `SaleMessages.STATION_LIST_SUCCESS` | `List<StationDTO>` |
-| Tra cứu chuyến | `SaleMessages.SEARCH_SCHEDULE_SUCCESS` | `SaleScheduleSearchResultDTO` |
-| Sơ đồ ghế | `SaleMessages.SEATMAP_SUCCESS` | `SeatMapResponseDTO` |
-| Giữ/nhả ghế | `SaleMessages.HOLD_SUCCESS` / `SaleMessages.RELEASE_HOLD_SUCCESS` | `SeatHoldResponseDTO` |
-| Bán vé | `SaleMessages.SALE_SUCCESS` | `SaleCreateResponseDTO` |
+### Server → Client (Response.data)
+| Luồng | Response.data |
+|---|---|
+| Danh sách ga | `List<StationDTO>` |
+| Danh sách chuyến bán vé | `SaleScheduleSearchResultDTO` |
+| Sơ đồ ghế | `SeatMapResponseDTO` |
+| Hold/Release ghế | `SeatHoldResponseDTO` |
+| Tạo đơn thanh toán | `PaymentCreateResponseDTO` |
+| Trạng thái/xác nhận thanh toán | `PaymentStatusDTO` |
+| Bán vé | `SaleCreateResponseDTO` |
 
 ---
 
 ## Use Case Diagram (Mermaid)
 ```mermaid
 graph LR
-  Actor[Nhân viên bán vé] --> UC001((UC001 - Bán vé))
-  UC001 --> U1[Tra cứu chuyến (SEARCH_SCHEDULES_FOR_SALE)]
-  UC001 --> U2[Xem sơ đồ ghế (GET_SEATMAP_FOR_SCHEDULE)]
-  UC001 --> U3[Giữ/Nhả ghế (HOLD/RELEASE)]
-  UC001 --> U4[Tạo đơn online (CREATE_PAYMENT_ORDER)]
-  UC001 --> U5[Xác nhận online (CONFIRM_INTERNAL_PAYMENT)]
-  UC001 --> U6[Chốt giao dịch (CREATE_SALE_TRANSACTION)]
+  Actor["Nhân viên bán vé"] --> UC001["UC001 - Bán vé"]
+  UC001 --> U1["Tra cứu chuyến (SEARCH_SCHEDULES_FOR_SALE)"]
+  UC001 --> U2["Xem sơ đồ ghế (GET_SEATMAP_FOR_SCHEDULE)"]
+  UC001 --> U3["Giữ/Nhả ghế (HOLD_SEATS_FOR_SALE/RELEASE_HELD_SEATS_FOR_SALE)"]
+  UC001 --> U4["Tạo đơn QR (CREATE_PAYMENT_ORDER)"]
+  UC001 --> U5["Xác nhận QR (CONFIRM_PAYMENT_ORDER)"]
+  UC001 --> U6["Chốt giao dịch (CREATE_SALE_TRANSACTION)"]
 ```
 
----
-
-## BA Review — Yêu cầu cập nhật Database / Entity / DTO (Từ BA Review)
-- **Vì sao cần `Schedule.arrivalTime`**: phục vụ hiển thị thời gian đến dự kiến trên UI/biên nhận và làm cơ sở kiểm tra logic liên quan (đổi/trả theo mốc thời gian).
-- **Vì sao `ScheduleDetail` có `segmentDepartureStation/segmentDestinationStation` và `routeStop = null` khi tạo batch**: hệ thống tạo “tất cả cặp chặng” (mỗi ghế × mọi cặp ga theo route path) để định giá theo chặng và bán vé theo đoạn; `routeStop` không đại diện cho chặng bán mà chỉ là điểm dừng trên tuyến nên khi tạo chi tiết bán vé theo đoạn, `routeStop` không bắt buộc và có thể `null`.
-- **Seat hold TTL (10 phút)**: cần chuẩn hóa trong tài liệu nghiệp vụ (quy định giữ ghế tối đa 10 phút) để tránh tranh chấp giữa quầy và giảm ghế “kẹt” không bán được.
-- **Trạng thái ghế “SOLD/HELD/AVAILABLE”**: cần thống nhất nguồn dữ liệu; hiện tại SOLD dựa vào `Ticket.status` (không dựa `Seat.available`). Đề xuất BA xác nhận có tiếp tục dùng `Seat.available` hay coi là field dư thừa.
-- **Đổi điểm**: quy tắc “không đổi điểm khi có vé ưu đãi theo đối tượng” cần ghi thành requirement rõ ràng (đang enforce bằng code `POINTS_NOT_ALLOWED_WITH_DISCOUNT`).

@@ -5,12 +5,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +18,7 @@ import lombok.ToString;
 import org.hibernate.annotations.BatchSize;
 import vn.edu.iuh.fit.common.constant.TicketStatus;
 import vn.edu.iuh.fit.common.constant.TicketType;
+import vn.edu.iuh.fit.server.util.id.annotation.GeneratedTicketId;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -34,8 +32,8 @@ import vn.edu.iuh.fit.common.constant.TicketType;
 public class Ticket {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
-  @Column(name = "ticket_id", length = 36)
+  @GeneratedTicketId
+  @Column(name = "ticket_id", length = 10)
   private String id;
 
   @ManyToOne(fetch = FetchType.LAZY)
