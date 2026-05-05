@@ -26,8 +26,8 @@ public class InvoiceRepositoryImpl extends AbstractGenericRepositoryImpl<Invoice
         return readOnly(em -> {
             StringBuilder jpql = new StringBuilder(
                 "SELECT i FROM Invoice i " +
-                "JOIN FETCH i.customer c " +
-                "JOIN FETCH i.employee e " +
+                "LEFT JOIN FETCH i.customer c " +
+                "LEFT JOIN FETCH i.employee e " +
                 "WHERE 1=1");
             appendWhereConditions(jpql, keyword, day, month, year, type, employeeId);
             jpql.append(" ORDER BY i.issueDate DESC");
@@ -48,8 +48,8 @@ public class InvoiceRepositoryImpl extends AbstractGenericRepositoryImpl<Invoice
         return readOnly(em -> {
             StringBuilder jpql = new StringBuilder(
                 "SELECT COUNT(i) FROM Invoice i " +
-                "JOIN i.customer c " +
-                "JOIN i.employee e " +
+                "LEFT JOIN i.customer c " +
+                "LEFT JOIN i.employee e " +
                 "WHERE 1=1");
             appendWhereConditions(jpql, keyword, day, month, year, type, employeeId);
 
@@ -63,8 +63,8 @@ public class InvoiceRepositoryImpl extends AbstractGenericRepositoryImpl<Invoice
     public Invoice findInvoiceWithHeader(String invoiceId) {
         return readOnly(em -> em.createQuery(
             "SELECT i FROM Invoice i " +
-            "JOIN FETCH i.customer " +
-            "JOIN FETCH i.employee " +
+            "LEFT JOIN FETCH i.customer " +
+            "LEFT JOIN FETCH i.employee " +
             "WHERE i.id = :invoiceId", Invoice.class)
             .setParameter("invoiceId", invoiceId)
             .getResultStream()
