@@ -56,158 +56,158 @@ classDiagram
 
     %% ── Auth ──────────────────────────────────────────────
     class Role {
-        +String id
-        +String code
-        +String name
+        id: String
+        code: String
+        name: String
     }
 
     class Account {
-        +String id
-        +String username
-        +String password
-        +boolean active
+        id: String
+        username: String
+        password: String
+        active: boolean
     }
 
     class Employee {
-        +String employeeId
-        +String employeeCode
-        +String employeeName
-        +String nationalId
-        +String address
-        +LocalDate dateOfBirth
-        +Boolean gender
-        +String phoneNumber
-        +String email
-        +Boolean isManager
-        +EmployeeStatus employeeStatus
-        +LocalDate createdAt
-        +LocalDate updatedAt
+        employeeId: String
+        employeeCode: String
+        employeeName: String
+        nationalId: String
+        address: String
+        dateOfBirth: LocalDate
+        gender: Boolean
+        phoneNumber: String
+        email: String
+        isManager: Boolean
+        employeeStatus: EmployeeStatus
+        createdAt: LocalDate
+        updatedAt: LocalDate
     }
 
     %% ── Khach hang ────────────────────────────────────────
     class Customer {
-        +String id
-        +String name
-        +String idCard
-        +String passport
-        +String phoneNumber
-        +String email
-        +boolean isActive
-        +int rewardPoints
+        id: String
+        name: String
+        idCard: String
+        passport: String
+        phoneNumber: String
+        email: String
+        isActive: boolean
+        rewardPoints: int
     }
 
     %% ── Tau - Toa - Ghe ───────────────────────────────────
     class Train {
-        +String id
-        +String trainCode
-        +TrainStatus status
+        id: String
+        trainCode: String
+        status: TrainStatus
     }
 
     class Carriage {
-        +String id
-        +int number
-        +CarriageType type
+        id: String
+        number: int
+        type: CarriageType
     }
 
     class Seat {
-        +String id
-        +int number
-        +boolean available
-        +SeatType type
+        id: String
+        number: int
+        available: boolean
+        type: SeatType
     }
 
     %% ── Ga - Tuyen - Diem dung ────────────────────────────
     class Station {
-        +String id
-        +String name
-        +Float destinationKm
+        id: String
+        name: String
+        destinationKm: Float
     }
 
     class Route {
-        +String id
-        +String routeCode
-        +RouteStatus status
-        +Double priceBasic
+        id: String
+        routeCode: String
+        status: RouteStatus
+        priceBasic: Double
     }
 
     class RouteStop {
-        +String id
-        +int orderStop
+        id: String
+        orderStop: int
     }
 
     %% ── Lich trinh ────────────────────────────────────────
     class Schedule {
-        +String id
-        +LocalDateTime departureTime
-        +LocalDateTime arrivalTime
-        +StatusSchedule status
+        id: String
+        departureTime: LocalDateTime
+        arrivalTime: LocalDateTime
+        status: StatusSchedule
     }
 
     class ScheduleDetail {
-        +String id
-        +BigDecimal priceSeat
-        +Integer segmentDepartureOrder
-        +Integer segmentDestinationOrder
-        +int version
+        id: String
+        priceSeat: BigDecimal
+        segmentDepartureOrder: Integer
+        segmentDestinationOrder: Integer
+        version: int
     }
 
     %% ── Ve - Hoa don ──────────────────────────────────────
     class Ticket {
-        +String id
-        +TicketType type
-        +boolean roundTrip
-        +TicketStatus status
-        +String qrCode
-        +String originalTicketId
-        +boolean exchanged
-        +String passengerName
-        +String passengerIdCard
+        id: String
+        type: TicketType
+        roundTrip: boolean
+        status: TicketStatus
+        qrCode: String
+        originalTicketId: String
+        exchanged: boolean
+        passengerName: String
+        passengerIdCard: String
     }
 
     class Invoice {
-        +String id
-        +LocalDateTime issueDate
-        +double totalAmount
-        +InvoiceType type
-        +String taxCode
-        +String companyName
+        id: String
+        issueDate: LocalDateTime
+        totalAmount: double
+        type: InvoiceType
+        taxCode: String
+        companyName: String
     }
 
     class InvoiceDetail {
-        +String id
-        +Double subTotal
-        +double discount
-        +double insurance
-        +boolean isReturned
-        +double refundAmount
+        id: String
+        subTotal: Double
+        discount: double
+        insurance: double
+        isReturned: boolean
+        refundAmount: double
     }
 
     %% ── Composition — parent sở hữu lifecycle của child (cascade) ──
-    Train "1" *-- "*" Carriage
-    Carriage "1" *-- "*" Seat
-    Route "1" *-- "*" RouteStop
-    Schedule "1" *-- "*" ScheduleDetail
-    Invoice "1" *-- "*" InvoiceDetail
+    Train "1" *-- "*" Carriage         : gồm các toa
+    Carriage "1" *-- "*" Seat          : gồm các ghế
+    Route "1" *-- "*" RouteStop        : gồm các điểm dừng
+    Schedule "1" *-- "*" ScheduleDetail : gồm các chi tiết ghế
+    Invoice "1" *-- "*" InvoiceDetail  : gồm các dòng
 
     %% ── Aggregation — whole/part, child tồn tại độc lập ──────────
-    Employee "1" o-- "1" Account
+    Employee "1" o-- "1" Account       : đăng nhập bằng
 
     %% ── Association — FK reference ────────────────────────────────
-    Account "*" --> "*" Role
-    Route "*" --> "1" Station : departure
-    Route "*" --> "1" Station : destination
-    RouteStop "*" --> "1" Station
-    Schedule "*" --> "1" Train
-    Schedule "*" --> "1" Route
-    ScheduleDetail "*" --> "1" Seat
-    ScheduleDetail "*" --> "0..1" RouteStop
-    ScheduleDetail "*" --> "1" Station : segmentDeparture
-    ScheduleDetail "*" --> "1" Station : segmentDestination
-    Ticket "*" --> "1" Customer
-    Ticket "*" --> "1" ScheduleDetail
-    Invoice "*" --> "1" Customer
-    Invoice "*" --> "1" Employee
-    InvoiceDetail "*" --> "1" Ticket
+    Account "*" --> "*" Role           : có vai trò
+    Route "*" --> "1" Station          : khởi hành từ
+    Route "*" --> "1" Station          : đến ga
+    RouteStop "*" --> "1" Station      : là ga dừng
+    Schedule "*" --> "1" Train         : chạy bằng tàu
+    Schedule "*" --> "1" Route         : theo tuyến
+    ScheduleDetail "*" --> "1" Seat    : cho ghế
+    ScheduleDetail "*" --> "0..1" RouteStop : tại điểm dừng
+    ScheduleDetail "*" --> "1" Station : ga đi của đoạn
+    ScheduleDetail "*" --> "1" Station : ga đến của đoạn
+    Ticket "*" --> "1" Customer        : thuộc về khách
+    Ticket "*" --> "1" ScheduleDetail  : đặt ghế
+    Invoice "*" --> "1" Customer       : lập cho khách
+    Invoice "*" --> "1" Employee       : do nhân viên lập
+    InvoiceDetail "*" --> "1" Ticket   : ghi nhận vé
 ```
 
 ---
