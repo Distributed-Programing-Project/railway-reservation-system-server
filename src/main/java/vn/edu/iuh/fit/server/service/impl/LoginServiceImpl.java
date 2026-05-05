@@ -27,31 +27,31 @@ public class LoginServiceImpl implements LoginService {
             return Response.error(LoginMessages.LOGIN_DATA_REQUIRED);
         }
 
-        String username = normalize(loginRequestDTO.getUsername());
+        String loginIdentifier = normalize(loginRequestDTO.getUsername());
         String password = loginRequestDTO.getPassword();
-        if (username == null || password == null || password.isBlank()) {
+        if (loginIdentifier == null || password == null || password.isBlank()) {
             return Response.error(LoginMessages.USERNAME_PASSWORD_REQUIRED);
         }
 
         try {
             return AbstractGenericRepositoryImpl.readOnly(em -> {
-                Account account = accountRepository.findByUsername(em, username);
+                Account account = accountRepository.findByUsername(em, loginIdentifier);
                 if (account == null) {
-                    log.warn("Login failed: username not found={}", username);
+                    log.warn("Login failed: account not found for login={}", loginIdentifier);
                     return Response.error(LoginMessages.INVALID_CREDENTIALS);
                 }
 
                 if (!account.isActive()) {
-                    log.warn("Login failed: account inactive username={}", username);
+                    log.warn("Login failed: account inactive login={}", loginIdentifier);
                     return Response.error(LoginMessages.ACCOUNT_INACTIVE);
                 }
                 if (!passwordMatches(password, account.getPassword())) {
-                    log.warn("Login failed: invalid password username={}", username);
+                    log.warn("Login failed: invalid password login={}", loginIdentifier);
                     return Response.error(LoginMessages.INVALID_CREDENTIALS);
                 }
 
                 Employee employee = findEmployeeByAccountId(em, account.getId());
-                log.info("Login successful: username={}", username);
+                log.info("Login successful: login={}, accountUsername={}", loginIdentifier, account.getUsername());
                 return Response.success(LoginMessages.LOGIN_SUCCESS, AccountDTO.builder()
                         .id(account.getId())
                         .username(account.getUsername())
@@ -61,7 +61,7 @@ public class LoginServiceImpl implements LoginService {
                         .build());
             });
         } catch (Exception e) {
-            log.error("Login failed with system error: username={}", username, e);
+            log.error("Login failed with system error: login={}", loginIdentifier, e);
             return Response.error(LoginMessages.SYSTEM_ERROR_PREFIX + e.getMessage());
         }
     }
@@ -82,7 +82,12 @@ public class LoginServiceImpl implements LoginService {
             return false;
         }
         if (isBCryptHash(storedPassword)) {
-            return BCrypt.checkpw(rawPassword, storedPassword);
+            try {
+                return BCrypt.checkpw(rawPassword, storedPassword);
+            } catch (IllegalArgumentException e) {
+                log.warn("Stored password is not a valid BCrypt hash");
+                return false;
+            }
         }
         return false;
     }
@@ -90,7 +95,7 @@ public class LoginServiceImpl implements LoginService {
     private Employee findEmployeeByAccountId(EntityManager em, String accountId) {
         return em.createQuery(
                 "SELECT e FROM Employee e WHERE e.account.id = :accountId",
-                        Employee.class)
+                Employee.class)
                 .setParameter("accountId", accountId)
                 .getResultStream()
                 .findFirst()
@@ -100,6 +105,7 @@ public class LoginServiceImpl implements LoginService {
     private boolean isBCryptHash(String value) {
         return value.startsWith("$2a$")
                 || value.startsWith("$2b$")
+                || value.startsWith("$2x$")
                 || value.startsWith("$2y$");
     }
 }
