@@ -33,7 +33,7 @@ public class Ticket {
 
   @Id
   @GeneratedTicketId
-  @Column(name = "ticket_id", length = 10)
+  @Column(name = "ticket_id", length = 12)
   private String id;
 
   @ManyToOne(fetch = FetchType.LAZY)

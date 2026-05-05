@@ -36,7 +36,7 @@ import vn.edu.iuh.fit.server.util.id.annotation.GeneratedInvoiceId;
 public class Invoice {
   @Id
   @GeneratedInvoiceId
-  @Column(name = "invoice_id", length = 10)
+  @Column(name = "invoice_id", length = 13)
   private String id;
 
   @Column(name = "issue_date")

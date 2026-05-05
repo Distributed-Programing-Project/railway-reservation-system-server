@@ -7,13 +7,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
-
-import vn.edu.iuh.fit.server.model.Employee;
 
 public class EmployeeIdGenerator implements IdentifierGenerator {
 
@@ -21,21 +18,11 @@ public class EmployeeIdGenerator implements IdentifierGenerator {
   private static volatile boolean sequenceTableEnsured = false;
   private static final Object sequenceTableLock = new Object();
 
-  private static final DateTimeFormatter DOB_FORMAT = DateTimeFormatter.ofPattern("ddMMyy");
-
   @Override
   public Object generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
-    LocalDate dob = null;
-    if (object instanceof Employee employee) {
-      dob = employee.getDateOfBirth();
-    }
-    if (dob == null) {
-      dob = LocalDate.now();
-    }
-
-    String dobPart = dob.format(DOB_FORMAT);
-    String prefix = "NV" + dobPart;
-    String seqName = "EMPLOYEE_" + dobPart;
+    int yearTwoDigits = LocalDate.now().getYear() % 100;
+    String prefix = "NV" + String.format("%02d", yearTwoDigits);
+    String seqName = "EMPLOYEE_" + yearTwoDigits;
 
     long next = nextSequenceValue(session, seqName, () -> initializeFromExisting(session, prefix));
     return prefix + String.format("%04d", next);
@@ -73,10 +60,10 @@ public class EmployeeIdGenerator implements IdentifierGenerator {
           return 1L;
         }
         String maxId = rs.getString(1);
-        if (maxId == null || maxId.length() != 12) {
+        if (maxId == null || maxId.length() != 8) {
           return 1L;
         }
-        long numeric = Long.parseLong(maxId.substring(8));
+        long numeric = Long.parseLong(maxId.substring(4));
         return numeric + 1;
       }
     } catch (SQLException | NumberFormatException e) {

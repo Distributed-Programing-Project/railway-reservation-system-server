@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -19,8 +20,9 @@ public class CustomerIdGenerator implements IdentifierGenerator {
 
   @Override
   public Object generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
-    String prefix = "KH";
-    String seqName = "CUSTOMER";
+    int yearTwoDigits = LocalDate.now().getYear() % 100;
+    String prefix = "KH" + String.format("%02d", yearTwoDigits);
+    String seqName = "CUSTOMER_" + yearTwoDigits;
 
     long next = nextSequenceValue(session, seqName, () -> initializeFromExisting(session, prefix));
     return prefix + String.format("%09d", next);
@@ -59,10 +61,10 @@ public class CustomerIdGenerator implements IdentifierGenerator {
           return 1L;
         }
         String maxId = rs.getString(1);
-        if (maxId == null || maxId.length() != 11) {
+        if (maxId == null || maxId.length() != 13) {
           return 1L;
         }
-        long numeric = Long.parseLong(maxId.substring(2));
+        long numeric = Long.parseLong(maxId.substring(4));
         return numeric + 1;
       }
     } catch (SQLException | NumberFormatException e) {

@@ -5,9 +5,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -30,12 +31,12 @@ import vn.edu.iuh.fit.server.model.Invoice;
 public class InvoiceMetadata {
 
   @Id
-  @Column(name = "invoice_id", length = 36)
-  private String invoiceId;
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = "invoice_metadata_id", length = 36)
+  private String id;
 
-  @MapsId
   @OneToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "invoice_id")
+  @JoinColumn(name = "invoice_id", nullable = false, unique = true)
   private Invoice invoice;
 
   @Column(name = "vat_address", columnDefinition = "NVARCHAR(255)")

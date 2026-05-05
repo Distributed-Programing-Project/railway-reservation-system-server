@@ -20,7 +20,7 @@ import java.util.List;
 public class Employee {
     @Id
     @GeneratedEmployeeId
-    @Column(name = "employee_id", length = 12)
+    @Column(name = "employee_id", length = 8)
     private String employeeId;
 
     @Column(name = "employee_code", unique = true, nullable = false, length = 10)

@@ -25,7 +25,7 @@ public class InvoiceIdGenerator implements IdentifierGenerator {
     String seqName = "INVOICE_" + yearTwoDigits;
 
     long next = nextSequenceValue(session, seqName, () -> initializeFromExisting(session, prefix));
-    return prefix + String.format("%06d", next);
+    return prefix + String.format("%09d", next);
   }
 
   private long nextSequenceValue(
@@ -61,7 +61,7 @@ public class InvoiceIdGenerator implements IdentifierGenerator {
           return 1L;
         }
         String maxId = rs.getString(1);
-        if (maxId == null || maxId.length() != 10) {
+        if (maxId == null || maxId.length() != 13) {
           return 1L;
         }
         long numeric = Long.parseLong(maxId.substring(4));

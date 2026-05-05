@@ -26,7 +26,7 @@ import vn.edu.iuh.fit.server.util.id.annotation.GeneratedCustomerId;
 public class Customer {
   @Id
   @GeneratedCustomerId
-  @Column(name = "customer_id", length = 11)
+  @Column(name = "customer_id", length = 13)
   private String id;
 
   @Column(name = "full_name", nullable = false, columnDefinition = "NVARCHAR(255)")
