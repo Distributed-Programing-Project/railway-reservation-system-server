@@ -56,7 +56,7 @@ sequenceDiagram
     Router->>Svc: filterSchedules(filterParams, page, size)
     
     Svc->>Repo: findAll(Specification/Pageable)
-    Repo->>DB: SELECT s FROM Schedule s JOIN Route ...
+    Repo->>DB: SELECT s FROM Schedule s JOIN Route ... ORDER BY s.departureTime DESC
     DB-->>Repo: ResultSet (List<Schedule>)
     Repo-->>Svc: Page<Schedule>
     
