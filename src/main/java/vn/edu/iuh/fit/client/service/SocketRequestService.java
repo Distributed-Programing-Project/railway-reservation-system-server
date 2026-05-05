@@ -2,8 +2,10 @@ package vn.edu.iuh.fit.client.service;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
 import vn.edu.iuh.fit.common.request.Request;
 import vn.edu.iuh.fit.common.response.Response;
@@ -43,6 +45,10 @@ public class SocketRequestService {
                 }
                 return Response.error("Phản hồi từ server không hợp lệ");
             }
+        } catch (ConnectException e) {
+            return Response.error("Không thể kết nối server: server chưa khởi động hoặc sai cổng " + host + ":" + port);
+        } catch (SocketTimeoutException e) {
+            return Response.error("Không thể kết nối server: quá thời gian chờ phản hồi từ " + host + ":" + port);
         } catch (Exception e) {
             return Response.error("Không thể kết nối server: " + e.getMessage());
         }

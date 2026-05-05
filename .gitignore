@@ -58,3 +58,4 @@ src/main/resources/META-INF/persistence.xml
 .maven/
 .userhome
 requirements/
+.openjfx

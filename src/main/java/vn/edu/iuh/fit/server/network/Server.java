@@ -80,7 +80,11 @@ public class Server {
     }
 
     public static void main(String[] args) {
-        JPAUtils.getFactory();
-        new Server().start();
+        try {
+            JPAUtils.getFactory();
+            new Server().start();
+        } catch (Throwable e) {
+            log.error("Server startup failed. Check database connection in persistence.xml and ensure MariaDB is running on localhost:3307 before starting the socket server on port {}.", SERVER_PORT, e);
+        }
     }
 }
