@@ -33,8 +33,9 @@ public interface TicketRepository {
 
     boolean updateTickets(EntityManager em, List<Ticket> tickets);
 
+    Ticket findOriginalTicketForDisplay(String ticketId);
+
     Double findActualPaidAmountByTicketId(EntityManager em, String ticketId);
 
     List<Ticket> findTicketsByStatusWithSchedule(EntityManager em, TicketStatus status);
-
 }

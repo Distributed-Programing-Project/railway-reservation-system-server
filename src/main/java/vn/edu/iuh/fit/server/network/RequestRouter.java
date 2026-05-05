@@ -30,6 +30,12 @@ import vn.edu.iuh.fit.common.dto.ScheduleFilterDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleGenerateDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleLifecycleDTO;
 import vn.edu.iuh.fit.common.dto.ScheduleUpdateDTO;
+import vn.edu.iuh.fit.common.dto.CreateCarriageDTO;
+import vn.edu.iuh.fit.common.dto.CreateTrainDTO;
+import vn.edu.iuh.fit.common.dto.CustomerDTO;
+import vn.edu.iuh.fit.common.dto.CustomerDeleteRequestDTO;
+import vn.edu.iuh.fit.common.dto.CustomerSearchDTO;
+import vn.edu.iuh.fit.common.dto.InvoiceFilterDTO;
 import vn.edu.iuh.fit.common.dto.SeatHoldRequestDTO;
 import vn.edu.iuh.fit.common.dto.SeatMapRequestDTO;
 import vn.edu.iuh.fit.common.dto.StatisticsRequestDTO;
@@ -52,7 +58,9 @@ import vn.edu.iuh.fit.server.service.StationService;
 import vn.edu.iuh.fit.server.service.StatisticsService;
 import vn.edu.iuh.fit.server.service.TicketService;
 import vn.edu.iuh.fit.server.service.TrainService;
+import vn.edu.iuh.fit.server.service.InvoiceService;
 import vn.edu.iuh.fit.server.service.impl.CustomerServiceImpl;
+import vn.edu.iuh.fit.server.service.impl.InvoiceServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.EmployeeServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.LoginServiceImpl;
 import vn.edu.iuh.fit.server.service.impl.PaymentOrderServiceImpl;
@@ -78,6 +86,7 @@ public class RequestRouter {
     private final StationService stationService = new StationServiceImpl();
     private final RouteService routeService = new RouteServiceImpl();
     private final RouteStopService routeStopService = new RouteStopServiceImpl();
+    private final InvoiceService invoiceService = new InvoiceServiceImpl();
 
     public Response route(Request request) {
         if (request == null || request.getAction() == null) {
@@ -142,6 +151,9 @@ public class RequestRouter {
             case UPDATE_TRAIN_CARRIAGES ->
                 trainService.updateTrainCarriages(castData(request, UpdateTrainCarriagesDTO.class));
             case UPDATE_TRAIN_STATUS -> trainService.updateTrainStatus(castData(request, UpdateTrainStatusDTO.class));
+
+            case FILTER_INVOICES -> invoiceService.filterInvoices(castData(request, InvoiceFilterDTO.class));
+            case GET_INVOICE_DETAIL_BY_ID -> invoiceService.getInvoiceDetailById(castData(request, String.class));
 
             case SEARCH_CUSTOMERS -> customerService.searchCustomers(castData(request, CustomerSearchDTO.class));
             case CREATE_CUSTOMER -> customerService.createCustomer(castData(request, CustomerDTO.class));
