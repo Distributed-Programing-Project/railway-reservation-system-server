@@ -6,72 +6,47 @@
 
 ```mermaid
 graph TB
-    subgraph CLIENT ["Client (JavaFX)"]
-        UI["TicketReturnView<br/>(Trả vé UI)"]
-        SC["SocketClient"]
-    end
+  subgraph CLIENT["Client (JavaFX)"]
+    UI["ReturnTicketController"]
+    CS["ReturnTicketClientService"]
+    SRS["SocketRequestService.send(Request)"]
+  end
 
-    subgraph TRANSPORT ["TCP Socket Transport"]
-        OOS["ObjectOutputStream.writeObject(Request)"]
-        OIS["ObjectInputStream.readObject() trả về Response"]
-    end
+  subgraph TRANSPORT["TCP Socket Transport"]
+    OOS["ObjectOutputStream.writeObject(Request)"]
+    OIS["ObjectInputStream.readObject() -> Response"]
+  end
 
-    subgraph SERVER ["Server (Java Socket Server)"]
-        SRV["Server.java<br/>handleClient(Socket)"]
-        RR["RequestRouter.route(Request)"]
-        SVC1["TicketServiceImpl<br/>.searchTicketsForReturn(ReturnTicketSearchDTO)"]
-        SVC2["TicketServiceImpl<br/>.previewReturnTickets(ReturnTicketPreviewRequestDTO)"]
-        SVC3["TicketServiceImpl<br/>.confirmReturnTickets(ReturnTicketConfirmDTO)"]
-        JPA["JPAUtils.getEntityManager()"]
-        T_REPO["TicketRepositoryImpl<br/>.findTicketsByCustomerIdCardWithStatus(...)<br/>.findTicketsByIdsWithSchedule(...)"]
-        E_REPO["EmployeeRepositoryImpl<br/>.findEmployeeById(...)"]
-        I_REPO["InvoiceRepositoryImpl<br/>.createInvoice(em, invoice)"]
-        ID_REPO["InvoiceDetailRepositoryImpl<br/>.createInvoiceDetail(...)<br/>.findInvoiceDetailsByTicketIdsAndInvoiceType(...)<br/>.updateInvoiceDetails(...)"]
-    end
+  subgraph SERVER["Server (Java Socket Server)"]
+    SRV["Server.handleClient(Socket)"]
+    RR["RequestRouter.route(Request)<br/>(ActionType.*RETURN*)"]
+    SVC["TicketServiceImpl<br/>searchTicketsForReturn / previewReturnTickets / confirmReturnTickets / getRefundReceipt"]
+    JPA["JPAUtils.getEntityManager()"]
+    T_REPO["TicketRepositoryImpl.findTicketsByIdsWithSchedule(...) / updateTickets(...)"]
+    INV_REPO["InvoiceRepositoryImpl.createInvoice(...)"]
+    INVD_REPO["InvoiceDetailRepositoryImpl<br/>createInvoiceDetail(...)<br/>findInvoiceDetailsByTicketIdsAndInvoiceType(...)<br/>updateInvoiceDetails(...)"]
+    E_REPO["EmployeeRepositoryImpl.findEmployeeById(...)"]
+  end
 
-    subgraph DB ["MariaDB"]
-        T_TICKET["tickets"]
-        T_CUS["customers"]
-        T_SD["schedule_details"]
-        T_SCH["schedules"]
-        T_EMP["employees"]
-        T_INV["invoices"]
-        T_INVD["invoice_details"]
-    end
+  subgraph DB["MariaDB"]
+    T_TICKET["tickets"]
+    T_SCH["schedules"]
+    T_SD["schedule_details"]
+    T_INV["invoices"]
+    T_INVD["invoice_details"]
+    T_EMP["employees"]
+    T_CUS["customers"]
+  end
 
-    UI -- "Request(SEARCH_TICKETS_FOR_RETURN, ReturnTicketSearchDTO)" --> SC
-    UI -- "Request(PREVIEW_RETURN_TICKETS, ReturnTicketPreviewRequestDTO)" --> SC
-    UI -- "Request(CONFIRM_RETURN_TICKETS, ReturnTicketConfirmDTO)" --> SC
-
-    SC --> OOS
-    OOS -- "TCP Socket" --> SRV
-    SRV --> RR
-    RR --> SVC1
-    RR --> SVC2
-    RR --> SVC3
-
-    SVC1 --> JPA
-    SVC2 --> JPA
-    SVC3 --> JPA
-
-    SVC1 --> T_REPO
-    SVC2 --> T_REPO
-    SVC3 --> T_REPO
-    SVC3 --> E_REPO
-    SVC3 --> I_REPO
-    SVC3 --> ID_REPO
-
-    T_REPO -- "JPQL: Ticket JOIN FETCH customer/scheduleDetail/schedule" --> T_TICKET
-    E_REPO -- "em.find(Employee)" --> T_EMP
-    I_REPO -- "INSERT Invoice(type=REFUND)" --> T_INV
-    ID_REPO -- "INSERT InvoiceDetail(refund) x N" --> T_INVD
-    ID_REPO -- "JPQL: find sale InvoiceDetail by ticketIds" --> T_INVD
-    ID_REPO -- "UPDATE InvoiceDetail.returned/refund_amount" --> T_INVD
-    T_REPO -- "UPDATE Ticket.status=RETURNED, qr_code=INVALID" --> T_TICKET
-
-    T_TICKET --> T_CUS
-    T_TICKET --> T_SD
-    T_SD --> T_SCH
+  UI --> CS --> SRS --> OOS
+  OOS -- "TCP Socket (ObjectStream)" --> SRV
+  SRV --> RR --> SVC --> JPA
+  SVC --> T_REPO --> T_TICKET
+  SVC --> INV_REPO --> T_INV
+  SVC --> INVD_REPO --> T_INVD
+  SVC --> E_REPO --> T_EMP
+  T_TICKET --> T_SD --> T_SCH
+  T_TICKET --> T_CUS
 ```
 
 ---
@@ -80,306 +55,123 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    actor Clerk as NhanVienBanVe
-    participant UI as TicketReturnView
-    participant Socket as SocketClient
-    participant Server as Server.java
-    participant Router as RequestRouter
-    participant Service as TicketServiceImpl
-    participant TicketRepo as TicketRepositoryImpl
-    participant EmpRepo as EmployeeRepositoryImpl
-    participant InvRepo as InvoiceRepositoryImpl
-    participant InvDetRepo as InvoiceDetailRepositoryImpl
-    participant DB as MariaDB
+  actor Clerk as Nhân viên bán vé
+  participant UI as ReturnTicketController
+  participant ClientSvc as ReturnTicketClientService
+  participant Socket as SocketRequestService
+  participant Server as Server.handleClient
+  participant Router as RequestRouter.route
+  participant TicketSvc as TicketServiceImpl
+  participant TicketRepo as TicketRepositoryImpl
+  participant InvRepo as InvoiceRepositoryImpl
+  participant InvDetRepo as InvoiceDetailRepositoryImpl
+  participant DB as MariaDB
 
-    opt Tìm vé theo CCCD/Hộ chiếu (SEARCH_TICKETS_FOR_RETURN)
-        Clerk->>UI: Đăng nhập thành công
-        Clerk->>UI: Chọn màn hình "Trả vé"
-        Clerk->>UI: Nhập CCCD/Hộ chiếu, bấm "Tìm kiếm"
-        UI->>UI: new ReturnTicketSearchDTO(idCard)
-        UI->>Socket: sendRequest(new Request(SEARCH_TICKETS_FOR_RETURN, searchDTO))
-        Socket->>Server: ObjectOutputStream.writeObject(request)
-        Server->>Router: route(request)
-        Router->>Service: searchTicketsForReturn(searchDTO)
+  Clerk->>UI: Nhập mã vé/QR/CCCD -> Tra cứu
+  UI->>ClientSvc: searchTicketsForReturn(query)
+  ClientSvc->>Socket: send(Request(SEARCH_TICKETS_FOR_RETURN, ReturnTicketSearchDTO))
+  Socket->>Server: writeObject(Request)
+  Server->>Router: route(Request)
+  Router->>TicketSvc: searchTicketsForReturn(dto)
+  TicketSvc->>TicketRepo: findTicketByIdOrQrWithSchedule(...) / findTicketsByCustomerIdCardWithStatus(...) / ...
+  TicketRepo->>DB: JPQL SELECT Ticket JOIN FETCH schedule/seat/carriage/customer ...
+  TicketSvc-->>Router: Response.success("Lấy thông tin vé thành công", List<ReturnTicketTicketDTO>)
 
-        Service->>Service: ValidationUtils.validate(searchDTO)
-        alt Lỗi validation
-            Service-->>Router: Response.error(DATA_INVALID_PREFIX + errors)
-        else Hợp lệ
-            Service->>Service: JPAUtils.getEntityManager() trả về em
-            Service->>TicketRepo: findTicketsByCustomerIdCardWithStatus(em, idCard, PAID)
-            TicketRepo->>DB: JPQL SELECT Ticket JOIN FETCH customer/scheduleDetail/schedule WHERE (idCard OR passport) AND status=PAID
-            DB-->>TicketRepo: List of Ticket
-            TicketRepo-->>Service: tickets
-            Service-->>Router: Response.success(FIND_SUCCESS, List of ReturnTicketTicketDTO)
-        end
+  Clerk->>UI: Chọn danh sách vé -> Xem trước hoàn
+  UI->>ClientSvc: previewReturnTickets(ticketIds)
+  ClientSvc->>Socket: send(Request(PREVIEW_RETURN_TICKETS, ReturnTicketPreviewRequestDTO))
+  Router->>TicketSvc: previewReturnTickets(dto)
+  TicketSvc->>TicketRepo: findTicketsByIdsWithSchedule(ticketIds)
+  TicketRepo->>DB: JPQL SELECT Ticket JOIN FETCH customer/scheduleDetail/schedule WHERE id IN :ids
+  TicketSvc->>TicketSvc: doComputeReturn(...) (>=4h, fee min 10k, làm tròn 1k)
+  alt Different customerId
+    TicketSvc-->>Router: Response.error("Tất cả các vé phải thuộc cùng một khách hàng để thực hiện trả theo lô.")
+  else OK
+    TicketSvc-->>Router: Response.success("Tính toán số tiền hoàn trả thành công", ReturnTicketPreviewDTO)
+  end
 
-        Router-->>Server: Response
-        Server-->>Socket: Response + out.reset()
-        Socket-->>UI: Response
-    end
+  Clerk->>UI: Nhập refundAmount + employeeId -> Xác nhận trả
+  UI->>ClientSvc: confirmReturnTickets(ticketIds, refundAmount, employeeId)
+  ClientSvc->>Socket: send(Request(CONFIRM_RETURN_TICKETS, ReturnTicketConfirmDTO))
+  Router->>TicketSvc: confirmReturnTickets(dto)
+  TicketSvc->>TicketSvc: AbstractGenericRepositoryImpl.transactional(em -> doConfirmReturnTickets)
+  TicketSvc->>InvRepo: createInvoice(Invoice REFUND)
+  TicketSvc->>InvDetRepo: createInvoiceDetail(refundDetail) x N
+  TicketSvc->>InvDetRepo: findInvoiceDetailsByTicketIdsAndInvoiceType(..., SALE)
+  TicketSvc->>InvDetRepo: updateInvoiceDetails(...)
+  TicketSvc->>TicketRepo: updateTickets(status=RETURNED, qrCode=INVALID)
+  TicketSvc-->>Router: Response.success("Trả vé thành công", refundInvoiceId)
 
-    opt Xem trước phí/tiền hoàn (PREVIEW_RETURN_TICKETS)
-        Clerk->>UI: Chọn ticketIds, bấm "Xem trước"
-        UI->>UI: new ReturnTicketPreviewRequestDTO(ticketIds)
-        UI->>Socket: sendRequest(new Request(PREVIEW_RETURN_TICKETS, previewDTO))
-        Socket->>Server: ObjectOutputStream.writeObject(request)
-        Server->>Router: route(request)
-        Router->>Service: previewReturnTickets(previewDTO)
-
-        Service->>Service: ValidationUtils.validate(previewDTO)
-        alt Lỗi validation
-            Service-->>Router: Response.error(DATA_INVALID_PREFIX + errors)
-        else Hợp lệ
-            Service->>Service: computeReturn(em, ticketIds)
-            Service->>TicketRepo: findTicketsByIdsWithSchedule(em, distinctIds)
-            TicketRepo->>DB: JPQL SELECT Ticket JOIN FETCH customer/scheduleDetail/schedule WHERE id IN :ids
-            DB-->>TicketRepo: List of Ticket
-            TicketRepo-->>Service: tickets
-
-            loop Mỗi ticket
-                Service->>Service: validate status=PAID
-                Service->>Service: validate schedule and departureTime not null
-                Service->>Service: validate minutesToDeparture tối thiểu 4h
-                Service->>Service: feeRate = (minutesToDeparture nhỏ hơn 24h thì 20%, ngược lại 10%)
-                Service->>Service: fee = max(price*feeRate, 10000), clamp fee to price
-                Service->>Service: refundAmount = price - fee
-            end
-            Service-->>Router: Response.success(PREVIEW_SUCCESS, ReturnTicketPreviewDTO(totalTicketPrice, refundFee, refundAmount))
-        end
-
-        Router-->>Server: Response
-        Server-->>Socket: Response + out.reset()
-        Socket-->>UI: Response
-    end
-
-    Clerk->>UI: Bấm "Xác nhận trả vé" (CONFIRM_RETURN_TICKETS)
-    UI->>UI: new ReturnTicketConfirmDTO(ticketIds, refundAmount, employeeId)
-    UI->>Socket: sendRequest(new Request(CONFIRM_RETURN_TICKETS, confirmDTO))
-    Socket->>Server: ObjectOutputStream.writeObject(request)
-    Server->>Router: route(request)
-    Router->>Service: confirmReturnTickets(confirmDTO)
-
-    Service->>Service: ValidationUtils.validate(confirmDTO)
-    alt Lỗi validation
-        Service-->>Router: Response.error(DATA_INVALID_PREFIX + errors)
-    else Hợp lệ
-        Service->>Service: JPAUtils.getEntityManager() trả về em
-        Service->>Service: em.getTransaction().begin()
-
-        Service->>Service: computeReturn(em, ticketIds)
-        alt refundAmount mismatch (tolerance 1.0)
-            Service->>Service: rollbackQuietly(tx)
-            Service-->>Router: Response.error(REFUND_AMOUNT_MISMATCH)
-        else refundAmount khớp
-            Service->>EmpRepo: findEmployeeById(em, employeeId)
-            EmpRepo->>DB: em.find(Employee, employeeId) thực hiện SELECT employees
-            DB-->>EmpRepo: Employee or null
-            EmpRepo-->>Service: employee
-
-            alt employee == null
-                Service->>Service: rollbackQuietly(tx)
-                Service-->>Router: Response.error(EmployeeMessages.notFoundById)
-            else employee tồn tại
-                Service->>Service: check tất cả ticket thuộc cùng customer
-                alt Customer mismatch
-                    Service->>Service: rollbackQuietly(tx)
-                    Service-->>Router: Response.error(CUSTOMER_MISMATCH)
-                else Cùng customer
-                    Service->>InvRepo: createInvoice(em, Invoice(type=REFUND,totalAmount=totalRefundAmount,employee))
-                    InvRepo->>DB: em.persist(Invoice) thực hiện INSERT invoices
-                    DB-->>InvRepo: refundInvoiceId
-                    InvRepo-->>Service: refundInvoice
-
-                    loop Mỗi ticket (refund detail)
-                        Service->>InvDetRepo: createInvoiceDetail(em, InvoiceDetail(isReturned=true, refundAmount, subTotal=ticketPrice))
-                        InvDetRepo->>DB: em.persist(InvoiceDetail) thực hiện INSERT invoice_details
-                        DB-->>InvDetRepo: ok
-                        InvDetRepo-->>Service: ok
-                    end
-
-                    Service->>InvDetRepo: findInvoiceDetailsByTicketIdsAndInvoiceType(em, ticketIds, SALE)
-                    InvDetRepo->>DB: JPQL SELECT InvoiceDetail JOIN FETCH invoice,ticket WHERE ticketId IN :ids AND invoice.type=SALE
-                    DB-->>InvDetRepo: List of InvoiceDetail (sale)
-                    InvDetRepo-->>Service: saleDetails
-
-                    loop Mỗi saleDetail
-                        Service->>Service: saleDetail.returned=true, saleDetail.refundAmount=refundAmountByTicketId[ticketId]
-                    end
-                    Service->>InvDetRepo: updateInvoiceDetails(em, saleDetails)
-                    InvDetRepo->>DB: em.merge(InvoiceDetail) x N thực hiện UPDATE invoice_details
-                    DB-->>InvDetRepo: ok
-                    InvDetRepo-->>Service: ok
-
-                    loop Mỗi ticket
-                        Service->>Service: ticket.status=RETURNED, ticket.qrCode="INVALID"
-                    end
-                    Service->>TicketRepo: updateTickets(em, tickets)
-                    TicketRepo->>DB: em.merge(Ticket) x N thực hiện UPDATE tickets
-                    DB-->>TicketRepo: ok
-                    TicketRepo-->>Service: ok
-
-                    Service->>Service: em.getTransaction().commit()
-                    Service-->>Router: Response.success(RETURN_SUCCESS, refundInvoiceId)
-                end
-            end
-        end
-
-        Router-->>Server: Response
-        Server-->>Socket: Response + out.reset()
-        Socket-->>UI: Response
-    end
-
-    alt IllegalArgumentException (từ computeReturn)
-        Service->>Service: rollbackQuietly(tx)
-        Service-->>Router: Response.error(e.message)
-    else OptimisticLockException
-        Service->>Service: rollbackQuietly(tx)
-        Service-->>Router: Response.error(DATA_CONFLICT)
-    else Exception khác
-        Service->>Service: rollbackQuietly(tx)
-        Service-->>Router: Response.error(RETURN_FAILED_PREFIX + e.message)
-    end
+  Clerk->>UI: In biên lai
+  UI->>ClientSvc: getRefundReceipt(refundInvoiceId)
+  ClientSvc->>Socket: send(Request(GET_REFUND_RECEIPT, RefundReceiptRequestDTO))
+  Router->>TicketSvc: getRefundReceipt(dto)
+  TicketSvc->>DB: JPQL SELECT Invoice i LEFT JOIN FETCH i.details d LEFT JOIN FETCH d.ticket ... WHERE i.id=:invoiceId
+  TicketSvc-->>Router: Response.success("Lấy dữ liệu biên lai hoàn tiền thành công.", RefundReceiptDTO)
 ```
 
 ---
 
-## 3. Class Diagram
+## 3. Class Diagram (DTO / Entity / Enum)
 
 ```mermaid
 classDiagram
-    class ReturnTicketSearchDTO {
-        +String idCard
-        +serialVersionUID : long
-    }
-    note for ReturnTicketSearchDTO "DTO"
+  direction TB
 
-    class ReturnTicketPreviewRequestDTO {
-        +List~String~ ticketIds
-        +serialVersionUID : long
-    }
-    note for ReturnTicketPreviewRequestDTO "DTO"
+  class ReturnTicketSearchDTO["<<DTO>> ReturnTicketSearchDTO"] {
+    String query
+    ReturnTicketSearchType queryType
+  }
+  class ReturnTicketPreviewRequestDTO["<<DTO>> ReturnTicketPreviewRequestDTO"] {
+    List~String~ ticketIds
+  }
+  class ReturnTicketConfirmDTO["<<DTO>> ReturnTicketConfirmDTO"] {
+    List~String~ ticketIds
+    double refundAmount
+    String employeeId
+  }
+  class RefundReceiptRequestDTO["<<DTO>> RefundReceiptRequestDTO"] {
+    String refundInvoiceId
+  }
+  class RefundReceiptDTO["<<DTO>> RefundReceiptDTO"] {
+    String refundInvoiceId
+    String ticketId
+    double originalAmount
+    double refundFee
+    double refundAmount
+  }
 
-    class ReturnTicketPreviewDTO {
-        +double totalTicketPrice
-        +double refundFee
-        +double refundAmount
-        +serialVersionUID : long
-    }
-    note for ReturnTicketPreviewDTO "DTO"
+  class Ticket["<<entity>> Ticket"] {
+    String id
+    TicketStatus status
+    String qrCode
+  }
+  class Invoice["<<entity>> Invoice"] {
+    String id
+    InvoiceType type
+    double totalAmount
+  }
+  class InvoiceDetail["<<entity>> InvoiceDetail"] {
+    String id
+    boolean isReturned
+    double refundAmount
+  }
+  class Employee["<<entity>> Employee"] {
+    String employeeId
+  }
+  class Customer["<<entity>> Customer"] {
+    String id
+  }
 
-    class ReturnTicketConfirmDTO {
-        +List~String~ ticketIds
-        +double refundAmount
-        +String employeeId
-        +serialVersionUID : long
-    }
-    note for ReturnTicketConfirmDTO "DTO"
+  class TicketStatus["<<enum>> TicketStatus"]
+  class InvoiceType["<<enum>> InvoiceType"]
+  class ReturnTicketSearchType["<<enum>> ReturnTicketSearchType"]
 
-    class ReturnTicketTicketDTO {
-        +String id
-        +String customerId
-        +String scheduleDetailId
-        +String scheduleId
-        +LocalDateTime departureTime
-        +double ticketPrice
-        +TicketType type
-        +boolean roundTrip
-        +TicketStatus status
-        +String originalTicketId
-        +serialVersionUID : long
-    }
-    note for ReturnTicketTicketDTO "DTO"
-
-    class Ticket {
-        +String id
-        +TicketStatus status
-        +String qrCode
-        +Customer customer
-        +ScheduleDetail scheduleDetail
-    }
-    note for Ticket "entity"
-
-    class ScheduleDetail {
-        +String id
-        +BigDecimal priceSeat
-        +Schedule schedule
-    }
-    note for ScheduleDetail "entity"
-
-    class Schedule {
-        +String id
-        +LocalDateTime departureTime
-    }
-    note for Schedule "entity"
-
-    class Invoice {
-        +String id
-        +LocalDateTime issueDate
-        +double totalAmount
-        +InvoiceType type
-        +Customer customer
-        +Employee employee
-    }
-    note for Invoice "entity"
-
-    class InvoiceDetail {
-        +String id
-        +double subTotal
-        +boolean isReturned
-        +double refundAmount
-        +Invoice invoice
-        +Ticket ticket
-    }
-    note for InvoiceDetail "entity"
-
-    class TicketStatus {
-        PAID
-        RETURNED
-        CANCELLED
-        EXCHANGED
-    }
-    note for TicketStatus "enum"
-
-    class InvoiceType {
-        SALE
-        REFUND
-        EXCHANGE
-    }
-    note for InvoiceType "enum"
-
-    class Request {
-        +ActionType action
-        +Object data
-        +serialVersionUID : long
-    }
-    note for Request "common"
-
-    class Response {
-        +boolean success
-        +String message
-        +Object data
-        +serialVersionUID : long
-        +success(message, data)$
-        +error(message)$
-    }
-    note for Response "common"
-
-    ReturnTicketSearchDTO ..> Request : "SEARCH_TICKETS_FOR_RETURN"
-    ReturnTicketPreviewRequestDTO ..> Request : "PREVIEW_RETURN_TICKETS"
-    ReturnTicketConfirmDTO ..> Request : "CONFIRM_RETURN_TICKETS"
-    Request --> Response : "socket cycle"
-
-    Ticket "N" --> "1" Customer : customer
-    Ticket "1" --> "1" ScheduleDetail : scheduleDetail
-    ScheduleDetail "N" --> "1" Schedule : schedule
-
-    Invoice "N" --> "1" Customer : customer
-    Invoice "N" --> "1" Employee : employee
-    Invoice "1" --> "N" InvoiceDetail : details
-    InvoiceDetail "N" --> "1" Ticket : ticket
-    InvoiceDetail "N" --> "1" Invoice : invoice
-
-    Ticket --> TicketStatus : status
-    Invoice --> InvoiceType : type
+  Ticket --> TicketStatus
+  Invoice --> InvoiceType
+  ReturnTicketSearchDTO --> ReturnTicketSearchType
+  Customer "1" --o "N" Ticket
+  Invoice "1" --o "N" InvoiceDetail
+  InvoiceDetail "*" --> "1" Ticket
+  Employee "1" --o "N" Invoice
 ```

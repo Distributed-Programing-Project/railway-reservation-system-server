@@ -5,6 +5,9 @@ import org.slf4j.LoggerFactory;
 import vn.edu.iuh.fit.common.constant.EmployeeStatus;
 import vn.edu.iuh.fit.common.dto.CustomerDTO;
 import vn.edu.iuh.fit.common.dto.CustomerDeleteRequestDTO;
+import vn.edu.iuh.fit.common.dto.CustomerHistoryItemDTO;
+import vn.edu.iuh.fit.common.dto.CustomerHistoryRequestDTO;
+import vn.edu.iuh.fit.common.dto.CustomerHistoryResponseDTO;
 import vn.edu.iuh.fit.common.dto.CustomerPageDTO;
 import vn.edu.iuh.fit.common.dto.CustomerSearchDTO;
 import vn.edu.iuh.fit.common.message.CustomerMessages;
@@ -82,11 +85,11 @@ public class CustomerServiceImpl implements CustomerService {
         try {
             return AbstractGenericRepositoryImpl.transactional(em -> {
                 if (customerRepository.existsByIdCard(em, customerDTO.getIdCard(), null)) {
-                    return Response.error(CustomerMessages.ID_CARD_DUPLICATE);
+                    throw new IllegalArgumentException(CustomerMessages.ID_CARD_DUPLICATE);
                 }
                 if (customerDTO.getEmail() != null && !customerDTO.getEmail().isBlank()
                         && customerRepository.existsByEmail(em, customerDTO.getEmail(), null)) {
-                    return Response.error(CustomerMessages.EMAIL_DUPLICATE);
+                    throw new IllegalArgumentException(CustomerMessages.EMAIL_DUPLICATE);
                 }
 
                 Customer customer = CustomerMapper.INSTANCE.toEntity(customerDTO);
@@ -96,6 +99,8 @@ public class CustomerServiceImpl implements CustomerService {
 
                 return Response.success(CustomerMessages.CREATE_SUCCESS, CustomerMapper.INSTANCE.toDto(customer));
             });
+        } catch (IllegalArgumentException e) {
+            return Response.error(e.getMessage());
         } catch (Exception e) {
             log.error("Failed to create customer: idCard={}", customerDTO.getIdCard(), e);
             return Response.error(CustomerMessages.CREATE_FAILED_PREFIX + e.getMessage());
@@ -116,18 +121,18 @@ public class CustomerServiceImpl implements CustomerService {
             return AbstractGenericRepositoryImpl.transactional(em -> {
                 Customer existing = customerRepository.findCustomerById(em, customerDTO.getCustomerId());
                 if (existing == null) {
-                    return Response.error(CustomerMessages.customerNotFound(customerDTO.getCustomerId()));
+                    throw new IllegalArgumentException(CustomerMessages.customerNotFound(customerDTO.getCustomerId()));
                 }
                 if (!existing.isActive()) {
-                    return Response.error(CustomerMessages.customerInactive(customerDTO.getCustomerId()));
+                    throw new IllegalArgumentException(CustomerMessages.customerInactive(customerDTO.getCustomerId()));
                 }
 
                 if (customerRepository.existsByIdCard(em, customerDTO.getIdCard(), existing.getId())) {
-                    return Response.error(CustomerMessages.ID_CARD_DUPLICATE);
+                    throw new IllegalArgumentException(CustomerMessages.ID_CARD_DUPLICATE);
                 }
                 if (customerDTO.getEmail() != null && !customerDTO.getEmail().isBlank()
                         && customerRepository.existsByEmail(em, customerDTO.getEmail(), existing.getId())) {
-                    return Response.error(CustomerMessages.EMAIL_DUPLICATE);
+                    throw new IllegalArgumentException(CustomerMessages.EMAIL_DUPLICATE);
                 }
 
                 existing.setName(customerDTO.getFullName());
@@ -139,6 +144,8 @@ public class CustomerServiceImpl implements CustomerService {
 
                 return Response.success(CustomerMessages.UPDATE_SUCCESS, CustomerMapper.INSTANCE.toDto(existing));
             });
+        } catch (IllegalArgumentException e) {
+            return Response.error(e.getMessage());
         } catch (Exception e) {
             log.error("Failed to update customer: customerId={}", customerDTO.getCustomerId(), e);
             return Response.error(CustomerMessages.UPDATE_FAILED_PREFIX + e.getMessage());
@@ -198,5 +205,31 @@ public class CustomerServiceImpl implements CustomerService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    @Override
+    public Response getCustomerHistory(CustomerHistoryRequestDTO requestDTO) {
+        List<String> errors = ValidationUtils.validate(requestDTO);
+        if (!errors.isEmpty()) {
+            return Response.error(CustomerMessages.DATA_INVALID_PREFIX + String.join(", ", errors));
+        }
+
+        try {
+            return AbstractGenericRepositoryImpl.readOnly(em -> {
+                String customerId = requestDTO.getCustomerId().trim();
+                List<CustomerHistoryItemDTO> items = customerRepository.findCustomerTicketHistory(em, customerId);
+                double totalAmount = customerRepository.sumCustomerInvoiceTotalAmount(em, customerId);
+
+                CustomerHistoryResponseDTO dto = CustomerHistoryResponseDTO.builder()
+                        .items(items)
+                        .totalAmount(totalAmount)
+                        .build();
+
+                return Response.success("Lấy lịch sử mua vé thành công", dto);
+            });
+        } catch (Exception e) {
+            log.error("Failed to get customer history: customerId={}", requestDTO.getCustomerId(), e);
+            return Response.error("Lỗi khi lấy lịch sử mua vé: " + e.getMessage());
+        }
     }
 }

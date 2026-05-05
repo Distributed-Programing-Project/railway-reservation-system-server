@@ -13,5 +13,7 @@ public interface InvoiceDetailRepository {
             InvoiceType invoiceType);
 
     List<InvoiceDetail> updateInvoiceDetails(EntityManager em, List<InvoiceDetail> invoiceDetails);
+
+    List<InvoiceDetail> findDetailsWithFullChainByInvoiceId(String invoiceId);
 }
 

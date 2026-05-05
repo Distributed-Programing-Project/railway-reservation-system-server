@@ -45,7 +45,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             return Response.error(String.join(", ", errors));
         }
 
-        Response authError = requireActiveManager(requestDTO.getRequestEmployeeId());
+        Response authError = requireActiveEmployee(requestDTO.getRequestEmployeeId());
         if (authError != null) return authError;
 
         String effectiveEmployeeId = resolveEffectiveEmployeeId(requestDTO.getRequestEmployeeId(), requestDTO.getEmployeeId());
@@ -67,7 +67,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
     }
 
-    private Response requireActiveManager(String employeeId) {
+    private Response requireActiveEmployee(String employeeId) {
         return AbstractGenericRepositoryImpl.readOnly(em -> {
             Employee requester = employeeRepository.findEmployeeById(em, employeeId);
             if (requester == null) {
@@ -76,15 +76,18 @@ public class StatisticsServiceImpl implements StatisticsService {
             if (requester.getEmployeeStatus() != EmployeeStatus.ACTIVE) {
                 return Response.error(StatisticsMessages.REQUEST_EMPLOYEE_INACTIVE);
             }
-            if (!Boolean.TRUE.equals(requester.getIsManager())) {
-                return Response.error(StatisticsMessages.NOT_MANAGER);
-            }
             return null;
         });
     }
 
     private String resolveEffectiveEmployeeId(String requestEmployeeId, String filterEmployeeId) {
-        return filterEmployeeId;
+        return AbstractGenericRepositoryImpl.readOnly(em -> {
+            Employee requester = employeeRepository.findEmployeeById(em, requestEmployeeId);
+            if (requester != null && Boolean.TRUE.equals(requester.getIsManager())) {
+                return filterEmployeeId; // manager: null = toàn hệ thống, or specific ID
+            }
+            return requestEmployeeId; // non-manager: chỉ xem dữ liệu của chính mình
+        });
     }
 
     private LocalDate[] computeDateRange(StatisticsPeriod periodType, LocalDate targetDate) {

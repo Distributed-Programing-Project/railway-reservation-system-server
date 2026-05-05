@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.common.dto;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,7 +22,17 @@ public class ReturnTicketTicketDTO implements Serializable {
     private String customerId;
     private String scheduleDetailId;
     private String scheduleId;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime departureTime;
+
+    private String trainCode;
+    private String departureStation;
+    private String destinationStation;
+
+    private String carriageName;
+    private String seatNumber;
+
     private double ticketPrice;
     private TicketType type;
     private boolean roundTrip;
