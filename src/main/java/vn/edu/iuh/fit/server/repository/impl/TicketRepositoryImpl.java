@@ -110,4 +110,22 @@ public class TicketRepositoryImpl extends AbstractGenericRepositoryImpl<Ticket, 
     }
     return true;
   }
+
+  @Override
+  public Ticket findOriginalTicketForDisplay(String ticketId) {
+    return readOnly(em -> em.createQuery(
+        "SELECT t FROM Ticket t " +
+        "JOIN FETCH t.scheduleDetail sd " +
+        "JOIN FETCH sd.schedule " +
+        "JOIN FETCH sd.seat seat " +
+        "JOIN FETCH seat.carriage car " +
+        "JOIN FETCH car.train " +
+        "JOIN FETCH sd.segmentDepartureStation " +
+        "JOIN FETCH sd.segmentDestinationStation " +
+        "WHERE t.id = :ticketId", Ticket.class)
+        .setParameter("ticketId", ticketId)
+        .getResultStream()
+        .findFirst()
+        .orElse(null));
+  }
 }

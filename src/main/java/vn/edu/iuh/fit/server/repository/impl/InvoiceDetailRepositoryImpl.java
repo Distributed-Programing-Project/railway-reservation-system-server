@@ -45,5 +45,22 @@ public class InvoiceDetailRepositoryImpl extends AbstractGenericRepositoryImpl<I
         }
         return invoiceDetails;
     }
+
+    @Override
+    public List<InvoiceDetail> findDetailsWithFullChainByInvoiceId(String invoiceId) {
+        return readOnly(em -> em.createQuery(
+            "SELECT d FROM InvoiceDetail d " +
+            "JOIN FETCH d.ticket t " +
+            "JOIN FETCH t.scheduleDetail sd " +
+            "JOIN FETCH sd.schedule " +
+            "JOIN FETCH sd.seat seat " +
+            "JOIN FETCH seat.carriage car " +
+            "JOIN FETCH car.train " +
+            "JOIN FETCH sd.segmentDepartureStation " +
+            "JOIN FETCH sd.segmentDestinationStation " +
+            "WHERE d.invoice.id = :invoiceId", InvoiceDetail.class)
+            .setParameter("invoiceId", invoiceId)
+            .getResultList());
+    }
 }
 

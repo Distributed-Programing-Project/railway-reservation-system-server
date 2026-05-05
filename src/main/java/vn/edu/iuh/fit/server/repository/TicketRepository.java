@@ -26,4 +26,6 @@ public interface TicketRepository {
     boolean updateTicket(EntityManager em, Ticket ticket);
 
     boolean updateTickets(EntityManager em, List<Ticket> tickets);
+
+    Ticket findOriginalTicketForDisplay(String ticketId);
 }
