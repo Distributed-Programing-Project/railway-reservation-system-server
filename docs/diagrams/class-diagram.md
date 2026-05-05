@@ -69,7 +69,7 @@ classDiagram
     }
 
     class Employee {
-        +String id
+        +String employeeId
         +String employeeCode
         +String employeeName
         +String nationalId
@@ -79,7 +79,7 @@ classDiagram
         +String phoneNumber
         +String email
         +Boolean isManager
-        +EmployeeStatus status
+        +EmployeeStatus employeeStatus
         +LocalDate createdAt
         +LocalDate updatedAt
     }
@@ -87,7 +87,7 @@ classDiagram
     %% ── Khach hang ────────────────────────────────────────
     class Customer {
         +String id
-        +String fullName
+        +String name
         +String idCard
         +String passport
         +String phoneNumber
