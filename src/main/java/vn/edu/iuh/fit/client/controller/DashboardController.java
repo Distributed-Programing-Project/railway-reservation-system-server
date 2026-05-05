@@ -1,5 +1,9 @@
 package vn.edu.iuh.fit.client.controller;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
@@ -14,10 +18,6 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 import vn.edu.iuh.fit.client.service.SessionManager;
 import vn.edu.iuh.fit.common.dto.AccountDTO;
-
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 public class DashboardController {
 
@@ -42,6 +42,15 @@ public class DashboardController {
     private Button btnInvoice;
 
     @FXML
+    private Button btnSellTicket;
+
+    @FXML
+    private Button btnExchangeTicket;
+
+    @FXML
+    private Button btnReturnTicket;
+
+    @FXML
     private Button btnSchedule;
 
     @FXML
@@ -52,6 +61,9 @@ public class DashboardController {
 
     @FXML
     private Button btnEmployee;
+
+    @FXML
+    private Button btnCustomer;
 
     @FXML
     private Button btnStatistics;
@@ -100,6 +112,22 @@ public class DashboardController {
             setActiveMenu(btnInvoice);
             loadContent("/client/ui/views/invoice-management.fxml");
         });
+        btnSellTicket.setOnAction(event -> {
+            setActiveMenu(btnSellTicket);
+            openSellTicketView();
+        });
+        btnExchangeTicket.setOnAction(event -> {
+            setActiveMenu(btnExchangeTicket);
+            openExchangeTicketView();
+        });
+        btnReturnTicket.setOnAction(event -> {
+            setActiveMenu(btnReturnTicket);
+            loadContent("/client/ui/views/tra-ve.fxml");
+        });
+        btnCustomer.setOnAction(event -> {
+            setActiveMenu(btnCustomer);
+            loadContent("/client/ui/views/customer-management.fxml");
+        });
         btnSchedule.setOnAction(event -> {
             setActiveMenu(btnSchedule);
             openScheduleView();
@@ -123,6 +151,24 @@ public class DashboardController {
         btnLogout.setOnAction(event -> logout());
     }
 
+    private void openExchangeTicketView() {
+        try {
+            // Tải cái khung Wizard Bán Vé
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/ui/views/ban-ve.fxml"));
+            javafx.scene.Parent root = loader.load();
+
+            vn.edu.iuh.fit.client.controller.BanVeController controller = loader.getController();
+
+            // Bật chế độ Đổi vé và show màn hình Tra cứu
+            controller.getState().setExchangeMode(true);
+            controller.showExchangeSearch();
+            contentPane.getChildren().setAll(root);
+
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void openHomeView() {
         loadContent("/client/ui/views/dashboard_statistics.fxml", controller -> {
             if (controller instanceof DashboardStatisticsController dashboardStatisticsController) {
@@ -137,6 +183,24 @@ public class DashboardController {
 
     private void openScheduleView() {
         loadContent("/client/ui/views/schedule-management.fxml");
+    }
+
+    private void openSellTicketView() {
+        if (tryLoadContent("/client/ui/views/ban-ve.fxml")) {
+            return;
+        }
+        loadContent("/client/ui/views/sell-ticket-wizard.fxml");
+    }
+
+    private boolean tryLoadContent(String fxmlPath) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            Parent view = loader.load();
+            contentPane.getChildren().setAll(view);
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     private void loadContent(String fxmlPath) {
@@ -176,11 +240,15 @@ public class DashboardController {
     private void clearActiveMenu() {
         btnHome.getStyleClass().remove("menu-item-active");
         btnInvoice.getStyleClass().remove("menu-item-active");
+        btnSellTicket.getStyleClass().remove("menu-item-active");
+        btnExchangeTicket.getStyleClass().remove("menu-item-active");
+        btnReturnTicket.getStyleClass().remove("menu-item-active");
         btnSchedule.getStyleClass().remove("menu-item-active");
         btnRoute.getStyleClass().remove("menu-item-active");
         btnTrain.getStyleClass().remove("menu-item-active");
         btnEmployee.getStyleClass().remove("menu-item-active");
         btnStatistics.getStyleClass().remove("menu-item-active");
+        btnCustomer.getStyleClass().remove("menu-item-active");
     }
 
     private void logout() {

@@ -1,11 +1,5 @@
 package vn.edu.iuh.fit.server.network;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import vn.edu.iuh.fit.common.request.Request;
-import vn.edu.iuh.fit.common.response.Response;
-import vn.edu.iuh.fit.server.util.JPAUtils;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -17,6 +11,13 @@ import java.net.SocketTimeoutException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import vn.edu.iuh.fit.common.request.Request;
+import vn.edu.iuh.fit.common.response.Response;
+import vn.edu.iuh.fit.server.util.JPAUtils;
 
 public class Server {
 
@@ -49,9 +50,8 @@ public class Server {
             return;
         }
         try (
-            ObjectOutputStream out = new ObjectOutputStream(clientSocket.getOutputStream());
-            ObjectInputStream in  = new ObjectInputStream(clientSocket.getInputStream())
-        ) {
+                ObjectOutputStream out = new ObjectOutputStream(clientSocket.getOutputStream());
+                ObjectInputStream in = new ObjectInputStream(clientSocket.getInputStream())) {
             while (true) {
                 Request request = (Request) in.readObject();
                 log.debug("Received action: {}", request.getAction());

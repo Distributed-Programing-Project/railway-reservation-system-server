@@ -1,12 +1,12 @@
 package vn.edu.iuh.fit.client.service;
 
-import vn.edu.iuh.fit.common.request.Request;
-import vn.edu.iuh.fit.common.response.Response;
-
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+
+import vn.edu.iuh.fit.common.request.Request;
+import vn.edu.iuh.fit.common.response.Response;
 
 public class SocketRequestService {
 
@@ -33,7 +33,7 @@ public class SocketRequestService {
             socket.setSoTimeout(READ_TIMEOUT_MS);
 
             try (ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-                 ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
+                    ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
                 out.writeObject(request);
                 out.flush();
 
