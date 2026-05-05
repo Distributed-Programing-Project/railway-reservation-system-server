@@ -206,21 +206,23 @@ sequenceDiagram
 
 ```mermaid
 classDiagram
+    direction TB
+
+    %% ── DTOs ──────────────────────────────────────────────
     class ScheduleUpdateDTO {
-        <<DTO>>
+        <<DTO · request>>
         +String requestEmployeeId
         +String scheduleId
         +String trainId
         +String routeId
         +LocalDateTime departureTime
         +LocalDateTime arrivalTime
-        +serialVersionUID : long
-        +isDepartureTimeInFuture() boolean [AssertTrue]
-        +isArrivalTimeAfterDepartureTime() boolean [AssertTrue]
+        +isDepartureTimeInFuture() bool
+        +isArrivalTimeAfterDepartureTime() bool
     }
 
     class ScheduleDTO {
-        <<DTO>>
+        <<DTO · response>>
         +String id
         +LocalDateTime departureTime
         +LocalDateTime arrivalTime
@@ -233,8 +235,18 @@ classDiagram
         +String destinationStationName
     }
 
+    %% ── Mapper ────────────────────────────────────────────
+    class ScheduleMapper {
+        <<mapper · MapStruct>>
+        +toDto(Schedule) ScheduleDTO
+        +toDtoList(List~Schedule~) List~ScheduleDTO~
+        +toEntity(ScheduleDTO) Schedule
+        +toEntityForUpdate(ScheduleUpdateDTO) Schedule
+    }
+
+    %% ── Entities ──────────────────────────────────────────
     class Schedule {
-        <<entity>>
+        <<entity · schedules>>
         +String id
         +LocalDateTime departureTime
         +LocalDateTime arrivalTime
@@ -245,17 +257,21 @@ classDiagram
     }
 
     class ScheduleDetail {
-        <<entity>>
+        <<entity · schedule_details>>
         +String id
         +BigDecimal priceSeat
         +Seat seat
         +Schedule schedule
         +RouteStop routeStop
+        +Station segmentDepartureStation
+        +Station segmentDestinationStation
+        +Integer segmentDepartureOrder
+        +Integer segmentDestinationOrder
         +int version
     }
 
     class Train {
-        <<entity>>
+        <<entity · trains>>
         +String id
         +String trainCode
         +TrainStatus status
@@ -263,7 +279,7 @@ classDiagram
     }
 
     class Carriage {
-        <<entity>>
+        <<entity · carriages>>
         +String id
         +int number
         +CarriageType type
@@ -272,36 +288,145 @@ classDiagram
     }
 
     class Seat {
-        <<entity>>
+        <<entity · seats>>
         +String id
         +int number
+        +boolean available
         +SeatType type
         +Carriage carriage
     }
 
     class Route {
-        <<entity>>
+        <<entity · routes>>
         +String id
         +String routeCode
+        +RouteStatus status
+        +Double priceBasic
         +Station departureStation
         +Station destinationStation
-        +RouteStatus status
+        +List~RouteStop~ routeStops
     }
 
-    class ScheduleMapper {
-        <<mapper>>
-        +toDto(Schedule) ScheduleDTO
-        +toEntityForUpdate(ScheduleUpdateDTO) Schedule
-        +toDtoList(List~Schedule~) List~ScheduleDTO~
+    class RouteStop {
+        <<entity · route_stops>>
+        +String id
+        +int orderStop
+        +Station stationStop
+        +Route route
     }
 
-    ScheduleUpdateDTO ..> Schedule : maps to via ScheduleMapper.toEntityForUpdate()
-    ScheduleMapper ..> ScheduleDTO : produces
-    ScheduleMapper ..> Schedule : reads
-    Schedule "1" --> "1" Train
-    Schedule "1" --> "1" Route
-    Schedule "1" --> "*" ScheduleDetail
-    ScheduleDetail "*" --> "1" Seat
-    Train "1" --> "*" Carriage
-    Carriage "1" --> "*" Seat
+    class Station {
+        <<entity · stations>>
+        +String id
+        +String name
+        +Float destinationKm
+    }
+
+    %% ── Relationships ──────────────────────────────────────
+    ScheduleUpdateDTO ..> ScheduleMapper : input
+    ScheduleMapper ..> ScheduleDTO     : produces
+    ScheduleMapper ..> Schedule        : reads / writes
+
+    Schedule "*" --> "1" Train         : train_id
+    Schedule "*" --> "1" Route         : route_id
+    Schedule "1" *-- "*" ScheduleDetail : cascade REMOVE
+
+    Train    "1" *-- "*" Carriage
+    Carriage "1" *-- "*" Seat
+
+    ScheduleDetail "*" --> "1" Seat       : seat_id
+    ScheduleDetail "*" --> "0..1" RouteStop : route_stop_id
+    ScheduleDetail "*" --> "1" Station    : segmentDeparture
+    ScheduleDetail "*" --> "1" Station    : segmentDestination
+
+    Route "*" --> "1" Station : departureStation
+    Route "*" --> "1" Station : destinationStation
+    Route "1" *-- "*" RouteStop
+    RouteStop "*" --> "1" Station : stationStop
+```
+
+---
+
+## 4. DB Mapping (ER Diagram)
+
+```mermaid
+erDiagram
+    schedules {
+        VARCHAR10  schedule_id        PK
+        VARCHAR6   train_id           FK
+        VARCHAR8   route_id           FK
+        DATETIME   departure_time
+        DATETIME   arrival_time
+        VARCHAR50  status
+    }
+
+    schedule_details {
+        VARCHAR36  schedule_detail_id     PK
+        VARCHAR36  schedule_id            FK
+        VARCHAR36  seat_id                FK
+        VARCHAR36  route_stop_id          FK "nullable"
+        VARCHAR6   segment_departure_station_id   FK
+        VARCHAR6   segment_destination_station_id FK
+        DECIMAL    price_seat
+        INT        segment_departure_order
+        INT        segment_destination_order
+        INT        version
+    }
+
+    trains {
+        VARCHAR6   train_id    PK
+        VARCHAR10  train_code  "UNIQUE"
+        VARCHAR50  status
+    }
+
+    carriages {
+        VARCHAR36  carriage_id      PK
+        VARCHAR6   train_id         FK
+        INT        sequence_number
+        VARCHAR50  carriage_type
+    }
+
+    seats {
+        VARCHAR36  seat_id          PK
+        VARCHAR36  carriage_id      FK
+        INT        sequence_number
+        BOOLEAN    is_available
+        VARCHAR50  seat_type
+    }
+
+    routes {
+        VARCHAR8   route_id                  PK
+        VARCHAR6   departure_station_id      FK
+        VARCHAR6   destination_station_id    FK
+        VARCHAR20  route_code
+        VARCHAR50  status
+        DOUBLE     price_basic
+    }
+
+    route_stops {
+        VARCHAR36  route_stop_id    PK
+        VARCHAR8   route_id         FK
+        VARCHAR6   station_stop_id  FK
+        INT        order_stop
+    }
+
+    stations {
+        VARCHAR6       station_id      PK
+        NVARCHAR255    station_name
+        FLOAT          destination_km
+    }
+
+    trains        ||--o{ carriages        : "train_id"
+    carriages     ||--o{ seats            : "carriage_id"
+    trains        ||--o{ schedules        : "train_id"
+    routes        ||--o{ schedules        : "route_id"
+    schedules     ||--o{ schedule_details : "schedule_id"
+    seats         ||--o{ schedule_details : "seat_id"
+    route_stops   |o--o{ schedule_details : "route_stop_id (nullable)"
+    stations      ||--o{ schedule_details : "segment_departure_station_id"
+    stations      ||--o{ schedule_details : "segment_destination_station_id"
+    routes        ||--o{ route_stops      : "route_id"
+    stations      ||--o{ route_stops      : "station_stop_id"
+    stations      ||--o{ routes           : "departure_station_id"
+    stations      ||--o{ routes           : "destination_station_id"
 ```
