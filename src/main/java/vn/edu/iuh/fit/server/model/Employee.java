@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import vn.edu.iuh.fit.common.constant.EmployeeStatus;
+import vn.edu.iuh.fit.server.util.id.annotation.GeneratedEmployeeId;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -18,8 +19,8 @@ import java.util.List;
 @Table(name = "employees")
 public class Employee {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "employee_id", length = 36)
+    @GeneratedEmployeeId
+    @Column(name = "employee_id", length = 12)
     private String employeeId;
 
     @Column(name = "employee_code", unique = true, nullable = false, length = 10)

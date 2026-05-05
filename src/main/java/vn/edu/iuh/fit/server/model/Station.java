@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.server.model;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
+import vn.edu.iuh.fit.server.util.id.annotation.GeneratedStationId;
 
 import java.util.List;
 
@@ -17,8 +18,8 @@ import java.util.List;
 @BatchSize(size = 25)
 public class Station {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "station_id", length = 36)
+    @GeneratedStationId
+    @Column(name = "station_id", length = 6)
     private String id;
 
     @Column(name = "station_name", columnDefinition = "NVARCHAR(255)")

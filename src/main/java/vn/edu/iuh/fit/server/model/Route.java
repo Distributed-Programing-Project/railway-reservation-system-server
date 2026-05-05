@@ -7,6 +7,7 @@ import org.hibernate.annotations.BatchSize;
 import java.util.List;
 
 import vn.edu.iuh.fit.common.constant.RouteStatus;
+import vn.edu.iuh.fit.server.util.id.annotation.GeneratedRouteId;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,8 +20,8 @@ import vn.edu.iuh.fit.common.constant.RouteStatus;
 @BatchSize(size = 25)
 public class Route {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "route_id", length = 36)
+    @GeneratedRouteId
+    @Column(name = "route_id", length = 8)
     private String id;
 
     @Column(name = "route_code", length = 20)

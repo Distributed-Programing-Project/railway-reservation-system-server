@@ -8,6 +8,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -527,6 +528,13 @@ public class SaleServiceImpl implements SaleService {
       if (returnSchedule == null) {
         return Response.error(SaleMessages.NOT_FOUND_SCHEDULE);
       }
+
+      // 🔥 EDGE CASE 2: KHỨ HỒI XUYÊN KHÔNG (THỜI GIAN VỀ PHẢI SAU THỜI GIAN ĐẾN CỦA
+      // CHIỀU ĐI)
+      if (!returnSchedule.getDepartureTime().isAfter(outboundSchedule.getArrivalTime())) {
+        return Response
+            .error("Lỗi thời gian: Thời gian khởi hành của chuyến về phải diễn ra SAU thời gian đến của chuyến đi!");
+      }
     }
 
     SaleBuyerDTO buyerDTO = dto.getBuyer();
@@ -569,23 +577,52 @@ public class SaleServiceImpl implements SaleService {
       return Response.error(SaleMessages.INVALID_REQUEST);
     }
 
-    boolean hasChild = outboundPassengers.stream().anyMatch(p -> p != null && p.getTicketType() == TicketType.CHILD)
-        || returnPassengers.stream().anyMatch(p -> p != null && p.getTicketType() == TicketType.CHILD);
-    boolean hasAdult = outboundPassengers.stream().anyMatch(p -> p == null || p.getTicketType() != TicketType.CHILD)
-        || returnPassengers.stream().anyMatch(p -> p == null || p.getTicketType() != TicketType.CHILD);
-    if (hasChild && !hasAdult) {
-      return Response.error(SaleMessages.CHILD_REQUIRES_ADULT);
+    // 🔥 EDGE CASE 1: CHỐNG TRÙNG LẶP CCCD TRÊN CÙNG MỘT CHUYẾN TÀU (PHÂN THÂN CHI
+    // THUẬT)
+    Set<String> outboundDocs = new HashSet<>();
+    for (SalePassengerDTO p : outboundPassengers) {
+      if (p != null && p.getDocumentNumber() != null && !p.getDocumentNumber().isBlank()) {
+        if (!outboundDocs.add(normalize(p.getDocumentNumber()))) {
+          return Response.error("Hành khách mang giấy tờ số " + p.getDocumentNumber()
+              + " không được mua nhiều hơn 1 vé (vị trí ghế) trên chiều đi!");
+        }
+      }
+    }
+    if (dto.getTicketCategory() == TicketCategory.ROUND_TRIP) {
+      Set<String> returnDocs = new HashSet<>();
+      for (SalePassengerDTO p : returnPassengers) {
+        if (p != null && p.getDocumentNumber() != null && !p.getDocumentNumber().isBlank()) {
+          if (!returnDocs.add(normalize(p.getDocumentNumber()))) {
+            return Response.error("Hành khách mang giấy tờ số " + p.getDocumentNumber()
+                + " không được mua nhiều hơn 1 vé (vị trí ghế) trên chiều về!");
+          }
+        }
+      }
     }
 
-    boolean redeemRequested = buyerDTO.isHasAccount() && dto.getRedeemPoints() != null
-        && dto.getRedeemPoints().isRedeemRequested();
-    boolean hasDiscountType = outboundPassengers.stream()
-        .anyMatch(p -> p != null && p.getTicketType() != null && p.getTicketType() != TicketType.NORMAL)
-        || returnPassengers.stream()
-            .anyMatch(p -> p != null && p.getTicketType() != null && p.getTicketType() != TicketType.NORMAL)
-        || (dto.getChildrenUnder6() != null && !dto.getChildrenUnder6().isEmpty());
-    if (redeemRequested && hasDiscountType) {
-      return Response.error(SaleMessages.POINTS_NOT_ALLOWED_WITH_DISCOUNT);
+    // 🔥 EDGE CASE: STRICT ATTACHING (SỐ VÉ NL PHẢI >= SỐ VÉ TE)
+    long adultCount = outboundPassengers.stream().filter(p -> p == null || p.getTicketType() != TicketType.CHILD)
+        .count()
+        + returnPassengers.stream().filter(p -> p == null || p.getTicketType() != TicketType.CHILD).count();
+    long childCount = outboundPassengers.stream().filter(p -> p != null && p.getTicketType() == TicketType.CHILD)
+        .count()
+        + returnPassengers.stream().filter(p -> p != null && p.getTicketType() == TicketType.CHILD).count();
+
+    if (childCount > 0 && adultCount < childCount) {
+      return Response
+          .error("Số lượng vé Người Lớn phải lớn hơn hoặc bằng số lượng vé Trẻ Em trong cùng một giao dịch (đặt chỗ)!");
+    }
+
+    // 🔥 EDGE CASE 3: NHÀ TRẺ DI ĐỘNG (GIỚI HẠN TRẺ DƯỚI 6 TUỔI)
+    List<SaleChildUnder6DTO> childrenUnder6 = dto.getChildrenUnder6() != null ? dto.getChildrenUnder6() : List.of();
+    Map<String, Long> under6CountMap = childrenUnder6.stream()
+        .collect(Collectors.groupingBy(
+            c -> c.getAccompanyDirection() + "_" + c.getAccompanyPassengerIndex(),
+            Collectors.counting()));
+    for (Long count : under6CountMap.values()) {
+      if (count > 2) {
+        return Response.error("Một vé người lớn chỉ được kèm tối đa 2 trẻ em dưới 6 tuổi (miễn vé ngồi chung)!");
+      }
     }
 
     long now = System.currentTimeMillis();
@@ -612,7 +649,6 @@ public class SaleServiceImpl implements SaleService {
           issuedTickets);
     }
 
-    List<SaleChildUnder6DTO> childrenUnder6 = dto.getChildrenUnder6() != null ? dto.getChildrenUnder6() : List.of();
     for (SaleChildUnder6DTO child : childrenUnder6) {
       Response childResult = createChildVoucher(em, child, dto, outboundSchedule, returnSchedule, buyerCustomer,
           createdTickets, createdDetails, childVouchers);
@@ -620,17 +656,44 @@ public class SaleServiceImpl implements SaleService {
         return childResult;
     }
 
+    // 🔥 EDGE CASE: DISCOUNT PRORATION (PHÂN BỔ ĐIỂM TÍCH LŨY)
     double pointsDiscount = 0.0;
     int redeemedPoints = 0;
-    if (buyerDTO.isHasAccount() && dto.getRedeemPoints() != null && dto.getRedeemPoints().isRedeemRequested()
-        && buyerCustomer.getRewardPoints() > 0) {
+    boolean redeemRequested = buyerDTO.isHasAccount() && dto.getRedeemPoints() != null
+        && dto.getRedeemPoints().isRedeemRequested();
+
+    if (redeemRequested && buyerCustomer.getRewardPoints() > 0) {
+      // Lọc ra các vé KHÔNG thuộc đối tượng giảm giá (Vé Người lớn Normal)
+      List<InvoiceDetail> eligibleDetails = createdDetails.stream()
+          .filter(d -> d.getTicket().getType() == TicketType.NORMAL && d.getSubTotal() > 0)
+          .toList();
+
+      if (eligibleDetails.isEmpty()) {
+        return Response
+            .error("Không có vé hợp lệ (Người Lớn không ưu đãi) để áp dụng điểm tích lũy trong giao dịch này!");
+      }
+
+      // Tính tổng giá trị của các vé hợp lệ
+      double totalEligibleAmount = eligibleDetails.stream().mapToDouble(InvoiceDetail::getSubTotal).sum();
+
+      // Tính mức trần được phép giảm (Tối đa 10% của tổng vé hợp lệ)
+      double maxDiscountAllowed = totalEligibleAmount * MAX_REDEEM_RATE;
+      int maxPointsByRate = (int) Math.floor(maxDiscountAllowed / POINT_REDEEM_VALUE);
+
       int requested = Math.max(0, dto.getRedeemPoints().getPointsToRedeem());
-      double maxDiscount = subtotalAfterTypeDiscount * MAX_REDEEM_RATE;
-      int maxPointsByRate = (int) Math.floor(maxDiscount / POINT_REDEEM_VALUE);
       int maxByBalance = buyerCustomer.getRewardPoints();
       int allowed = Math.max(0, Math.min(maxByBalance, maxPointsByRate));
       redeemedPoints = requested <= 0 ? allowed : Math.min(requested, allowed);
+
       pointsDiscount = redeemedPoints * POINT_REDEEM_VALUE;
+
+      // Phân bổ (Prorate) tiền giảm vào từng vé hợp lệ
+      if (pointsDiscount > 0) {
+        double discountPerTicket = pointsDiscount / eligibleDetails.size();
+        for (InvoiceDetail d : eligibleDetails) {
+          d.setDiscount(d.getDiscount() + discountPerTicket);
+        }
+      }
     }
 
     double totalAmount = Math.max(0, subtotalAfterTypeDiscount - pointsDiscount);
@@ -674,7 +737,7 @@ public class SaleServiceImpl implements SaleService {
         .totalAmount(totalAmount)
         .type(InvoiceType.SALE)
         .customer(buyerCustomer)
-        .employee(staff) // GÁN NHÂN VIÊN VÀO ĐÂY SAU KHI TÌM ĐƯỢC
+        .employee(staff)
         .taxCode(dto.getVat() != null ? normalize(dto.getVat().getTaxCode()) : null)
         .companyName(dto.getVat() != null ? normalize(dto.getVat().getCompanyName()) : null)
         .build();
@@ -793,7 +856,7 @@ public class SaleServiceImpl implements SaleService {
           direction == TripDirection.RETURN);
 
       Ticket ticket = Ticket.builder()
-          .customer(passengerCustomer) // Gán đúng khách hàng thực tế
+          .customer(passengerCustomer)
           .scheduleDetail(sd)
           .type(pricing.effectiveType())
           .roundTrip(roundTrip)
@@ -813,7 +876,7 @@ public class SaleServiceImpl implements SaleService {
           .ticket(ticket)
           .subTotal(base)
           .discount(pricing.discountAmount())
-          .insurance(pricing.insurance()) // Đã cập nhật phí bảo hiểm
+          .insurance(pricing.insurance())
           .isReturned(false)
           .refundAmount(0.0)
           .build();
@@ -871,7 +934,7 @@ public class SaleServiceImpl implements SaleService {
     }
 
     Ticket voucher = Ticket.builder()
-        .customer(buyerCustomer) // Trẻ em gán vào người mua
+        .customer(buyerCustomer)
         .scheduleDetail(null)
         .type(TicketType.CHILD)
         .roundTrip(request.getTicketCategory() == TicketCategory.ROUND_TRIP)
@@ -974,20 +1037,45 @@ public class SaleServiceImpl implements SaleService {
 
   private Pricing applyPassengerPricing(SalePassengerDTO passenger, LocalDateTime departureTime, double base,
       boolean isReturnTicket) {
-    double insurance = 2000.0; // Phí bảo hiểm cố định
+    double insurance = 2000.0;
 
     if (passenger == null) {
       double rawPrice = (base + insurance);
       if (isReturnTicket)
-        rawPrice = rawPrice * 0.9; // Giảm 10% cho vé chiều về
+        rawPrice = rawPrice * 0.9;
       double finalPrice = Math.ceil(rawPrice / 1000.0) * 1000.0;
       return new Pricing(TicketType.NORMAL, 0.0, insurance, finalPrice);
     }
 
     TicketType type = passenger.getTicketType() != null ? passenger.getTicketType() : TicketType.NORMAL;
+
+    // 🔥 BACKEND TỰ ĐỘNG KIỂM TRA TUỔI THỰC TẾ
+    if (type == TicketType.CHILD || type == TicketType.SENIOR) {
+      if (passenger.getDateOfBirth() == null) {
+        throw new IllegalArgumentException("Bắt buộc phải cung cấp Ngày sinh để áp dụng loại vé "
+            + (type == TicketType.CHILD ? "Trẻ em" : "Người cao tuổi"));
+      }
+
+      int realAge = ageAt(passenger.getDateOfBirth(), departureTime);
+
+      if (type == TicketType.CHILD) {
+        if (realAge < 6) {
+          throw new IllegalArgumentException("Hành khách " + realAge
+              + " tuổi (Dưới 6 tuổi) thuộc diện miễn vé ngồi chung, vui lòng khai báo ở mục Trẻ em dưới 6 tuổi.");
+        } else if (realAge >= 10) {
+          throw new IllegalArgumentException(
+              "Hành khách đã " + realAge + " tuổi, không đủ điều kiện mua vé Trẻ em (Từ 6 đến dưới 10 tuổi).");
+        }
+      }
+
+      if (type == TicketType.SENIOR && realAge < 60) {
+        throw new IllegalArgumentException(
+            "Hành khách " + realAge + " tuổi, chưa đủ điều kiện mua vé Người cao tuổi (Từ 60 tuổi trở lên).");
+      }
+    }
+
     double discountRate = 0.0;
 
-    // Xét hệ số giảm giá theo đối tượng
     if (type == TicketType.CHILD) {
       discountRate = 0.25;
     } else if (type == TicketType.SENIOR) {
@@ -996,21 +1084,14 @@ public class SaleServiceImpl implements SaleService {
       discountRate = 0.10;
     }
 
-    // 1. Cộng dồn bảo hiểm trước
     double priceWithInsurance = base + insurance;
-
-    // 2. Trừ % giảm giá đối tượng
     double priceAfterTargetDiscount = priceWithInsurance * (1.0 - discountRate);
 
-    // 3. Nếu là vé khứ hồi (chiều về) -> Giảm thêm 10%
     if (isReturnTicket) {
       priceAfterTargetDiscount = priceAfterTargetDiscount * 0.9;
     }
 
-    // Làm tròn LÊN đến hàng nghìn (Vd: 2.143.800 -> 2.144.000)
     double finalPrice = Math.ceil(priceAfterTargetDiscount / 1000.0) * 1000.0;
-
-    // Tính ra số tiền thực tế được giảm để lưu vào hóa đơn
     double totalDiscountAmount = priceWithInsurance - finalPrice;
 
     return new Pricing(type, totalDiscountAmount, insurance, finalPrice);
@@ -1041,7 +1122,6 @@ public class SaleServiceImpl implements SaleService {
     return out;
   }
 
-  // Tính hệ số khoảng cách
   public static double getDistanceMultiplier(double km) {
     if (km <= 100)
       return 1.1;
@@ -1049,10 +1129,9 @@ public class SaleServiceImpl implements SaleService {
       return 1.25;
     if (km <= 800)
       return 1.5;
-    return 2.0; // > 800km
+    return 2.0;
   }
 
-  // Tính hệ số loại ghế (Tùy theo Enum SeatType của sếp)
   public static double getSeatMultiplier(String seatType) {
     switch (seatType) {
       case "GHE_CUNG":
