@@ -87,6 +87,10 @@ public class CustomerServiceImpl implements CustomerService {
                 if (customerRepository.existsByIdCard(em, customerDTO.getIdCard(), null)) {
                     throw new IllegalArgumentException(CustomerMessages.ID_CARD_DUPLICATE);
                 }
+                if (customerDTO.getPassport() != null && !customerDTO.getPassport().isBlank()
+                        && customerRepository.existsByPassport(em, customerDTO.getPassport(), null)) {
+                    throw new IllegalArgumentException(CustomerMessages.PASSPORT_DUPLICATE);
+                }
                 if (customerDTO.getEmail() != null && !customerDTO.getEmail().isBlank()
                         && customerRepository.existsByEmail(em, customerDTO.getEmail(), null)) {
                     throw new IllegalArgumentException(CustomerMessages.EMAIL_DUPLICATE);
@@ -130,6 +134,10 @@ public class CustomerServiceImpl implements CustomerService {
                 if (customerRepository.existsByIdCard(em, customerDTO.getIdCard(), existing.getId())) {
                     throw new IllegalArgumentException(CustomerMessages.ID_CARD_DUPLICATE);
                 }
+                if (customerDTO.getPassport() != null && !customerDTO.getPassport().isBlank()
+                        && customerRepository.existsByPassport(em, customerDTO.getPassport(), existing.getId())) {
+                    throw new IllegalArgumentException(CustomerMessages.PASSPORT_DUPLICATE);
+                }
                 if (customerDTO.getEmail() != null && !customerDTO.getEmail().isBlank()
                         && customerRepository.existsByEmail(em, customerDTO.getEmail(), existing.getId())) {
                     throw new IllegalArgumentException(CustomerMessages.EMAIL_DUPLICATE);
@@ -137,6 +145,7 @@ public class CustomerServiceImpl implements CustomerService {
 
                 existing.setName(customerDTO.getFullName());
                 existing.setIdCard(customerDTO.getIdCard());
+                existing.setPassport(normalizeBlankToNull(customerDTO.getPassport()));
                 existing.setPhoneNumber(normalizeBlankToNull(customerDTO.getPhone()));
                 existing.setEmail(normalizeBlankToNull(customerDTO.getEmail()));
 
@@ -181,17 +190,9 @@ public class CustomerServiceImpl implements CustomerService {
                     return Response.error(CustomerMessages.CUSTOMER_HAS_UPCOMING_TICKET);
                 }
 
-                boolean hasTicket = customerRepository.hasAnyTicket(em, customer.getId());
-                boolean hasInvoice = customerRepository.hasAnyInvoice(em, customer.getId());
-
-                if (hasTicket || hasInvoice) {
-                    customer.setActive(false);
-                    customerRepository.updateCustomer(em, customer);
-                    return Response.success(CustomerMessages.DELETE_SUCCESS, CustomerMapper.INSTANCE.toDto(customer));
-                }
-
-                customerRepository.deleteCustomer(em, customer);
-                return Response.success(CustomerMessages.DELETE_SUCCESS, requestDTO.getCustomerId());
+                customer.setActive(false);
+                customerRepository.updateCustomer(em, customer);
+                return Response.success(CustomerMessages.DELETE_SUCCESS, CustomerMapper.INSTANCE.toDto(customer));
             });
         } catch (Exception e) {
             log.error("Failed to delete customer: customerId={}", requestDTO.getCustomerId(), e);

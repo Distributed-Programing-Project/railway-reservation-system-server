@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -23,6 +24,7 @@ import vn.edu.iuh.fit.common.dto.ExchangeTicketRequestDTO;
 import vn.edu.iuh.fit.common.dto.ExchangeTicketResponseDTO;
 import vn.edu.iuh.fit.common.dto.IssuedTicketDTO;
 import vn.edu.iuh.fit.common.dto.RefundReceiptDTO;
+import vn.edu.iuh.fit.common.dto.RefundReceiptItemDTO;
 import vn.edu.iuh.fit.common.dto.RefundReceiptRequestDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketConfirmDTO;
 import vn.edu.iuh.fit.common.dto.ReturnTicketPreviewDTO;
@@ -35,6 +37,7 @@ import vn.edu.iuh.fit.common.message.TicketMessages;
 import vn.edu.iuh.fit.common.response.Response;
 import vn.edu.iuh.fit.server.mapper.TicketMapper;
 import vn.edu.iuh.fit.server.model.Carriage;
+import vn.edu.iuh.fit.server.model.Customer;
 import vn.edu.iuh.fit.server.model.Employee;
 import vn.edu.iuh.fit.server.model.Invoice;
 import vn.edu.iuh.fit.server.model.InvoiceDetail;
@@ -61,6 +64,7 @@ public class TicketServiceImpl implements TicketService {
   private static final Logger log = LoggerFactory.getLogger(TicketServiceImpl.class);
   private static final double EXCHANGE_FEE = 20_000.0;
   private static final double MIN_RETURN_FEE_PER_TICKET = 10_000.0;
+  private static final double POINT_EARN_VALUE = 10_000.0;
   private static final long MINUTES_4H = 4 * 60;
   private static final long MINUTES_24H = 24 * 60;
   private static final String INVALID_QR_CODE = "INVALID";
@@ -79,15 +83,34 @@ public class TicketServiceImpl implements TicketService {
       return Response.error(TicketMessages.DATA_INVALID_PREFIX + String.join(", ", errors));
     }
 
-    String idCard = normalize(searchDTO.getIdCard());
-    if (idCard == null) {
+    String keyword = normalize(searchDTO.getIdCard());
+    if (keyword == null) {
       return Response.error(TicketMessages.ID_CARD_REQUIRED);
     }
 
     try {
       return AbstractGenericRepositoryImpl.readOnly(em -> {
-        List<Ticket> tickets = ticketRepository.findTicketsByCustomerIdCardWithStatusForExchange(em, idCard,
-            TicketStatus.PAID);
+        List<Ticket> merged = new java.util.ArrayList<>();
+
+        // 1) Search by ticket id / QR
+        Ticket direct = ticketRepository.findTicketByIdOrQrWithSchedule(em, keyword);
+        if (direct != null && direct.getStatus() == TicketStatus.PAID) {
+          merged.add(direct);
+        }
+
+        // 2) Search by customer identifier (customer_id / id_card / passport)
+        merged.addAll(ticketRepository.findTicketsByCustomerIdCardWithStatusForExchange(em, keyword, TicketStatus.PAID));
+
+        // 3) Search by passenger document (passenger_id_card)
+        merged.addAll(ticketRepository.findTicketsByPassengerDocumentWithStatus(em, keyword, TicketStatus.PAID));
+
+        java.util.LinkedHashMap<String, Ticket> distinct = new java.util.LinkedHashMap<>();
+        for (Ticket t : merged) {
+          if (t != null && t.getId() != null) {
+            distinct.put(t.getId(), t);
+          }
+        }
+        List<Ticket> tickets = java.util.List.copyOf(distinct.values());
         LocalDateTime now = LocalDateTime.now();
 
         List<ExchangeEligibleTicketDTO> dtos = tickets.stream()
@@ -124,6 +147,9 @@ public class TicketServiceImpl implements TicketService {
         // Trách nhiệm kiểm tra chi tiết (đã thanh toán, chưa đổi...) nằm ở đây
         validateBusinessRulesOrThrow(oldTickets);
 
+        Map<String, Ticket> oldTicketMap = oldTickets.stream()
+            .collect(Collectors.toMap(Ticket::getId, t -> t));
+
         long nowEpoch = System.currentTimeMillis();
         for (String sdId : previewDTO.getNewScheduleDetailIds()) {
           if (!SeatHoldStore.isHeldBy(sdId, sessionId, nowEpoch)) {
@@ -141,6 +167,20 @@ public class TicketServiceImpl implements TicketService {
             previewDTO.getNewScheduleDetailIds());
         if (newSeats.size() != previewDTO.getNewScheduleDetailIds().size()) {
           throw new IllegalArgumentException(TicketMessages.SOME_TICKETS_INVALID);
+        }
+        Map<String, ScheduleDetail> newSeatMap = newSeats.stream()
+            .collect(Collectors.toMap(ScheduleDetail::getId, sd -> sd));
+
+        // Rule: Chỉ đổi vé cùng ga đi/ga đến
+        for (int i = 0; i < previewDTO.getOldTicketIds().size(); i++) {
+          String oldTicketId = previewDTO.getOldTicketIds().get(i);
+          String newScheduleDetailId = previewDTO.getNewScheduleDetailIds().get(i);
+          Ticket oldTicket = oldTicketMap.get(oldTicketId);
+          ScheduleDetail newSeat = newSeatMap.get(newScheduleDetailId);
+          if (oldTicket == null || newSeat == null) {
+            throw new IllegalArgumentException(TicketMessages.SOME_TICKETS_INVALID);
+          }
+          validateSameDepartureDestinationOrThrow(oldTicket, newSeat);
         }
         double totalNewPrice = newSeats.stream()
             .map(sd -> sd.getPriceSeat() != null ? sd.getPriceSeat().doubleValue() : 0.0)
@@ -270,6 +310,8 @@ public class TicketServiceImpl implements TicketService {
         throw new IllegalArgumentException(TicketMessages.scheduleDetailNotFound(newSeatId));
       }
 
+      validateSameDepartureDestinationOrThrow(oldTicket, newSeat);
+
       LocalDateTime newDepartureTime = newSeat.getSchedule().getDepartureTime();
       if (newDepartureTime == null || newDepartureTime.isBefore(LocalDateTime.now())) {
         throw new IllegalArgumentException("Ghế mới có thời gian khởi hành không hợp lệ hoặc đã qua.");
@@ -368,6 +410,38 @@ public class TicketServiceImpl implements TicketService {
               String.format(TicketMessages.EXCHANGE_TIME_EXPIRED, t.getId(), hoursRemaining));
         }
       }
+    }
+  }
+
+  private void validateSameDepartureDestinationOrThrow(Ticket oldTicket, ScheduleDetail newSeat) {
+    if (oldTicket == null || newSeat == null) {
+      throw new IllegalArgumentException(TicketMessages.SOME_TICKETS_INVALID);
+    }
+
+    vn.edu.iuh.fit.server.model.Schedule oldSchedule = oldTicket.getScheduleDetail() != null
+        ? oldTicket.getScheduleDetail().getSchedule()
+        : null;
+    vn.edu.iuh.fit.server.model.Schedule newSchedule = newSeat.getSchedule();
+
+    Route oldRoute = oldSchedule != null ? oldSchedule.getRoute() : null;
+    Route newRoute = newSchedule != null ? newSchedule.getRoute() : null;
+
+    Station oldDep = oldRoute != null ? oldRoute.getDepartureStation() : null;
+    Station oldDest = oldRoute != null ? oldRoute.getDestinationStation() : null;
+    Station newDep = newRoute != null ? newRoute.getDepartureStation() : null;
+    Station newDest = newRoute != null ? newRoute.getDestinationStation() : null;
+
+    String oldDepId = oldDep != null ? oldDep.getId() : null;
+    String oldDestId = oldDest != null ? oldDest.getId() : null;
+    String newDepId = newDep != null ? newDep.getId() : null;
+    String newDestId = newDest != null ? newDest.getId() : null;
+
+    if (oldDepId == null || oldDestId == null || newDepId == null || newDestId == null) {
+      throw new IllegalArgumentException(TicketMessages.EXCHANGE_ROUTE_DATA_MISSING);
+    }
+
+    if (!Objects.equals(oldDepId, newDepId) || !Objects.equals(oldDestId, newDestId)) {
+      throw new IllegalArgumentException(TicketMessages.EXCHANGE_ROUTE_MISMATCH);
     }
   }
 
@@ -656,6 +730,18 @@ public class TicketServiceImpl implements TicketService {
     }
     invoiceDetailRepository.updateInvoiceDetails(em, saleDetails);
 
+    // Reward points: revoke points earned from returned tickets (do not restore redeemed points)
+    Customer customer = computation.tickets.get(0).getCustomer();
+    if (customer != null && computation.totalTicketPrice > 0) {
+      int pointsToRevoke = (int) Math.floor(computation.totalTicketPrice / POINT_EARN_VALUE);
+      if (pointsToRevoke > 0) {
+        int currentPoints = customer.getRewardPoints();
+        int newPoints = Math.max(0, currentPoints - pointsToRevoke);
+        customer.setRewardPoints(newPoints);
+        em.merge(customer);
+      }
+    }
+
     for (Ticket ticket : computation.tickets) {
       ticket.setStatus(TicketStatus.RETURNED);
       ticket.setQrCode(INVALID_QR_CODE);
@@ -867,57 +953,94 @@ public class TicketServiceImpl implements TicketService {
       throw new IllegalArgumentException("Mã chứng từ không phải biên lai hoàn tiền.");
     }
 
-    InvoiceDetail detail = invoice.getDetails() == null
-        ? null
-        : invoice.getDetails().stream().findFirst().orElse(null);
+    List<InvoiceDetail> details = invoice.getDetails() == null
+        ? List.of()
+        : invoice.getDetails().stream().filter(d -> d != null && d.getTicket() != null).toList();
 
-    if (detail == null || detail.getTicket() == null) {
+    if (details.isEmpty()) {
       throw new IllegalArgumentException("Biên lai hoàn tiền không có chi tiết vé.");
     }
 
-    Ticket ticket = detail.getTicket();
-    ScheduleDetail sd = ticket.getScheduleDetail();
-    Seat seat = sd != null ? sd.getSeat() : null;
-    Carriage carriage = seat != null ? seat.getCarriage() : null;
-    vn.edu.iuh.fit.server.model.Schedule schedule = sd != null ? sd.getSchedule() : null;
-    Route route = schedule != null ? schedule.getRoute() : null;
-    Station dep = route != null ? route.getDepartureStation() : null;
-    Station dest = route != null ? route.getDestinationStation() : null;
-
-    String customerName = ticket.getCustomer() != null ? ticket.getCustomer().getName() : null;
-    String customerDocument = ticket.getPassengerIdCard();
-
-    if ((customerName == null || customerName.isBlank()) && invoice.getCustomer() != null) {
-      customerName = invoice.getCustomer().getName();
+    String customerName = invoice.getCustomer() != null ? invoice.getCustomer().getName() : null;
+    String customerDocument = invoice.getCustomer() != null ? invoice.getCustomer().getIdCard() : null;
+    if (customerDocument == null || customerDocument.isBlank()) {
+      customerDocument = invoice.getCustomer() != null ? invoice.getCustomer().getPassport() : null;
     }
-    if ((customerDocument == null || customerDocument.isBlank()) && invoice.getCustomer() != null) {
-      customerDocument = invoice.getCustomer().getIdCard();
-      if (customerDocument == null || customerDocument.isBlank()) {
-        customerDocument = invoice.getCustomer().getPassport();
+
+    List<RefundReceiptItemDTO> items = new ArrayList<>();
+    double totalOriginalAmount = 0.0;
+    double totalRefundAmount = 0.0;
+    double totalRefundFee = 0.0;
+
+    for (InvoiceDetail detail : details) {
+      Ticket ticket = detail.getTicket();
+      ScheduleDetail sd = ticket.getScheduleDetail();
+      Seat seat = sd != null ? sd.getSeat() : null;
+      Carriage carriage = seat != null ? seat.getCarriage() : null;
+      vn.edu.iuh.fit.server.model.Schedule schedule = sd != null ? sd.getSchedule() : null;
+      Route route = schedule != null ? schedule.getRoute() : null;
+      Station dep = route != null ? route.getDepartureStation() : null;
+      Station dest = route != null ? route.getDestinationStation() : null;
+
+      String passengerName = ticket.getPassengerName();
+      String passengerDocument = ticket.getPassengerIdCard();
+      if (passengerDocument == null || passengerDocument.isBlank()) {
+        passengerDocument = customerDocument;
       }
+
+      double originalAmount = detail.getSubTotal() != null ? detail.getSubTotal() : 0.0;
+      double refundAmount = detail.getRefundAmount();
+      double refundFee = Math.max(0.0, originalAmount - refundAmount);
+
+      totalOriginalAmount += originalAmount;
+      totalRefundAmount += refundAmount;
+      totalRefundFee += refundFee;
+
+      items.add(RefundReceiptItemDTO.builder()
+          .ticketId(ticket.getId())
+          .passengerName(passengerName)
+          .passengerDocument(passengerDocument)
+          .trainCode(schedule != null && schedule.getTrain() != null ? schedule.getTrain().getTrainCode() : null)
+          .departureStation(dep != null ? dep.getName() : null)
+          .destinationStation(dest != null ? dest.getName() : null)
+          .departureTime(schedule != null ? schedule.getDepartureTime() : null)
+          .carriageName(carriage != null ? String.valueOf(carriage.getNumber()) : null)
+          .seatNumber(seat != null ? String.valueOf(seat.getNumber()) : null)
+          .originalAmount(originalAmount)
+          .refundFee(refundFee)
+          .refundAmount(refundAmount)
+          .build());
     }
 
-    double originalAmount = detail.getSubTotal() != null ? detail.getSubTotal() : 0.0;
-    double refundAmount = detail.getRefundAmount();
-    double refundFee = Math.max(0.0, originalAmount - refundAmount);
+    if (items.isEmpty()) {
+      throw new IllegalArgumentException("Biên lai hoàn tiền không có chi tiết vé.");
+    }
+
+    RefundReceiptItemDTO first = items.get(0);
 
     return RefundReceiptDTO.builder()
         .refundInvoiceId(invoice.getId())
         .transactionCode(invoice.getId())
         .refundDate(invoice.getIssueDate())
         .employeeName(invoice.getEmployee() != null ? invoice.getEmployee().getEmployeeName() : null)
-        .ticketId(ticket.getId())
+        // backward-compatible (single-item template): set from first item
+        .ticketId(first.getTicketId())
         .customerName(customerName)
         .customerDocument(customerDocument)
-        .trainCode(schedule != null && schedule.getTrain() != null ? schedule.getTrain().getTrainCode() : null)
-        .departureStation(dep != null ? dep.getName() : null)
-        .destinationStation(dest != null ? dest.getName() : null)
-        .departureTime(schedule != null ? schedule.getDepartureTime() : null)
-        .carriageName(carriage != null ? String.valueOf(carriage.getNumber()) : null)
-        .seatNumber(seat != null ? String.valueOf(seat.getNumber()) : null)
-        .originalAmount(originalAmount)
-        .refundFee(refundFee)
-        .refundAmount(refundAmount)
+        .trainCode(first.getTrainCode())
+        .departureStation(first.getDepartureStation())
+        .destinationStation(first.getDestinationStation())
+        .departureTime(first.getDepartureTime())
+        .carriageName(first.getCarriageName())
+        .seatNumber(first.getSeatNumber())
+        .originalAmount(first.getOriginalAmount())
+        .refundFee(first.getRefundFee())
+        .refundAmount(first.getRefundAmount())
+        // multi-item
+        .items(items)
+        .totalOriginalAmount(totalOriginalAmount)
+        .totalRefundFee(totalRefundFee)
+        .totalRefundAmount(totalRefundAmount)
         .build();
   }
 }

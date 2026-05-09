@@ -90,6 +90,25 @@ public class CustomerRepositoryImpl implements CustomerRepository {
   }
 
   @Override
+  public boolean existsByPassport(EntityManager em, String passport, String excludeCustomerId) {
+    if (passport == null || passport.isBlank()) {
+      return false;
+    }
+    boolean hasExclude = excludeCustomerId != null && !excludeCustomerId.isBlank();
+    StringBuilder jpql = new StringBuilder("SELECT COUNT(c) FROM Customer c WHERE c.passport = :passport ");
+    if (hasExclude) {
+      jpql.append("AND c.id <> :excludeId ");
+    }
+    TypedQuery<Long> query = em.createQuery(jpql.toString(), Long.class)
+        .setParameter("passport", passport.trim());
+    if (hasExclude) {
+      query.setParameter("excludeId", excludeCustomerId.trim());
+    }
+    Long count = query.getSingleResult();
+    return count != null && count > 0;
+  }
+
+  @Override
   public boolean existsByEmail(EntityManager em, String email, String excludeCustomerId) {
     if (email == null || email.isBlank()) {
       return false;

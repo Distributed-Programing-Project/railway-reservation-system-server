@@ -15,6 +15,8 @@ public interface CustomerRepository {
 
   boolean existsByIdCard(EntityManager em, String idCard, String excludeCustomerId);
 
+  boolean existsByPassport(EntityManager em, String passport, String excludeCustomerId);
+
   boolean existsByEmail(EntityManager em, String email, String excludeCustomerId);
 
   Customer findCustomerById(EntityManager em, String customerId);

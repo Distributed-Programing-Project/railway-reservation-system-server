@@ -554,10 +554,10 @@ public class SaleServiceImpl implements SaleService {
       return Response.error(SaleMessages.CUSTOMER_DOCUMENT_REQUIRED);
     }
 
-    // TÌM NHÂN VIÊN ĐANG THỰC HIỆN GIAO DỊCH
-    Employee staff = null;
-    if (dto.getEmployeeId() != null && !dto.getEmployeeId().isBlank()) {
-      staff = em.find(Employee.class, dto.getEmployeeId().trim());
+    // TÌM NHÂN VIÊN ĐANG THỰC HIỆN GIAO DỊCH (server là source-of-truth)
+    Employee staff = findEmployeeByIdOrCode(em, dto.getEmployeeId());
+    if (staff == null) {
+      return Response.error(SaleMessages.EMPLOYEE_REQUIRED);
     }
 
     List<Ticket> createdTickets = new ArrayList<>();
@@ -661,6 +661,15 @@ public class SaleServiceImpl implements SaleService {
     int redeemedPoints = 0;
     boolean redeemRequested = buyerDTO.isHasAccount() && dto.getRedeemPoints() != null
         && dto.getRedeemPoints().isRedeemRequested();
+
+    if (redeemRequested) {
+      boolean hasTargetDiscount = createdTickets.stream()
+          .filter(t -> t != null && t.getScheduleDetail() != null)
+          .anyMatch(t -> t.getType() != TicketType.NORMAL);
+      if (hasTargetDiscount) {
+        return Response.error(SaleMessages.POINTS_NOT_ALLOWED_WITH_DISCOUNT);
+      }
+    }
 
     if (redeemRequested && buyerCustomer.getRewardPoints() > 0) {
       // Lọc ra các vé KHÔNG thuộc đối tượng giảm giá (Vé Người lớn Normal)
@@ -1101,6 +1110,43 @@ public class SaleServiceImpl implements SaleService {
     if (dob == null || departureTime == null)
       return 0;
     return Period.between(dob, departureTime.toLocalDate()).getYears();
+  }
+
+  private Employee findEmployeeByIdOrCode(jakarta.persistence.EntityManager em, String value) {
+    String normalized = normalize(value);
+    if (normalized == null) {
+      return null;
+    }
+
+    // Case 1: client gửi employee_id
+    Employee employee = em.find(Employee.class, normalized);
+    if (employee != null) {
+      return employee;
+    }
+
+    // Case 2: client gửi employee_code như QL001
+    try {
+      Object rawEmployeeId = em.createNativeQuery("""
+          SELECT employee_id
+          FROM employees
+          WHERE employee_code = ? OR employee_id = ?
+          LIMIT 1
+          """)
+          .setParameter(1, normalized)
+          .setParameter(2, normalized)
+          .getResultStream()
+          .findFirst()
+          .orElse(null);
+
+      if (rawEmployeeId == null) {
+        return null;
+      }
+      String employeeId = String.valueOf(rawEmployeeId);
+      return em.find(Employee.class, employeeId);
+    } catch (Exception e) {
+      log.warn("Không thể resolve employee từ id/code={}", normalized, e);
+      return null;
+    }
   }
 
   private String normalize(String value) {
